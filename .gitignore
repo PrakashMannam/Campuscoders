@@ -29,5 +29,11 @@ build/
 !**/src/main/**/build/
 !**/src/test/**/build/
 
+### Node / React ###
+node_modules/
+dist/
+.env
+.env.*
+
 ### VS Code ###
 .vscode/
