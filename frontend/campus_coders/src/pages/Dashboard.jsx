@@ -328,50 +328,13 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* ── Streak, Leaderboard & XP ── */}
+        {/* ── Leaderboard ── */}
         <div
           className="sd-stats-row"
           style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(3, 1fr)",
-            gap: "16px",
             marginBottom: "24px",
           }}
         >
-          <div
-            className="sd-stat-pill"
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "flex-start",
-              justifyContent: "center",
-              height: "110px",
-            }}
-          >
-            <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-              <span className="sd-stat-pill-icon">🔥</span>
-              <div>
-                <div className="sd-stat-pill-label">DAILY STREAK</div>
-                <div className="sd-stat-pill-value">
-                  {user?.dailyStreak || 0} Days
-                </div>
-              </div>
-            </div>
-            {user?.checkedInToday ? (
-              <span
-                style={{
-                  color: "#059669",
-                  fontSize: "0.75rem",
-                  fontWeight: "bold",
-                  display: "block",
-                  marginTop: "10px",
-                  marginLeft: "36px",
-                }}
-              >
-                ✓ Checked In Today
-              </span>
-            ) : null}
-          </div>
           <div
             className="sd-stat-pill clickable-stat"
             onClick={() => navigate("/dashboard/leaderboard")}
@@ -379,30 +342,29 @@ export default function Dashboard() {
               cursor: "pointer",
               display: "flex",
               alignItems: "center",
-              gap: "10px",
-              height: "110px",
+              justifyContent: "space-between",
+              padding: "20px 24px",
+              height: "auto",
+              background: "#ffffff",
+              border: "1px solid #e2e8f0",
+              borderRadius: "14px", 
+              boxShadow: "0 2px 8px rgba(0, 0, 0, 0.03)"
             }}
           >
-            <span className="sd-stat-pill-icon">🏆</span>
-            <div>
-              <div className="sd-stat-pill-label">LEADERBOARD</div>
-              <div className="sd-stat-pill-value">{userRank}</div>
+            <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+              <span className="sd-stat-pill-icon" style={{ fontSize: "2rem" }}>🏆</span>
+              <div>
+                <div className="sd-stat-pill-label" style={{ fontSize: "0.8rem", fontWeight: 700, color: "#64748b", textTransform: "uppercase" }}>
+                  STUDENT LEADERBOARD
+                </div>
+                <div className="sd-stat-pill-value" style={{ fontSize: "1.4rem", fontWeight: 800, color: "#0f172a" }}>
+                  Current Rank: {userRank}
+                </div>
+              </div>
             </div>
-          </div>
-          <div
-            className="sd-stat-pill"
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "10px",
-              height: "110px",
-            }}
-          >
-            <span className="sd-stat-pill-icon">⚡</span>
-            <div>
-              <div className="sd-stat-pill-label">TOTAL SCORE</div>
-              <div className="sd-stat-pill-value">{user?.xp ?? 0} XP</div>
-            </div>
+            <button className="res-view-all-btn" style={{ fontSize: "0.9rem" }}>
+              View Leaderboard →
+            </button>
           </div>
         </div>
 
@@ -430,50 +392,13 @@ export default function Dashboard() {
               className="sd-potd-actions-row"
               style={{ display: "flex", gap: "12px", alignItems: "center" }}
             >
-              {solvedToday ? (
-                <>
-                  <span className="sd-potd-solved-banner">✓ SOLVED</span>
-                  <button
-                    className="sd-potd-open-btn"
-                    onClick={handleRedirectChallenge}
-                  >
-                    Open Question{" "}
-                    <FiExternalLink size={13} style={{ marginLeft: "4px" }} />
-                  </button>
-                </>
-              ) : (
-                <>
-                  {openedChallenge ? (
-                    <>
-                      <button
-                        className="sd-potd-open-btn"
-                        onClick={handleRedirectChallenge}
-                      >
-                        Open Question{" "}
-                        <FiExternalLink
-                          size={13}
-                          style={{ marginLeft: "4px" }}
-                        />
-                      </button>
-                      <button
-                        className="sd-potd-manual-btn"
-                        onClick={handleMarkSolvedManual}
-                        style={{ marginLeft: 8 }}
-                      >
-                        Mark as Solved
-                      </button>
-                    </>
-                  ) : (
-                    <button
-                      className="sd-potd-solve-btn"
-                      id="solve-potd-btn"
-                      onClick={handleRedirectChallenge}
-                    >
-                      Solve Challenge
-                    </button>
-                  )}
-                </>
-              )}
+              <button
+                className="sd-potd-solve-btn"
+                id="solve-potd-btn"
+                onClick={handleRedirectChallenge}
+              >
+                Open Question <FiExternalLink size={14} style={{ marginLeft: "6px" }} />
+              </button>
             </div>
           </div>
         </div>

@@ -20,21 +20,23 @@ export default function Leaderboard() {
     }
     if (stored) {
       const parsed = JSON.parse(stored);
-      const updated = parsed.map((row) => {
-        if (row.isYou || row.name === (user?.name || 'Alex Rivera')) {
-          return {
-            ...row,
-            solved: user?.solvedCount || 48,
-            leetcodeUser: user?.leetcodeUser || row.leetcodeUser,
-            gfgUser: user?.gfgUser || row.gfgUser,
-            avatar: user?.avatar || row.avatar
-          };
-        }
-        return row;
+      
+      // Remove any existing "YOU" rows or hardcoded default names to prevent duplicates
+      const withoutYou = parsed.filter(row => !row.isYou && row.name !== 'Alex Rivera');
+      
+      // Inject the single correct "YOU" row
+      withoutYou.push({
+        name: user?.name || 'Alex Rivera',
+        solved: user?.solvedCount || 48,
+        leetcodeUser: user?.leetcodeUser || '',
+        gfgUser: user?.gfgUser || '',
+        isYou: true,
+        avatar: user?.avatar || null
       });
-      updated.sort((a, b) => b.solved - a.solved);
-      localStorage.setItem('cc-leaderboard', JSON.stringify(updated));
-      setLeaderboardData(updated);
+
+      withoutYou.sort((a, b) => b.solved - a.solved);
+      localStorage.setItem('cc-leaderboard', JSON.stringify(withoutYou));
+      setLeaderboardData(withoutYou);
     } else {
       const defaultData = [
         { name: 'Kabir Mehta',    solved: 134, leetcodeUser: 'kabir_m',     gfgUser: 'kabir_gfg',     avatar: null },
