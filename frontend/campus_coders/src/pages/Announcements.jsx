@@ -230,14 +230,7 @@ export default function Announcements() {
                     </div>
                   </div>
 
-                  {a.image && (
-                    <div className="ann-item-image">
-                      <div className="ann-item-image-placeholder">
-                        <span>🏆</span>
-                        <span>Hackathon</span>
-                      </div>
-                    </div>
-                  )}
+                  
                 </div>
               ))}
             </div>

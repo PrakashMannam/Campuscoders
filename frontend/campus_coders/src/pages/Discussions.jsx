@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { FiMessageSquare, FiStar, FiChevronUp, FiChevronDown, FiEdit3, FiX, FiCheck, FiSend } from 'react-icons/fi';
+import { FiMessageSquare, FiStar, FiChevronUp, FiChevronDown, FiEdit3, FiX, FiCheck, FiSend, FiSearch } from 'react-icons/fi';
 import DashboardLayout from '../components/DashboardLayout';
 import Toast from '../components/Toast';
 import { useAuth } from '../context/AuthContext';
@@ -71,6 +71,7 @@ export default function Discussions() {
   const [discussionList, setDiscussionList] = useState([]);
   const [activeCategory, setActiveCategory] = useState('All Topics');
   const [activeTag, setActiveTag] = useState(null);
+  const [sidebarSearch, setSidebarSearch] = useState('');
 
   // Modals state
   const [isNewModalOpen, setIsNewModalOpen] = useState(false);
@@ -117,6 +118,15 @@ export default function Discussions() {
     const matchesTag = !activeTag || d.tags.includes(activeTag);
     return matchesCategory && matchesTag;
   });
+
+  // Sidebar search — filters categories and tags
+  const sidebarQuery = sidebarSearch.trim().toLowerCase();
+  const filteredCategories = sidebarQuery
+    ? categories.filter(cat => cat.name.toLowerCase().includes(sidebarQuery))
+    : categories;
+  const filteredTrendingTags = sidebarQuery
+    ? trendingTags.filter(tag => tag.toLowerCase().includes(sidebarQuery))
+    : trendingTags;
 
 
 
@@ -230,49 +240,81 @@ export default function Discussions() {
         <div className="disc-layout">
           {/* Left sidebar */}
           <div className="disc-sidebar">
+
+            {/* Sidebar search */}
+            <div className="disc-sidebar-search-box">
+              <FiSearch className="disc-sidebar-search-icon" size={15} />
+              <input
+                type="text"
+                className="disc-sidebar-search-input"
+                placeholder="Search topics or tags..."
+                value={sidebarSearch}
+                onChange={e => setSidebarSearch(e.target.value)}
+              />
+              {sidebarSearch && (
+                <button
+                  className="disc-sidebar-search-clear"
+                  onClick={() => setSidebarSearch('')}
+                  aria-label="Clear search"
+                >
+                  <FiX size={13} />
+                </button>
+              )}
+            </div>
+
             <div className="disc-sidebar-card">
               <h4 className="disc-sidebar-title">CATEGORIES</h4>
-              <ul className="disc-cat-list">
-                {categories.map(cat => {
-                  const isActive = activeCategory === cat.name && !activeTag;
-                  return (
-                    <li
-                      key={cat.name}
-                      className={`disc-cat-item ${isActive ? 'active' : ''}`}
-                      onClick={() => {
-                        setActiveCategory(cat.name);
-                        setActiveTag(null);
-                      }}
-                    >
-                      <span className="disc-cat-dot" style={{ background: cat.color }} />
-                      <span className="disc-cat-name">{cat.name}</span>
-                      <span className="disc-cat-count">{getCategoryCount(cat.name)}</span>
-                    </li>
-                  );
-                })}
-              </ul>
+              {filteredCategories.length === 0 ? (
+                <p className="disc-sidebar-no-results">No categories match.</p>
+              ) : (
+                <ul className="disc-cat-list">
+                  {filteredCategories.map(cat => {
+                    const isActive = activeCategory === cat.name && !activeTag;
+                    return (
+                      <li
+                        key={cat.name}
+                        className={`disc-cat-item ${isActive ? 'active' : ''}`}
+                        onClick={() => {
+                          setActiveCategory(cat.name);
+                          setActiveTag(null);
+                          setSidebarSearch('');
+                        }}
+                      >
+                        <span className="disc-cat-dot" style={{ background: cat.color }} />
+                        <span className="disc-cat-name">{cat.name}</span>
+                        <span className="disc-cat-count">{getCategoryCount(cat.name)}</span>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
             </div>
 
             <div className="disc-sidebar-card">
               <h4 className="disc-sidebar-title">TRENDING TAGS</h4>
-              <div className="disc-tags-wrap">
-                {trendingTags.map(tag => {
-                  const isActive = activeTag === tag;
-                  return (
-                    <span 
-                      key={tag} 
-                      className={`disc-tag ${isActive ? 'active' : ''}`}
-                      onClick={() => {
-                        setActiveTag(isActive ? null : tag);
-                        setActiveCategory('All Topics');
-                      }}
-                      style={{ cursor: 'pointer' }}
-                    >
-                      {tag}
-                    </span>
-                  );
-                })}
-              </div>
+              {filteredTrendingTags.length === 0 ? (
+                <p className="disc-sidebar-no-results">No tags match.</p>
+              ) : (
+                <div className="disc-tags-wrap">
+                  {filteredTrendingTags.map(tag => {
+                    const isActive = activeTag === tag;
+                    return (
+                      <span
+                        key={tag}
+                        className={`disc-tag ${isActive ? 'active' : ''}`}
+                        onClick={() => {
+                          setActiveTag(isActive ? null : tag);
+                          setActiveCategory('All Topics');
+                          setSidebarSearch('');
+                        }}
+                        style={{ cursor: 'pointer' }}
+                      >
+                        {tag}
+                      </span>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           </div>
 
