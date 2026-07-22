@@ -305,6 +305,7 @@ export default function Profile() {
 
       // Update user context & local leaderboard
       updateUser({
+        name: formData.name,
         leetcodeUser: formData.leetcodeUser,
         gfgUser: formData.gfgUser,
         githubUser: formData.githubUser,
@@ -315,10 +316,10 @@ export default function Profile() {
       const currentLeaderboard =
         JSON.parse(localStorage.getItem("cc-leaderboard")) || [];
       const filteredLeaderboard = currentLeaderboard.filter(
-        (item) => item.name !== (user?.name || "Alex Rivera"),
+        (item) => !item.isYou && item.name !== (user?.name || "Alex Rivera"),
       );
       filteredLeaderboard.push({
-        name: user?.name || "Alex Rivera",
+        name: formData.name || user?.name || "Alex Rivera",
         solved: totalSolved,
         leetcodeUser: formData.leetcodeUser,
         gfgUser: formData.gfgUser,

@@ -2,6 +2,7 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import './App.css';
 import { AuthProvider } from './context/AuthContext';
+import { ProgressProvider } from './context/ProgressContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
@@ -12,6 +13,9 @@ import ForgotPassword from './pages/ForgotPassword';
 import Dashboard from './pages/Dashboard';
 import AdminDashboard from './pages/AdminDashboard';
 import Resources from './pages/Resources';
+import AllLearningPaths from './pages/AllLearningPaths';
+import LearningPathDetail from './pages/LearningPathDetail';
+import TopicDetail from './pages/TopicDetail';
 import CourseResources from './pages/CourseResources';
 import Discussions from './pages/Discussions';
 import Announcements from './pages/Announcements';
@@ -38,7 +42,8 @@ function LayoutWrapper({ children }) {
 function App() {
   return (
     <AuthProvider>
-      <Router>
+      <ProgressProvider>
+        <Router>
         <LayoutWrapper>
           <Routes>
             {/* Public Pages */}
@@ -56,6 +61,7 @@ function App() {
                 </ProtectedRoute>
               }
             />
+            {/* Resources Hub */}
             <Route
               path="/dashboard/resources"
               element={
@@ -64,6 +70,34 @@ function App() {
                 </ProtectedRoute>
               }
             />
+            {/* All Learning Paths */}
+            <Route
+              path="/dashboard/resources/paths"
+              element={
+                <ProtectedRoute requiredRole="student">
+                  <AllLearningPaths />
+                </ProtectedRoute>
+              }
+            />
+            {/* Learning Path Detail */}
+            <Route
+              path="/dashboard/resources/paths/:pathId"
+              element={
+                <ProtectedRoute requiredRole="student">
+                  <LearningPathDetail />
+                </ProtectedRoute>
+              }
+            />
+            {/* Topic Detail */}
+            <Route
+              path="/dashboard/resources/topics/:topicId"
+              element={
+                <ProtectedRoute requiredRole="student">
+                  <TopicDetail />
+                </ProtectedRoute>
+              }
+            />
+            {/* Legacy Course Resources fallback */}
             <Route
               path="/dashboard/resources/:courseId"
               element={
@@ -72,6 +106,7 @@ function App() {
                 </ProtectedRoute>
               }
             />
+
             <Route
               path="/dashboard/discussions"
               element={
@@ -144,6 +179,7 @@ function App() {
           </Routes>
         </LayoutWrapper>
       </Router>
+      </ProgressProvider>
     </AuthProvider>
   );
 }

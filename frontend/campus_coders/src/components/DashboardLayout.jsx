@@ -68,27 +68,6 @@ export default function DashboardLayout({ children }) {
         {/* Top bar */}
         <header className="dl-topbar">
           <div className="dl-topbar-right">
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginRight: '4px' }}>
-              <span 
-                className="dl-xp-badge"
-                style={{ 
-                  fontSize: '0.75rem', 
-                  fontWeight: 800, 
-                  color: '#8C701B', 
-                  background: '#FFFBE6', 
-                  border: '1px solid #FCE8B2', 
-                  padding: '4px 10px', 
-                  borderRadius: '12px', 
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  gap: '4px',
-                  fontFamily: 'var(--font-title)'
-                }}
-              >
-                ⚡ {user?.xp || 120} XP
-              </span>
-            </div>
-
             <button 
               className="dl-topbar-bell" 
               id="notification-bell" 
