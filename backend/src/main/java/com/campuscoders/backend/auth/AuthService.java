@@ -1,7 +1,5 @@
 package com.campuscoders.backend.auth;
 
-import java.time.LocalDateTime;
-
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -12,10 +10,9 @@ import com.campuscoders.backend.user.Role;
 import com.campuscoders.backend.user.User;
 import com.campuscoders.backend.user.repository.UserRepository;
 
-
 @Service
 public class AuthService {
-  
+
   private final UserRepository userRepository;
   private final PasswordEncoder passwordEncoder;
   private final JwtService jwtService;
@@ -29,8 +26,8 @@ public class AuthService {
     this.passwordEncoder = passwordEncoder;
     this.jwtService = jwtService;
   }
-  
-  //Response for registration
+
+  // Response for registration
   public AuthResponse register(RegisterRequest registerRequest) {
     if (userRepository.existsByEmail(registerRequest.getEmail())) {
       throw new ResponseStatusException(HttpStatus.CONFLICT, "Email already exists");
@@ -42,8 +39,6 @@ public class AuthService {
     user.setPassword(passwordEncoder.encode(registerRequest.getPassword()));
     user.setRole(Role.STUDENT);
     user.setEnabled(true);
-    user.setCreatedAt(LocalDateTime.now());
-    user.setUpdatedAt(LocalDateTime.now());
 
     User savedUser = userRepository.save(user);
 
@@ -57,7 +52,7 @@ public class AuthService {
     return response;
   }
 
-  //Response for login
+  // Response for login
   public AuthResponse login(LoginRequest request) {
     User user = userRepository.findByEmail(request.getEmail())
         .orElseThrow(() -> new ResponseStatusException(
@@ -78,14 +73,12 @@ public class AuthService {
 
     return response;
   }
-  
+
   public CurrentUserResponse getCurrentUser(String email) {
     User user = userRepository.findByEmail(email)
-                .orElseThrow(() ->
-                        new ResponseStatusException(
-                                  HttpStatus.NOT_FOUND,
-                                  "User not found"
-        ));
+        .orElseThrow(() -> new ResponseStatusException(
+            HttpStatus.NOT_FOUND,
+            "User not found"));
     CurrentUserResponse response = new CurrentUserResponse();
     response.setId(user.getId());
     response.setFullName(user.getFullName());

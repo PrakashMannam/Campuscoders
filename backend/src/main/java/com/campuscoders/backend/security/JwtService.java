@@ -8,7 +8,6 @@ import java.util.function.Function;
 
 import javax.crypto.SecretKey;
 
-import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Service;
 
 import com.campuscoders.backend.user.User;
@@ -16,7 +15,6 @@ import com.campuscoders.backend.user.User;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
-import jakarta.annotation.Nonnull;
 
 @Service
 public class JwtService {
