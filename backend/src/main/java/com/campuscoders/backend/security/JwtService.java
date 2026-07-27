@@ -4,11 +4,12 @@ import java.nio.charset.StandardCharsets;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.function.Function;
 
 import javax.crypto.SecretKey;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
 import com.campuscoders.backend.user.User;
 
@@ -19,6 +20,7 @@ import io.jsonwebtoken.security.Keys;
 @Service
 public class JwtService {
 
+  // Development secret for signing tokens. Move this to configuration before production.
   private static final String SECRET_KEY = "campus-coders-secret-key-campus-coders-secret-key";
 
   public String generateToken(User user) {
@@ -32,16 +34,20 @@ public class JwtService {
         .expiration(new Date(System.currentTimeMillis() + 1000 * 60 * 60 * 24))
         .signWith(getSigningKey())
         .compact();
-
   }
 
   public String extractEmail(String token) {
-    return extractClaim(token, claims -> claims.getSubject());
+    String email = extractAllClaims(token).getSubject();
+
+    if (email == null) {
+      throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid token subject");
+    }
+
+    return email;
   }
 
   public boolean validateToken(String token, User user) {
     String email = extractEmail(token);
-
     return email.equals(user.getEmail()) && !isTokenExpired(token);
   }
 
@@ -50,13 +56,13 @@ public class JwtService {
   }
 
   private Date extractExpiration(String token) {
-    return extractClaim(token, claims -> claims.getExpiration());
-  }
+    Date expiration = extractAllClaims(token).getExpiration();
 
-  private <T> T extractClaim(String token, Function<Claims, T> claimsResolver) {
-    Claims claims = extractAllClaims(token);
+    if (expiration == null) {
+      throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid token expiration");
+    }
 
-    return claimsResolver.apply(claims);
+    return expiration;
   }
 
   private Claims extractAllClaims(String token) {
@@ -65,7 +71,6 @@ public class JwtService {
         .build()
         .parseSignedClaims(token)
         .getPayload();
-
   }
 
   private SecretKey getSigningKey() {

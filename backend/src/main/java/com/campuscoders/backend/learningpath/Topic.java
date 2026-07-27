@@ -36,6 +36,7 @@ public class Topic {
   @Column(nullable = false)
   private String title;
 
+  // URL-friendly unique name, for example: oop or spring-security.
   @NotBlank
   @Column(nullable = false, unique = true)
   private String slug;
@@ -46,6 +47,7 @@ public class Topic {
   @Column(name = "estimated_minutes")
   private Integer estimatedMinutes;
 
+  // Controls the order topics appear inside a learning path.
   @Column(name = "sort_order")
   private Integer sortOrder;
 
@@ -53,11 +55,13 @@ public class Topic {
   @Column(nullable = false)
   private Boolean active = true;
 
+  // Many topics belong to one learning path.
   @NotNull
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "learning_path_id", nullable = false)
   private LearningPath learningPath;
 
+  // A topic owns many resources, such as videos, PDFs, articles, and practice links.
   @OneToMany(mappedBy = "topic", cascade = CascadeType.ALL, orphanRemoval = true)
   private List<LearningResource> resources = new ArrayList<>();
 

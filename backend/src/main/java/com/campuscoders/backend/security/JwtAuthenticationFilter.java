@@ -42,6 +42,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     String authHeader = request.getHeader("Authorization");
 
+    // Requests without a Bearer token continue as unauthenticated requests.
     if (authHeader == null || !authHeader.startsWith("Bearer ")) {
       filterChain.doFilter(request, response);
       return;
@@ -50,6 +51,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     String token = authHeader.substring(7);
     String email = jwtService.extractEmail(token);
 
+    // Only set authentication when the token is valid and no user is already set.
     if (email != null && SecurityContextHolder.getContext().getAuthentication() == null) {
       User user = userRepository.findByEmail(email).orElse(null);
 

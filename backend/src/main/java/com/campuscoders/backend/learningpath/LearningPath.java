@@ -35,6 +35,7 @@ public class LearningPath {
   @Column(nullable = false)
   private String title;
 
+  // URL-friendly unique name, for example: java-full-stack.
   @NotBlank
   @Column(nullable = false, unique = true)
   private String slug;
@@ -58,10 +59,12 @@ public class LearningPath {
   @Column(name = "estimated_hours")
   private Integer estimatedHours;
 
+  // Soft-delete flag: inactive paths stay in DB but are hidden from normal reads.
   @NotNull
   @Column(nullable = false)
   private Boolean active = true;
 
+  // A learning path owns many topics, such as OOP, Collections, and Streams.
   @OneToMany(mappedBy = "learningPath", cascade = CascadeType.ALL, orphanRemoval = true)
   private List<Topic> topics = new ArrayList<>();
 
@@ -71,6 +74,7 @@ public class LearningPath {
   @Column(name = "updated_at", nullable = false)
   private LocalDateTime updatedAt;
 
+  // JPA calls this before inserting the row for the first time.
   @PrePersist
   void onCreate() {
     LocalDateTime now = LocalDateTime.now();
@@ -78,6 +82,7 @@ public class LearningPath {
     this.updatedAt = now;
   }
 
+  // JPA calls this before updating an existing row.
   @PreUpdate
   void onUpdate() {
     this.updatedAt = LocalDateTime.now();

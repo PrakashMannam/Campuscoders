@@ -9,9 +9,12 @@ import com.campuscoders.backend.learningpath.LearningPath;
 
 public interface LearningPathRepository extends JpaRepository<LearningPath, Long> {
 
+  // Used by the public Learning Hub list page.
   List<LearningPath> findByActiveTrueOrderByTitleAsc();
 
+  // Slug lookup supports readable URLs like /api/learning-paths/java-full-stack.
   Optional<LearningPath> findBySlug(String slug);
 
+  // Used before creation to return a clean 409 instead of a database constraint error.
   boolean existsBySlug(String slug);
 }

@@ -2,7 +2,6 @@ package com.campuscoders.backend.user;
 
 import java.time.LocalDateTime;
 
-
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -31,11 +30,13 @@ public class User {
   @Column(name = "full_name", nullable = false)
   private String fullName;
 
+  // Email is the unique login identifier for each account.
   @Email
   @NotBlank
   @Column(nullable = false, unique = true)
   private String email;
 
+  // Stored as a BCrypt hash, never as the raw password from the request.
   @NotBlank
   @Column(nullable = false)
   private String password;

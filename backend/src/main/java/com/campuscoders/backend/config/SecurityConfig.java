@@ -2,6 +2,7 @@ package com.campuscoders.backend.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -11,16 +12,17 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 
 import com.campuscoders.backend.security.JwtAuthenticationFilter;
 
-//Configuration class for customized security
+@EnableMethodSecurity
 @Configuration
 public class SecurityConfig {
 
-  private JwtAuthenticationFilter authenticationFilter;
+  private final JwtAuthenticationFilter authenticationFilter;
 
   public SecurityConfig(JwtAuthenticationFilter authenticationFilter) {
     this.authenticationFilter = authenticationFilter;
   }
 
+  // BCrypt is a one-way password hash designed for storing user passwords safely.
   @Bean
   public PasswordEncoder passwordEncoder() {
     return new BCryptPasswordEncoder();
@@ -30,18 +32,17 @@ public class SecurityConfig {
   public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
     return http
         .csrf(csrf -> csrf.disable())
-        .sessionManagement(session ->
-                session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
-        )
+        // JWT APIs are stateless; the server does not keep login sessions.
+        .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
         .authorizeHttpRequests(auth -> auth
             .requestMatchers(
                 "/api/auth/register",
-                            "/api/auth/login")
+                "/api/auth/login")
             .permitAll()
             .anyRequest()
             .authenticated())
+        // Run our JWT filter before Spring Security's username/password filter.
         .addFilterBefore(authenticationFilter, UsernamePasswordAuthenticationFilter.class)
         .build();
-
   }
 }

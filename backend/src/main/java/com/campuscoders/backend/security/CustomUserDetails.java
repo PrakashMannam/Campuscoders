@@ -17,6 +17,7 @@ public class CustomUserDetails implements UserDetails {
     this.user = user;
   }
 
+  // Spring Security expects roles as GrantedAuthority values, such as ROLE_STUDENT.
   @Override
   public Collection<? extends GrantedAuthority> getAuthorities() {
     return List.of(new SimpleGrantedAuthority("ROLE_" + user.getRole().name()));
@@ -27,6 +28,7 @@ public class CustomUserDetails implements UserDetails {
     return user.getPassword();
   }
 
+  // We use email as the username because it is unique and used during login.
   @Override
   public String getUsername() {
     return user.getEmail();
