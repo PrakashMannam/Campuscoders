@@ -59,6 +59,7 @@ public class LearningResource {
   @Column(name = "estimated_minutes")
   private Integer estimatedMinutes;
 
+  // Controls the order resources appear inside a topic.
   @Column(name = "sort_order")
   private Integer sortOrder;
 
@@ -66,6 +67,7 @@ public class LearningResource {
   @Column(nullable = false)
   private Boolean active = true;
 
+  // Many resources belong to one topic.
   @NotNull
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "topic_id", nullable = false)

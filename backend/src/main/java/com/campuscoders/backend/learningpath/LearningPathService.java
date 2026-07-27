@@ -20,12 +20,14 @@ public class LearningPathService {
   }
 
   public LearningPathResponse createLearningPath(CreateLearningPathRequest request) {
+    // Slugs are used in URLs, so each learning path must have a unique slug.
     if (learningPathRepository.existsBySlug(request.slug())) {
       throw new ResponseStatusException(
           HttpStatus.CONFLICT,
           "Learning path slug already exists");
     }
 
+    // Convert incoming API data into the entity that JPA can store in MySQL.
     LearningPath learningPath = new LearningPath();
     learningPath.setTitle(request.title());
     learningPath.setSlug(request.slug());
@@ -58,6 +60,7 @@ public class LearningPathService {
     return toResponse(learningPath);
   }
 
+  // Keep API responses separate from database entities.
   private LearningPathResponse toResponse(LearningPath learningPath) {
     return new LearningPathResponse(
         learningPath.getId(),

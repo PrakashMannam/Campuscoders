@@ -21,18 +21,18 @@ public class AuthService {
       UserRepository userRepository,
       PasswordEncoder passwordEncoder,
       JwtService jwtService) {
-
     this.userRepository = userRepository;
     this.passwordEncoder = passwordEncoder;
     this.jwtService = jwtService;
   }
 
-  // Response for registration
   public AuthResponse register(RegisterRequest registerRequest) {
+    // Email is the login identity, so duplicate accounts are blocked early.
     if (userRepository.existsByEmail(registerRequest.getEmail())) {
       throw new ResponseStatusException(HttpStatus.CONFLICT, "Email already exists");
     }
 
+    // Store only encoded passwords. Never save raw passwords in the database.
     User user = new User();
     user.setFullName(registerRequest.getFullName());
     user.setEmail(registerRequest.getEmail());
@@ -42,36 +42,22 @@ public class AuthService {
 
     User savedUser = userRepository.save(user);
 
-    AuthResponse response = new AuthResponse();
-
-    response.setToken(jwtService.generateToken(savedUser));
-    response.setEmail(savedUser.getEmail());
-    response.setFullName(savedUser.getFullName());
-    response.setRole(savedUser.getRole());
-
-    return response;
+    return buildAuthResponse(savedUser);
   }
 
-  // Response for login
   public AuthResponse login(LoginRequest request) {
     User user = userRepository.findByEmail(request.getEmail())
         .orElseThrow(() -> new ResponseStatusException(
             HttpStatus.UNAUTHORIZED,
             "Invalid email or password"));
+
     if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
       throw new ResponseStatusException(
           HttpStatus.UNAUTHORIZED,
           "Invalid email or password");
     }
 
-    AuthResponse response = new AuthResponse();
-
-    response.setToken(jwtService.generateToken(user));
-    response.setEmail(user.getEmail());
-    response.setFullName(user.getFullName());
-    response.setRole(user.getRole());
-
-    return response;
+    return buildAuthResponse(user);
   }
 
   public CurrentUserResponse getCurrentUser(String email) {
@@ -79,12 +65,23 @@ public class AuthService {
         .orElseThrow(() -> new ResponseStatusException(
             HttpStatus.NOT_FOUND,
             "User not found"));
+
     CurrentUserResponse response = new CurrentUserResponse();
     response.setId(user.getId());
     response.setFullName(user.getFullName());
     response.setEmail(user.getEmail());
     response.setRole(user.getRole());
 
+    return response;
+  }
+
+  // Auth responses include the JWT and safe user fields needed by the frontend.
+  private AuthResponse buildAuthResponse(User user) {
+    AuthResponse response = new AuthResponse();
+    response.setToken(jwtService.generateToken(user));
+    response.setEmail(user.getEmail());
+    response.setFullName(user.getFullName());
+    response.setRole(user.getRole());
     return response;
   }
 }

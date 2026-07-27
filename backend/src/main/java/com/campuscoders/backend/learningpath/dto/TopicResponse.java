@@ -1,5 +1,6 @@
 package com.campuscoders.backend.learningpath.dto;
 
+// Response sent to the frontend for topics inside a learning path.
 public record TopicResponse(
     Long id,
     Long learningPathId,

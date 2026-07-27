@@ -6,6 +6,7 @@ import com.campuscoders.backend.learningpath.ResourceType;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 
+// Request body accepted when creating a resource under an existing topic.
 public record CreateLearningResourceRequest(
     @NotNull Long topicId,
     @NotBlank String title,

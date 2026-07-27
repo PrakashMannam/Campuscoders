@@ -9,7 +9,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 import jakarta.validation.Valid;
 
-// Auth Controller
 @RestController
 @RequestMapping("/api/auth")
 public class AuthController {
@@ -20,18 +19,19 @@ public class AuthController {
     this.authService = authService;
   }
 
-  // Register Endpoint
+  // Creates a new student account and immediately returns a JWT for login state.
   @PostMapping("/register")
   public AuthResponse register(@Valid @RequestBody RegisterRequest request) {
     return authService.register(request);
   }
 
-  // Login Endpoint
+  // Verifies credentials and returns a JWT when the login is valid.
   @PostMapping("/login")
   public AuthResponse login(@Valid @RequestBody LoginRequest request) {
     return authService.login(request);
   }
 
+  // Uses the authenticated email from Spring Security to hydrate the current user.
   @GetMapping("/me")
   public CurrentUserResponse me(Authentication authentication) {
     return authService.getCurrentUser(authentication.getName());
