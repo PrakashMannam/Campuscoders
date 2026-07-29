@@ -8,6 +8,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import com.campuscoders.backend.learningpath.dto.CreateLearningResourceRequest;
 import com.campuscoders.backend.learningpath.dto.LearningResourceResponse;
+import com.campuscoders.backend.learningpath.dto.UpdateLearningResourceRequest;
 import com.campuscoders.backend.learningpath.repository.LearningResourceRepository;
 import com.campuscoders.backend.learningpath.repository.TopicRepository;
 
@@ -25,10 +26,7 @@ public class LearningResourceService {
   }
 
   public LearningResourceResponse createLearningResource(CreateLearningResourceRequest request) {
-    Topic topic = topicRepository.findById(request.topicId())
-        .orElseThrow(() -> new ResponseStatusException(
-            HttpStatus.NOT_FOUND,
-            "Topic not found"));
+    Topic topic = findTopicById(request.topicId());
 
     // Convert the request DTO into a resource entity linked to its parent topic.
     LearningResource resource = new LearningResource();
@@ -49,6 +47,22 @@ public class LearningResourceService {
     return toResponse(savedResource);
   }
 
+  public List<LearningResourceResponse> getAllActiveResources() {
+    return learningResourceRepository.findByActiveTrueOrderByTitleAsc()
+        .stream()
+        .map(this::toResponse)
+        .toList();
+  }
+
+  public LearningResourceResponse getActiveResourceById(Long resourceId) {
+    LearningResource resource = learningResourceRepository.findByIdAndActiveTrue(resourceId)
+        .orElseThrow(() -> new ResponseStatusException(
+            HttpStatus.NOT_FOUND,
+            "Resource not found"));
+
+    return toResponse(resource);
+  }
+
   public List<LearningResourceResponse> getActiveResourcesByTopicSlug(String topicSlug) {
     Topic topic = topicRepository.findBySlug(topicSlug)
         .orElseThrow(() -> new ResponseStatusException(
@@ -59,6 +73,62 @@ public class LearningResourceService {
         .stream()
         .map(this::toResponse)
         .toList();
+  }
+
+  public LearningResourceResponse updateLearningResource(
+      Long resourceId,
+      UpdateLearningResourceRequest request) {
+    LearningResource resource = findResourceById(resourceId);
+    Topic topic = findTopicById(request.topicId());
+
+    // Admins can also move a resource to another topic by changing topicId.
+    resource.setTopic(topic);
+    resource.setTitle(request.title());
+    resource.setDescription(request.description());
+    resource.setType(request.type());
+    resource.setDifficulty(request.difficulty());
+    resource.setUrl(request.url());
+    resource.setProvider(request.provider());
+    resource.setThumbnailUrl(request.thumbnailUrl());
+    resource.setEstimatedMinutes(request.estimatedMinutes());
+    resource.setSortOrder(request.sortOrder());
+    resource.setActive(request.active());
+
+    LearningResource savedResource = learningResourceRepository.save(resource);
+
+    return toResponse(savedResource);
+  }
+
+  public LearningResourceResponse deactivateLearningResource(Long resourceId) {
+    LearningResource resource = findResourceById(resourceId);
+    resource.setActive(false);
+
+    LearningResource savedResource = learningResourceRepository.save(resource);
+
+    return toResponse(savedResource);
+  }
+
+  public LearningResourceResponse activateLearningResource(Long resourceId) {
+    LearningResource resource = findResourceById(resourceId);
+    resource.setActive(true);
+
+    LearningResource savedResource = learningResourceRepository.save(resource);
+
+    return toResponse(savedResource);
+  }
+
+  private Topic findTopicById(Long topicId) {
+    return topicRepository.findById(topicId)
+        .orElseThrow(() -> new ResponseStatusException(
+            HttpStatus.NOT_FOUND,
+            "Topic not found"));
+  }
+
+  private LearningResource findResourceById(Long resourceId) {
+    return learningResourceRepository.findById(resourceId)
+        .orElseThrow(() -> new ResponseStatusException(
+            HttpStatus.NOT_FOUND,
+            "Resource not found"));
   }
 
   // Keep API responses separate from database entities.

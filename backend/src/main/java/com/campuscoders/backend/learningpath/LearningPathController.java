@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.campuscoders.backend.learningpath.dto.CreateLearningPathRequest;
+import com.campuscoders.backend.learningpath.dto.LearningPathDetailsResponse;
 import com.campuscoders.backend.learningpath.dto.LearningPathResponse;
 import com.campuscoders.backend.learningpath.dto.TopicResponse;
 
@@ -30,7 +31,7 @@ public class LearningPathController {
     this.topicService = topicService;
   }
 
-  // Admin-facing endpoint for creating a new learning path. Role checks come later.
+  // Admin-facing endpoint for creating a new learning path.
   @PreAuthorize("hasRole('ADMIN')")
   @PostMapping
   public LearningPathResponse createLearningPath(
@@ -42,6 +43,12 @@ public class LearningPathController {
   @GetMapping
   public List<LearningPathResponse> getAllLearningPaths() {
     return learningPathService.getAllActiveLearningPaths();
+  }
+
+  // Page-friendly endpoint for one learning path with its topics and resources.
+  @GetMapping("/{slug}/details")
+  public LearningPathDetailsResponse getLearningPathDetailsBySlug(@PathVariable String slug) {
+    return learningPathService.getLearningPathDetailsBySlug(slug);
   }
 
   // Fetches one path by its URL-friendly slug, for pages like /resources/java-full-stack.
