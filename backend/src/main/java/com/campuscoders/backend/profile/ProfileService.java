@@ -1,9 +1,11 @@
 package com.campuscoders.backend.profile;
 
 import org.springframework.http.HttpStatus;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
+import com.campuscoders.backend.profile.dto.ChangePasswordRequest;
 import com.campuscoders.backend.profile.dto.ProfileResponse;
 import com.campuscoders.backend.profile.dto.UpdateProfileRequest;
 import com.campuscoders.backend.user.User;
@@ -13,9 +15,13 @@ import com.campuscoders.backend.user.repository.UserRepository;
 public class ProfileService {
 
   private final UserRepository userRepository;
+  private final PasswordEncoder passwordEncoder;
 
-  public ProfileService(UserRepository userRepository) {
+  public ProfileService(
+      UserRepository userRepository,
+      PasswordEncoder passwordEncoder) {
     this.userRepository = userRepository;
+    this.passwordEncoder = passwordEncoder;
   }
 
   public ProfileResponse getCurrentProfile(String email) {
@@ -40,6 +46,19 @@ public class ProfileService {
     User savedUser = userRepository.save(user);
 
     return toResponse(savedUser);
+  }
+
+  public void changePassword(String email, ChangePasswordRequest request) {
+    User user = findUserByEmail(email);
+
+    if (!passwordEncoder.matches(request.currentPassword(), user.getPassword())) {
+      throw new ResponseStatusException(
+          HttpStatus.BAD_REQUEST,
+          "Current password is incorrect");
+    }
+
+    user.setPassword(passwordEncoder.encode(request.newPassword()));
+    userRepository.save(user);
   }
 
   private User findUserByEmail(String email) {
