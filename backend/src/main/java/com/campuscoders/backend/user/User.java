@@ -50,6 +50,27 @@ public class User {
   @Column(nullable = false)
   private Boolean enabled = true;
 
+  @Column(name = "university")
+  private String university;
+
+  @Column(name = "bio", length = 1000)
+  private String bio;
+
+  @Column(name = "leetcode_url", length = 500)
+  private String leetcodeUrl;
+
+  @Column(name = "geeksforgeeks_url", length = 500)
+  private String geeksforgeeksUrl;
+
+  @Column(name = "github_url", length = 500)
+  private String githubUrl;
+
+  @Column(name = "linkedin_url", length = 500)
+  private String linkedinUrl;
+
+  @Column(name = "avatar_url", length = 1000)
+  private String avatarUrl;
+
   @Column(name = "created_at")
   private LocalDateTime createdAt;
 
