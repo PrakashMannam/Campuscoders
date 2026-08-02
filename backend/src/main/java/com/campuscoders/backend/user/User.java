@@ -71,6 +71,22 @@ public class User {
   @Column(name = "avatar_url", length = 1000)
   private String avatarUrl;
 
+  @NotNull
+  @Column(name = "public_profile_visible", nullable = false)
+  private Boolean publicProfileVisible = true;
+
+  @NotNull
+  @Column(name = "email_digests", nullable = false)
+  private Boolean emailDigests = true;
+
+  @NotNull
+  @Column(name = "push_notifications", nullable = false)
+  private Boolean pushNotifications = true;
+
+  @NotNull
+  @Column(name = "discussion_mentions", nullable = false)
+  private Boolean discussionMentions = true;
+
   @Column(name = "created_at")
   private LocalDateTime createdAt;
 

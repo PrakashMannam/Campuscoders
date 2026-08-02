@@ -11,7 +11,9 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.campuscoders.backend.profile.dto.ChangePasswordRequest;
 import com.campuscoders.backend.profile.dto.ProfileResponse;
+import com.campuscoders.backend.profile.dto.ProfileSettingsResponse;
 import com.campuscoders.backend.profile.dto.UpdateProfileRequest;
+import com.campuscoders.backend.profile.dto.UpdateProfileSettingsRequest;
 
 import jakarta.validation.Valid;
 
@@ -37,6 +39,20 @@ public class ProfileController {
       Authentication authentication,
       @Valid @RequestBody UpdateProfileRequest request) {
     return profileService.updateCurrentProfile(authentication.getName(), request);
+  }
+
+  // Returns account preference toggles for the settings page.
+  @GetMapping("/me/settings")
+  public ProfileSettingsResponse getCurrentSettings(Authentication authentication) {
+    return profileService.getCurrentSettings(authentication.getName());
+  }
+
+  // Updates account preference toggles for the settings page.
+  @PutMapping("/me/settings")
+  public ProfileSettingsResponse updateCurrentSettings(
+      Authentication authentication,
+      @Valid @RequestBody UpdateProfileSettingsRequest request) {
+    return profileService.updateCurrentSettings(authentication.getName(), request);
   }
 
   // Changes the current user's password after verifying the existing password.

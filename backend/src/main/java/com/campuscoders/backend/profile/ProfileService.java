@@ -7,7 +7,9 @@ import org.springframework.web.server.ResponseStatusException;
 
 import com.campuscoders.backend.profile.dto.ChangePasswordRequest;
 import com.campuscoders.backend.profile.dto.ProfileResponse;
+import com.campuscoders.backend.profile.dto.ProfileSettingsResponse;
 import com.campuscoders.backend.profile.dto.UpdateProfileRequest;
+import com.campuscoders.backend.profile.dto.UpdateProfileSettingsRequest;
 import com.campuscoders.backend.user.User;
 import com.campuscoders.backend.user.repository.UserRepository;
 
@@ -48,6 +50,27 @@ public class ProfileService {
     return toResponse(savedUser);
   }
 
+  public ProfileSettingsResponse getCurrentSettings(String email) {
+    User user = findUserByEmail(email);
+
+    return toSettingsResponse(user);
+  }
+
+  public ProfileSettingsResponse updateCurrentSettings(
+      String email,
+      UpdateProfileSettingsRequest request) {
+    User user = findUserByEmail(email);
+
+    user.setPublicProfileVisible(request.publicProfileVisible());
+    user.setEmailDigests(request.emailDigests());
+    user.setPushNotifications(request.pushNotifications());
+    user.setDiscussionMentions(request.discussionMentions());
+
+    User savedUser = userRepository.save(user);
+
+    return toSettingsResponse(savedUser);
+  }
+
   public void changePassword(String email, ChangePasswordRequest request) {
     User user = findUserByEmail(email);
 
@@ -66,6 +89,14 @@ public class ProfileService {
         .orElseThrow(() -> new ResponseStatusException(
             HttpStatus.NOT_FOUND,
             "User not found"));
+  }
+
+  private ProfileSettingsResponse toSettingsResponse(User user) {
+    return new ProfileSettingsResponse(
+        user.getPublicProfileVisible(),
+        user.getEmailDigests(),
+        user.getPushNotifications(),
+        user.getDiscussionMentions());
   }
 
   private ProfileResponse toResponse(User user) {
