@@ -87,6 +87,15 @@ public class User {
   @Column(name = "discussion_mentions", nullable = false)
   private Boolean discussionMentions = true;
 
+  @Column(name = "total_xp")
+  private Integer totalXp = 0;
+
+  @Column(name = "daily_streak")
+  private Integer dailyStreak = 0;
+
+  @Column(name = "problems_solved")
+  private Integer problemsSolved = 0;
+
   @Column(name = "created_at")
   private LocalDateTime createdAt;
 

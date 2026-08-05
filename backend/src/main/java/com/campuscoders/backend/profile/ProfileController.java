@@ -3,6 +3,7 @@ package com.campuscoders.backend.profile;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -12,6 +13,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.campuscoders.backend.profile.dto.ChangePasswordRequest;
 import com.campuscoders.backend.profile.dto.ProfileResponse;
 import com.campuscoders.backend.profile.dto.ProfileSettingsResponse;
+import com.campuscoders.backend.profile.dto.PublicProfileResponse;
 import com.campuscoders.backend.profile.dto.UpdateProfileRequest;
 import com.campuscoders.backend.profile.dto.UpdateProfileSettingsRequest;
 
@@ -25,6 +27,12 @@ public class ProfileController {
 
   public ProfileController(ProfileService profileService) {
     this.profileService = profileService;
+  }
+
+  // Returns a public profile only when the user has enabled public visibility.
+  @GetMapping("/public/{userId}")
+  public PublicProfileResponse getPublicProfile(@PathVariable Long userId) {
+    return profileService.getPublicProfile(userId);
   }
 
   // Returns the profile for the currently authenticated user.

@@ -12,6 +12,8 @@ public interface LearningPathRepository extends JpaRepository<LearningPath, Long
   // Used by the public Learning Hub list page.
   List<LearningPath> findByActiveTrueOrderByTitleAsc();
 
+  long countByActiveTrue();
+
   // Slug lookup supports readable URLs like /api/learning-paths/java-full-stack.
   Optional<LearningPath> findBySlug(String slug);
 

@@ -46,6 +46,10 @@ public class SecurityConfig {
             .permitAll()
             .requestMatchers(HttpMethod.GET, "/api/resources/**")
             .permitAll()
+            .requestMatchers(HttpMethod.GET, "/api/profile/public/**")
+            .permitAll()
+            .requestMatchers(HttpMethod.GET, "/api/announcements")
+            .permitAll()
             .anyRequest()
             .authenticated())
         // Run our JWT filter before Spring Security's username/password filter.
