@@ -7,6 +7,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import com.campuscoders.backend.profile.dto.ChangePasswordRequest;
 import com.campuscoders.backend.profile.dto.ProfileResponse;
+import com.campuscoders.backend.profile.dto.PublicProfileResponse;
 import com.campuscoders.backend.profile.dto.ProfileSettingsResponse;
 import com.campuscoders.backend.profile.dto.UpdateProfileRequest;
 import com.campuscoders.backend.profile.dto.UpdateProfileSettingsRequest;
@@ -30,6 +31,19 @@ public class ProfileService {
     User user = findUserByEmail(email);
 
     return toResponse(user);
+  }
+
+  public PublicProfileResponse getPublicProfile(Long userId) {
+    User user = userRepository.findById(userId)
+        .orElseThrow(() -> new ResponseStatusException(
+            HttpStatus.NOT_FOUND,
+            "User not found"));
+
+    if (!Boolean.TRUE.equals(user.getPublicProfileVisible())) {
+      throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Profile not found");
+    }
+
+    return toPublicResponse(user);
   }
 
   public ProfileResponse updateCurrentProfile(String email, UpdateProfileRequest request) {
@@ -89,6 +103,22 @@ public class ProfileService {
         .orElseThrow(() -> new ResponseStatusException(
             HttpStatus.NOT_FOUND,
             "User not found"));
+  }
+
+  private PublicProfileResponse toPublicResponse(User user) {
+    return new PublicProfileResponse(
+        user.getId(),
+        user.getFullName(),
+        user.getUniversity(),
+        user.getBio(),
+        user.getLeetcodeUrl(),
+        user.getGeeksforgeeksUrl(),
+        user.getGithubUrl(),
+        user.getLinkedinUrl(),
+        user.getAvatarUrl(),
+        user.getTotalXp(),
+        user.getDailyStreak(),
+        user.getProblemsSolved());
   }
 
   private ProfileSettingsResponse toSettingsResponse(User user) {

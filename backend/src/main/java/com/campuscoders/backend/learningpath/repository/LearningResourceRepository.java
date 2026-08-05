@@ -12,6 +12,8 @@ public interface LearningResourceRepository extends JpaRepository<LearningResour
   // Fetches visible resources for general browsing pages.
   List<LearningResource> findByActiveTrueOrderByTitleAsc();
 
+  long countByActiveTrue();
+
   // Fetches one visible resource for public detail views.
   Optional<LearningResource> findByIdAndActiveTrue(Long id);
 
