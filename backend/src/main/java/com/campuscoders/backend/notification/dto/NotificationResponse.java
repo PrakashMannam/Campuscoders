@@ -1,6 +1,6 @@
 package com.campuscoders.backend.notification.dto;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 import com.campuscoders.backend.notification.NotificationType;
 
@@ -11,5 +11,5 @@ public record NotificationResponse(
     NotificationType type,
     String targetUrl,
     Boolean readStatus,
-    LocalDateTime createdAt) {
+    Instant createdAt) {
 }

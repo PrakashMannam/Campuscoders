@@ -1,9 +1,9 @@
 package com.campuscoders.backend.learningprogress.dto;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 public record CompletedResourceResponse(
     Long resourceId,
     String resourceTitle,
-    LocalDateTime completedAt) {
+    Instant completedAt) {
 }

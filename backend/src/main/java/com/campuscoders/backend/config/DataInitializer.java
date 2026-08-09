@@ -1,6 +1,7 @@
 package com.campuscoders.backend.config;
 
 import java.time.LocalDate;
+import java.time.ZoneOffset;
 import java.util.List;
 
 import org.springframework.boot.CommandLineRunner;
@@ -172,8 +173,8 @@ public class DataInitializer implements CommandLineRunner {
 
     List<CodingProblem> savedProblems = codingProblemRepository.saveAll(problems);
 
-    // Schedule Today's Daily Challenge if none exists for LocalDate.now()
-    LocalDate today = LocalDate.now();
+    // Schedule Today's Daily Challenge if none exists for LocalDate.now(ZoneOffset.UTC)
+    LocalDate today = LocalDate.now(ZoneOffset.UTC);
     if (!dailyChallengeRepository.existsByChallengeDateAndActiveTrue(today) && !savedProblems.isEmpty()) {
       DailyChallenge todayChallenge = new DailyChallenge();
       todayChallenge.setCodingProblem(savedProblems.get(0)); // Two Sum

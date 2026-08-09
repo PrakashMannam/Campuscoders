@@ -1,6 +1,6 @@
 package com.campuscoders.backend.notification;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 import com.campuscoders.backend.user.User;
 
@@ -56,10 +56,10 @@ public class Notification {
   private Boolean readStatus = false;
 
   @Column(name = "created_at", nullable = false, updatable = false)
-  private LocalDateTime createdAt;
+  private Instant createdAt;
 
   @PrePersist
   void onCreate() {
-    this.createdAt = LocalDateTime.now();
+    this.createdAt = Instant.now();
   }
 }

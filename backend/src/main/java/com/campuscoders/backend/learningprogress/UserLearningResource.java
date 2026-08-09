@@ -1,6 +1,6 @@
 package com.campuscoders.backend.learningprogress;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 import com.campuscoders.backend.learningpath.LearningResource;
 import com.campuscoders.backend.user.User;
@@ -45,11 +45,11 @@ public class UserLearningResource {
   private LearningResource resource;
 
   @Column(name = "completed_at", nullable = false, updatable = false)
-  private LocalDateTime completedAt;
+  private Instant completedAt;
 
-  // Automatically record completion timestamp at entity creation time so callers don't need to pass dates manually.
+  // Automatically record UTC completion timestamp at entity creation time so callers don't need to pass dates manually.
   @PrePersist
   void onCreate() {
-    this.completedAt = LocalDateTime.now();
+    this.completedAt = Instant.now();
   }
 }

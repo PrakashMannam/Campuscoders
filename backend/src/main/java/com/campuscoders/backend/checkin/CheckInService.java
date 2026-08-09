@@ -1,6 +1,7 @@
 package com.campuscoders.backend.checkin;
 
 import java.time.LocalDate;
+import java.time.ZoneOffset;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -31,7 +32,7 @@ public class CheckInService {
   @Transactional(readOnly = true)
   public CheckInStatusResponse getTodayStatus(String email) {
     User user = findUserByEmail(email);
-    LocalDate today = LocalDate.now();
+    LocalDate today = LocalDate.now(ZoneOffset.UTC);
 
     // Map existing check-in to response if already completed today; otherwise return unchecked status.
     return checkInRepository.findByUserIdAndCheckInDate(user.getId(), today)
@@ -43,7 +44,7 @@ public class CheckInService {
   @Transactional
   public CheckInStatusResponse checkInToday(String email) {
     User user = findUserByEmail(email);
-    LocalDate today = LocalDate.now();
+    LocalDate today = LocalDate.now(ZoneOffset.UTC);
 
     // 1️⃣ Prevent double check-ins on the same calendar day.
     if (checkInRepository.existsByUserIdAndCheckInDate(user.getId(), today)) {

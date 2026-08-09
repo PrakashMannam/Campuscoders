@@ -1,6 +1,6 @@
 package com.campuscoders.backend.announcement.dto;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 import com.campuscoders.backend.announcement.AnnouncementCategory;
 
@@ -12,6 +12,6 @@ public record AnnouncementResponse(
     String actionLabel,
     String actionUrl,
     Boolean active,
-    LocalDateTime createdAt,
-    LocalDateTime updatedAt) {
+    Instant createdAt,
+    Instant updatedAt) {
 }
