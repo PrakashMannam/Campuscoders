@@ -1,6 +1,7 @@
 package com.campuscoders.backend.config;
 
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -15,26 +16,23 @@ import com.campuscoders.backend.learningpath.Topic;
 import com.campuscoders.backend.learningpath.repository.LearningPathRepository;
 import com.campuscoders.backend.learningpath.repository.LearningResourceRepository;
 import com.campuscoders.backend.learningpath.repository.TopicRepository;
-import com.campuscoders.backend.user.repository.UserRepository;
 
 // @Component tells Spring Boot to instantiate this class automatically as a managed bean.
-// Implementing CommandLineRunner causes Spring Boot to run the run() method automatically when Spring Boot boots up.
+// @Profile({"dev", "default"}) ensures sample seeding only runs in dev/default environments, not in production.
 @Component
+@Profile({"dev", "default"})
 public class DataInitializer implements CommandLineRunner {
 
-  private final UserRepository userRepository;
   private final LearningPathRepository learningPathRepository;
   private final TopicRepository topicRepository;
   private final LearningResourceRepository learningResourceRepository;
   private final AnnouncementRepository announcementRepository;
 
   public DataInitializer(
-      UserRepository userRepository,
       LearningPathRepository learningPathRepository,
       TopicRepository topicRepository,
       LearningResourceRepository learningResourceRepository,
       AnnouncementRepository announcementRepository) {
-    this.userRepository = userRepository;
     this.learningPathRepository = learningPathRepository;
     this.topicRepository = topicRepository;
     this.learningResourceRepository = learningResourceRepository;

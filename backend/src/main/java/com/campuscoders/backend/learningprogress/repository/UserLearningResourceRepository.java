@@ -16,4 +16,10 @@ public interface UserLearningResourceRepository extends JpaRepository<UserLearni
 
   // Fast fetch of all completed items for a given user without loading unneeded global progress data.
   List<UserLearningResource> findAllByUserId(Long userId);
+
+  // Derived JPA count query: Counts user completions for resources belonging to a specific Learning Path.
+  long countByUserIdAndResourceTopicLearningPathId(Long userId, Long learningPathId);
+
+  // Derived JPA count query: Counts user completions for resources belonging to a specific Topic.
+  long countByUserIdAndResourceTopicId(Long userId, Long topicId);
 }
