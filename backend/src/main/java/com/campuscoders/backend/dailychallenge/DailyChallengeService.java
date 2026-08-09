@@ -1,6 +1,7 @@
 package com.campuscoders.backend.dailychallenge;
 
 import java.time.LocalDate;
+import java.time.ZoneOffset;
 import java.util.List;
 
 import org.springframework.http.HttpStatus;
@@ -42,11 +43,11 @@ public class DailyChallengeService {
 
   // --- Student Service Methods ---
 
-  // Fetches today's active challenge using LocalDate.now() and checks whether authenticated student completed it.
+  // Fetches today's active challenge using LocalDate.now(ZoneOffset.UTC) and checks whether authenticated student completed it.
   @Transactional(readOnly = true)
   public DailyChallengeResponse getTodayChallenge(String userEmail) {
     User user = getUserByEmail(userEmail);
-    LocalDate today = LocalDate.now();
+    LocalDate today = LocalDate.now(ZoneOffset.UTC);
 
     DailyChallenge challenge = dailyChallengeRepository.findByChallengeDateAndActiveTrue(today)
         .orElseThrow(() -> new CustomException("No active daily challenge found for today", HttpStatus.NOT_FOUND));

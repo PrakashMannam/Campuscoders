@@ -1,6 +1,6 @@
 package com.campuscoders.backend.announcement;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 import com.campuscoders.backend.user.User;
 
@@ -60,20 +60,20 @@ public class Announcement {
   private User createdBy;
 
   @Column(name = "created_at", nullable = false, updatable = false)
-  private LocalDateTime createdAt;
+  private Instant createdAt;
 
   @Column(name = "updated_at", nullable = false)
-  private LocalDateTime updatedAt;
+  private Instant updatedAt;
 
   @PrePersist
   void onCreate() {
-    LocalDateTime now = LocalDateTime.now();
+    Instant now = Instant.now();
     this.createdAt = now;
     this.updatedAt = now;
   }
 
   @PreUpdate
   void onUpdate() {
-    this.updatedAt = LocalDateTime.now();
+    this.updatedAt = Instant.now();
   }
 }

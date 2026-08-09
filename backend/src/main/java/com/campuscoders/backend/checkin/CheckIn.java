@@ -1,7 +1,7 @@
 package com.campuscoders.backend.checkin;
 
+import java.time.Instant;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 
 import com.campuscoders.backend.user.User;
 
@@ -47,11 +47,11 @@ public class CheckIn {
   private Integer xpAwarded;
 
   @Column(name = "created_at", nullable = false, updatable = false)
-  private LocalDateTime createdAt;
+  private Instant createdAt;
 
-  // Automatically stamp creation timestamp before saving to database.
+  // Automatically stamp UTC creation timestamp before saving to database.
   @PrePersist
   void onCreate() {
-    this.createdAt = LocalDateTime.now();
+    this.createdAt = Instant.now();
   }
 }

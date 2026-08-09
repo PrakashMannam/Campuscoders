@@ -1,6 +1,6 @@
 package com.campuscoders.backend.dailychallenge.dto;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 public record CompleteDailyChallengeResponse(
     Long challengeId,
@@ -8,5 +8,5 @@ public record CompleteDailyChallengeResponse(
     Integer xpAwarded,
     Integer newTotalXp,
     Integer newProblemsSolved,
-    LocalDateTime completedAt) {
+    Instant completedAt) {
 }

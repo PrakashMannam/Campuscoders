@@ -1,6 +1,6 @@
 package com.campuscoders.backend.dailychallenge;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 import com.campuscoders.backend.user.User;
 
@@ -46,7 +46,7 @@ public class UserDailyChallengeAttempt {
   private DailyChallenge dailyChallenge;
 
   @Column(name = "completed_at", nullable = false, updatable = false)
-  private LocalDateTime completedAt;
+  private Instant completedAt;
 
   @Column(name = "xp_awarded", nullable = false)
   private Integer xpAwarded;
@@ -54,7 +54,7 @@ public class UserDailyChallengeAttempt {
   @PrePersist
   protected void onCreate() {
     if (completedAt == null) {
-      completedAt = LocalDateTime.now();
+      completedAt = Instant.now();
     }
   }
 }
