@@ -4,6 +4,7 @@ import java.util.List;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import com.campuscoders.backend.notification.dto.CreateNotificationRequest;
@@ -25,6 +26,8 @@ public class NotificationService {
     this.userRepository = userRepository;
   }
 
+  // Fetch all notifications for current user ordered by creation date (newest first).
+  @Transactional(readOnly = true)
   public List<NotificationResponse> getCurrentUserNotifications(String email) {
     User user = findUserByEmail(email);
 
@@ -34,6 +37,7 @@ public class NotificationService {
         .toList();
   }
 
+  @Transactional
   public NotificationResponse createNotification(CreateNotificationRequest request) {
     User recipient = userRepository.findById(request.recipientUserId())
         .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Recipient not found"));
@@ -49,6 +53,8 @@ public class NotificationService {
     return toResponse(notificationRepository.save(notification));
   }
 
+  // Security check: Verify the notification recipient matches the authenticated user before allowing read status update.
+  @Transactional
   public NotificationResponse markAsRead(String email, Long notificationId) {
     User user = findUserByEmail(email);
     Notification notification = notificationRepository.findById(notificationId)
@@ -62,6 +68,8 @@ public class NotificationService {
     return toResponse(notificationRepository.save(notification));
   }
 
+  // Bulk update all unread notifications for a user in a single transactional batch.
+  @Transactional
   public void markAllAsRead(String email) {
     User user = findUserByEmail(email);
     List<Notification> notifications = notificationRepository.findByRecipientIdOrderByCreatedAtDesc(user.getId());
@@ -70,6 +78,8 @@ public class NotificationService {
     notificationRepository.saveAll(notifications);
   }
 
+  // Used by DashboardService to display unread badge count on the user UI.
+  @Transactional(readOnly = true)
   public long countUnreadForUser(Long userId) {
     return notificationRepository.countByRecipientIdAndReadStatusFalse(userId);
   }

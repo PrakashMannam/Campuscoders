@@ -4,6 +4,7 @@ import java.util.List;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import com.campuscoders.backend.announcement.dto.AnnouncementResponse;
@@ -20,6 +21,8 @@ public class AnnouncementService {
     this.announcementRepository = announcementRepository;
   }
 
+  // Public endpoint for students: Filter to active announcements only, ordered newest first.
+  @Transactional(readOnly = true)
   public List<AnnouncementResponse> getActiveAnnouncements() {
     return announcementRepository.findByActiveTrueOrderByCreatedAtDesc()
         .stream()
@@ -27,6 +30,8 @@ public class AnnouncementService {
         .toList();
   }
 
+  // Admin endpoint: Fetch all announcements (including archived/inactive ones).
+  @Transactional(readOnly = true)
   public List<AnnouncementResponse> getAnnouncementsForAdmin() {
     return announcementRepository.findAll()
         .stream()
@@ -34,6 +39,7 @@ public class AnnouncementService {
         .toList();
   }
 
+  @Transactional
   public AnnouncementResponse createAnnouncement(CreateAnnouncementRequest request) {
     Announcement announcement = new Announcement();
     announcement.setTitle(request.title());
@@ -46,6 +52,7 @@ public class AnnouncementService {
     return toResponse(announcementRepository.save(announcement));
   }
 
+  @Transactional
   public AnnouncementResponse updateAnnouncement(Long announcementId, UpdateAnnouncementRequest request) {
     Announcement announcement = findAnnouncementById(announcementId);
     announcement.setTitle(request.title());
@@ -58,12 +65,15 @@ public class AnnouncementService {
     return toResponse(announcementRepository.save(announcement));
   }
 
+  // Soft-deactivate an announcement without deleting its historical database record.
+  @Transactional
   public AnnouncementResponse deactivateAnnouncement(Long announcementId) {
     Announcement announcement = findAnnouncementById(announcementId);
     announcement.setActive(false);
     return toResponse(announcementRepository.save(announcement));
   }
 
+  @Transactional
   public AnnouncementResponse activateAnnouncement(Long announcementId) {
     Announcement announcement = findAnnouncementById(announcementId);
     announcement.setActive(true);

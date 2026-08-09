@@ -20,9 +20,10 @@ import io.jsonwebtoken.security.Keys;
 @Service
 public class JwtService {
 
-  // Development secret for signing tokens. Move this to configuration before production.
+  // Development HMAC secret key (at least 256 bits for HS256 algorithm). Move to application.properties in production.
   private static final String SECRET_KEY = "campus-coders-secret-key-campus-coders-secret-key";
 
+  // Generates a signed JWT with user email as subject, user role claim, and a 24-hour expiration window.
   public String generateToken(User user) {
     Map<String, Object> claims = new HashMap<>();
     claims.put("role", user.getRole().name());
@@ -31,11 +32,12 @@ public class JwtService {
         .claims(claims)
         .subject(user.getEmail())
         .issuedAt(new Date(System.currentTimeMillis()))
-        .expiration(new Date(System.currentTimeMillis() + 1000 * 60 * 60 * 24))
+        .expiration(new Date(System.currentTimeMillis() + 1000 * 60 * 60 * 24)) // 24 Hours
         .signWith(getSigningKey())
         .compact();
   }
 
+  // Parses JWT payload to extract user email subject stored during login.
   public String extractEmail(String token) {
     String email = extractAllClaims(token).getSubject();
 
@@ -46,6 +48,7 @@ public class JwtService {
     return email;
   }
 
+  // Validation: Verifies that token email matches target user and token expiration timestamp is in the future.
   public boolean validateToken(String token, User user) {
     String email = extractEmail(token);
     return email.equals(user.getEmail()) && !isTokenExpired(token);
@@ -65,6 +68,7 @@ public class JwtService {
     return expiration;
   }
 
+  // Parses cryptographic signature using secret key; throws JwtException if token has been tampered with.
   private Claims extractAllClaims(String token) {
     return Jwts.parser()
         .verifyWith(getSigningKey())

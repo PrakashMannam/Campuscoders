@@ -5,6 +5,7 @@ import java.util.List;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import com.campuscoders.backend.learningpath.dto.CreateTopicRequest;
@@ -26,17 +27,19 @@ public class TopicService {
     this.learningPathRepository = learningPathRepository;
   }
 
+  @Transactional
   public TopicResponse createTopic(CreateTopicRequest request) {
-    // Topic slugs are used in URLs, so we reject duplicates before saving.
+    // 1️⃣ Validate slug uniqueness to ensure clean, readable topic URLs.
     if (topicRepository.existsBySlug(request.slug())) {
       throw new ResponseStatusException(
           HttpStatus.CONFLICT,
           "Topic slug already exists");
     }
 
+    // 2️⃣ Verify parent learning path exists before associating topic.
     LearningPath learningPath = findLearningPathById(request.learningPathId());
 
-    // Convert the request DTO into a Topic entity linked to its parent path.
+    // 3️⃣ Map DTO fields to entity and set active state to true.
     Topic topic = new Topic();
     topic.setLearningPath(learningPath);
     topic.setTitle(request.title());
@@ -51,6 +54,7 @@ public class TopicService {
     return toResponse(savedTopic);
   }
 
+  @Transactional(readOnly = true)
   public List<TopicResponse> getActiveTopicsByLearningPathSlug(String learningPathSlug) {
     LearningPath learningPath = learningPathRepository.findBySlug(learningPathSlug)
         .orElseThrow(() -> new ResponseStatusException(
@@ -63,6 +67,8 @@ public class TopicService {
         .toList();
   }
 
+  // Multi-attribute sorting: Sorts topics first by Learning Path title, then by numerical sort order, then alphabetically.
+  @Transactional(readOnly = true)
   public List<TopicResponse> getTopicsForAdmin(Long learningPathId, Boolean active) {
     return topicRepository.findAll()
         .stream()
@@ -76,6 +82,7 @@ public class TopicService {
         .toList();
   }
 
+  @Transactional
   public TopicResponse updateTopic(Long topicId, UpdateTopicRequest request) {
     Topic topic = findTopicById(topicId);
     LearningPath learningPath = findLearningPathById(request.learningPathId());
@@ -86,7 +93,7 @@ public class TopicService {
           "Topic slug already exists");
     }
 
-    // Admins can also move a topic to another learning path by changing learningPathId.
+    // Admins can change topic details or move a topic to a different parent learning path.
     topic.setLearningPath(learningPath);
     topic.setTitle(request.title());
     topic.setSlug(request.slug());
@@ -100,6 +107,7 @@ public class TopicService {
     return toResponse(savedTopic);
   }
 
+  @Transactional
   public TopicResponse deactivateTopic(Long topicId) {
     Topic topic = findTopicById(topicId);
     topic.setActive(false);
@@ -109,6 +117,7 @@ public class TopicService {
     return toResponse(savedTopic);
   }
 
+  @Transactional
   public TopicResponse activateTopic(Long topicId) {
     Topic topic = findTopicById(topicId);
     topic.setActive(true);
@@ -132,11 +141,11 @@ public class TopicService {
             "Topic not found"));
   }
 
+  // Null-safe comparator helper: Places items without a sort order at the end of the list instead of throwing NullPointerException.
   private Integer nullSafeSortOrder(Integer sortOrder) {
     return sortOrder == null ? Integer.MAX_VALUE : sortOrder;
   }
 
-  // Keep API responses separate from database entities.
   private TopicResponse toResponse(Topic topic) {
     return new TopicResponse(
         topic.getId(),

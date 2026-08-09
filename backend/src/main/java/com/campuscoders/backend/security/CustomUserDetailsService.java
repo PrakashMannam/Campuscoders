@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 import com.campuscoders.backend.user.User;
 import com.campuscoders.backend.user.repository.UserRepository;
 
+// Implements Spring Security's core UserDetailsService interface to load user identity details by email username.
 @Service
 public class CustomUserDetailsService implements UserDetailsService {
 
@@ -17,7 +18,7 @@ public class CustomUserDetailsService implements UserDetailsService {
     this.userRepository = userRepository;
   }
 
-  // Spring Security calls this when it needs to load an authenticated user.
+  // Invoked during JWT authentication filtering to wrap our JPA User entity into Spring Security's UserDetails.
   @Override
   public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
     User user = userRepository.findByEmail(email)

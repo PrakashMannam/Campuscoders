@@ -5,6 +5,7 @@ import java.util.List;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import com.campuscoders.backend.learningpath.dto.CreateLearningPathRequest;
@@ -33,15 +34,16 @@ public class LearningPathService {
     this.learningResourceRepository = learningResourceRepository;
   }
 
+  @Transactional
   public LearningPathResponse createLearningPath(CreateLearningPathRequest request) {
-    // Slugs are used in URLs, so each learning path must have a unique slug.
+    // 1️⃣ Validate slug uniqueness to ensure clean, readable routing URLs (e.g. /paths/java-backend).
     if (learningPathRepository.existsBySlug(request.slug())) {
       throw new ResponseStatusException(
           HttpStatus.CONFLICT,
           "Learning path slug already exists");
     }
 
-    // Convert incoming API data into the entity that JPA can store in MySQL.
+    // 2️⃣ Convert incoming request DTO into JPA entity for database persistence.
     LearningPath learningPath = new LearningPath();
     learningPath.setTitle(request.title());
     learningPath.setSlug(request.slug());
@@ -58,6 +60,7 @@ public class LearningPathService {
     return toResponse(savedLearningPath);
   }
 
+  @Transactional(readOnly = true)
   public List<LearningPathResponse> getAllActiveLearningPaths() {
     return learningPathRepository.findByActiveTrueOrderByTitleAsc()
         .stream()
@@ -65,6 +68,7 @@ public class LearningPathService {
         .toList();
   }
 
+  @Transactional(readOnly = true)
   public List<LearningPathResponse> getLearningPathsForAdmin(Boolean active) {
     return learningPathRepository.findAll()
         .stream()
@@ -74,17 +78,20 @@ public class LearningPathService {
         .toList();
   }
 
+  @Transactional(readOnly = true)
   public LearningPathResponse getLearningPathBySlug(String slug) {
     LearningPath learningPath = findLearningPathBySlug(slug);
 
     return toResponse(learningPath);
   }
 
+  @Transactional
   public LearningPathResponse updateLearningPath(
       Long learningPathId,
       UpdateLearningPathRequest request) {
     LearningPath learningPath = findLearningPathById(learningPathId);
 
+    // Prevent slug collisions if the admin edits the URL slug to an existing one.
     if (!learningPath.getSlug().equals(request.slug()) && learningPathRepository.existsBySlug(request.slug())) {
       throw new ResponseStatusException(
           HttpStatus.CONFLICT,
@@ -106,6 +113,7 @@ public class LearningPathService {
     return toResponse(savedLearningPath);
   }
 
+  @Transactional
   public LearningPathResponse deactivateLearningPath(Long learningPathId) {
     LearningPath learningPath = findLearningPathById(learningPathId);
     learningPath.setActive(false);
@@ -115,6 +123,7 @@ public class LearningPathService {
     return toResponse(savedLearningPath);
   }
 
+  @Transactional
   public LearningPathResponse activateLearningPath(Long learningPathId) {
     LearningPath learningPath = findLearningPathById(learningPathId);
     learningPath.setActive(true);
@@ -124,10 +133,11 @@ public class LearningPathService {
     return toResponse(savedLearningPath);
   }
 
+  // Construct a nested curriculum tree: Learning Path -> List of Topics -> List of Resources.
+  @Transactional(readOnly = true)
   public LearningPathDetailsResponse getLearningPathDetailsBySlug(String slug) {
     LearningPath learningPath = findLearningPathBySlug(slug);
 
-    // Build the page-friendly tree: learning path -> topics -> resources.
     List<TopicDetails> topics = topicRepository
         .findByLearningPathIdAndActiveTrueOrderBySortOrderAsc(learningPath.getId())
         .stream()
@@ -195,7 +205,6 @@ public class LearningPathService {
         resource.getActive());
   }
 
-  // Keep API responses separate from database entities.
   private LearningPathResponse toResponse(LearningPath learningPath) {
     return new LearningPathResponse(
         learningPath.getId(),

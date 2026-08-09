@@ -9,6 +9,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 
 import com.campuscoders.backend.user.User;
 
+// Adapter class wrapping our custom User entity to satisfy Spring Security's UserDetails contract.
 public class CustomUserDetails implements UserDetails {
 
   private final User user;
@@ -17,7 +18,7 @@ public class CustomUserDetails implements UserDetails {
     this.user = user;
   }
 
-  // Spring Security expects roles as GrantedAuthority values, such as ROLE_STUDENT.
+  // Spring Security role naming convention: Maps domain Enum Role (e.g. STUDENT -> ROLE_STUDENT) for @PreAuthorize checks.
   @Override
   public Collection<? extends GrantedAuthority> getAuthorities() {
     return List.of(new SimpleGrantedAuthority("ROLE_" + user.getRole().name()));
@@ -28,7 +29,7 @@ public class CustomUserDetails implements UserDetails {
     return user.getPassword();
   }
 
-  // We use email as the username because it is unique and used during login.
+  // Email acts as the unique username principal across authentication filters.
   @Override
   public String getUsername() {
     return user.getEmail();

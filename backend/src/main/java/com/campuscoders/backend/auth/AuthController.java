@@ -19,19 +19,19 @@ public class AuthController {
     this.authService = authService;
   }
 
-  // Creates a new student account and immediately returns a JWT for login state.
+  // Public Endpoint: Creates a new student account and returns a signed JWT token so the user is immediately logged in.
   @PostMapping("/register")
   public AuthResponse register(@Valid @RequestBody RegisterRequest request) {
     return authService.register(request);
   }
 
-  // Verifies credentials and returns a JWT when the login is valid.
+  // Public Endpoint: Validates email and BCrypt password hash before issuing a signed JWT token.
   @PostMapping("/login")
   public AuthResponse login(@Valid @RequestBody LoginRequest request) {
     return authService.login(request);
   }
 
-  // Uses the authenticated email from Spring Security to hydrate the current user.
+  // Protected Endpoint: Extracts user email from JWT claims via Authentication context to fetch current profile summary.
   @GetMapping("/me")
   public CurrentUserResponse me(Authentication authentication) {
     return authService.getCurrentUser(authentication.getName());

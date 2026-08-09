@@ -34,6 +34,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     this.userDetailsService = userDetailsService;
   }
 
+  // Intercepts every HTTP request once to extract and validate the JWT Bearer token from headers.
   @Override
   protected void doFilterInternal(
       @NonNull HttpServletRequest request,
@@ -42,19 +43,21 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     String authHeader = request.getHeader("Authorization");
 
-    // Requests without a Bearer token continue as unauthenticated requests.
+    // 1️⃣ Requests without a "Bearer " header proceed unauthenticated (permitting public endpoints like /register or /login).
     if (authHeader == null || !authHeader.startsWith("Bearer ")) {
       filterChain.doFilter(request, response);
       return;
     }
 
+    // 2️⃣ Strip "Bearer " prefix (7 characters) to extract raw JWT string.
     String token = authHeader.substring(7);
     String email = jwtService.extractEmail(token);
 
-    // Only set authentication when the token is valid and no user is already set.
+    // 3️⃣ If token contains a subject and SecurityContext isn't authenticated yet for this thread:
     if (email != null && SecurityContextHolder.getContext().getAuthentication() == null) {
       User user = userRepository.findByEmail(email).orElse(null);
 
+      // 4️⃣ Verify signature and expiration; if valid, populate Spring Security's SecurityContext.
       if (user != null && jwtService.validateToken(token, user)) {
         UserDetails userDetails = userDetailsService.loadUserByUsername(email);
 
@@ -70,6 +73,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
       }
     }
 
+    // 5️⃣ Continue filter chain to target controller method.
     filterChain.doFilter(request, response);
   }
 }

@@ -4,6 +4,7 @@ import java.time.LocalDate;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import com.campuscoders.backend.checkin.dto.CheckInStatusResponse;
@@ -26,27 +27,35 @@ public class CheckInService {
     this.userRepository = userRepository;
   }
 
+  // readOnly = true optimizes database performance for read-only status checks.
+  @Transactional(readOnly = true)
   public CheckInStatusResponse getTodayStatus(String email) {
     User user = findUserByEmail(email);
     LocalDate today = LocalDate.now();
 
+    // Map existing check-in to response if already completed today; otherwise return unchecked status.
     return checkInRepository.findByUserIdAndCheckInDate(user.getId(), today)
         .map(checkIn -> toStatusResponse(user, true, checkIn.getXpAwarded(), today))
         .orElseGet(() -> toStatusResponse(user, false, 0, today));
   }
 
+  // Transactional ensures both the check-in record and user streak/XP updates succeed together atomically.
+  @Transactional
   public CheckInStatusResponse checkInToday(String email) {
     User user = findUserByEmail(email);
     LocalDate today = LocalDate.now();
 
+    // 1️⃣ Prevent double check-ins on the same calendar day.
     if (checkInRepository.existsByUserIdAndCheckInDate(user.getId(), today)) {
       throw new ResponseStatusException(
           HttpStatus.CONFLICT,
           "Already checked in today");
     }
 
+    // 2️⃣ Calculate streak continuity and award daily XP.
     updateUserStreakAndXp(user, today);
 
+    // 3️⃣ Save new check-in record for today.
     CheckIn checkIn = new CheckIn();
     checkIn.setUser(user);
     checkIn.setCheckInDate(today);
@@ -58,6 +67,7 @@ public class CheckInService {
     return toStatusResponse(savedUser, true, DAILY_CHECK_IN_XP, today);
   }
 
+  // Streak logic: If user checked in yesterday, increment current streak by 1. Otherwise reset streak to 1.
   private void updateUserStreakAndXp(User user, LocalDate today) {
     LocalDate yesterday = today.minusDays(1);
 
@@ -93,6 +103,7 @@ public class CheckInService {
         checkInDate);
   }
 
+  // Helper method protecting against null pointer exceptions when processing new user accounts with uninitialized fields.
   private Integer safeInteger(Integer value) {
     return value == null ? 0 : value;
   }

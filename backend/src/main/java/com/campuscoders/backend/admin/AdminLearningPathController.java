@@ -23,6 +23,7 @@ import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/api/admin/learning-paths")
+// Class-level authorization guard: Ensures all endpoints in this controller require ROLE_ADMIN authority.
 @PreAuthorize("hasRole('ADMIN')")
 public class AdminLearningPathController {
 
@@ -36,27 +37,27 @@ public class AdminLearningPathController {
     this.learningPathService = learningPathService;
   }
 
-  // Admin table endpoint: supports filtering learning paths by active state.
+  // Admin catalog query: Optional 'active' filter parameter allows admins to toggle between active, archived, or all paths.
   @GetMapping
   public List<LearningPathResponse> getLearningPathsForAdmin(
       @RequestParam(required = false) Boolean active) {
     return learningPathService.getLearningPathsForAdmin(active);
   }
 
-  // Dropdown endpoint useful for topic creation screens.
+  // Optimized lightweight endpoint returning only path IDs and titles to populate select dropdowns in admin forms.
   @GetMapping("/options")
   public List<AdminLearningPathOptionResponse> getLearningPathOptions() {
     return adminLearningResourceService.getLearningPathOptions();
   }
 
-  // Admin endpoint for creating a learning path from the admin panel.
+  // Validates incoming DTO and persists a new learning path catalog item.
   @PostMapping
   public LearningPathResponse createLearningPathForAdmin(
       @Valid @RequestBody CreateLearningPathRequest request) {
     return learningPathService.createLearningPath(request);
   }
 
-  // Admin endpoint for editing learning path details.
+  // Update existing learning path metadata (title, slug, active status).
   @PutMapping("/{learningPathId}")
   public LearningPathResponse updateLearningPathForAdmin(
       @PathVariable Long learningPathId,
@@ -64,13 +65,13 @@ public class AdminLearningPathController {
     return learningPathService.updateLearningPath(learningPathId, request);
   }
 
-  // Admin endpoint for hiding a learning path without deleting its topics/resources.
+  // Soft-deactivate a learning path to hide it from students while preserving associated topics and resources.
   @PatchMapping("/{learningPathId}/deactivate")
   public LearningPathResponse deactivateLearningPathForAdmin(@PathVariable Long learningPathId) {
     return learningPathService.deactivateLearningPath(learningPathId);
   }
 
-  // Admin endpoint for restoring a hidden learning path.
+  // Re-enable a previously soft-deactivated learning path.
   @PatchMapping("/{learningPathId}/activate")
   public LearningPathResponse activateLearningPathForAdmin(@PathVariable Long learningPathId) {
     return learningPathService.activateLearningPath(learningPathId);
