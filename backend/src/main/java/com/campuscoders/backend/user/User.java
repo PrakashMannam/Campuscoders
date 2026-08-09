@@ -30,17 +30,18 @@ public class User {
   @Column(name = "full_name", nullable = false)
   private String fullName;
 
-  // Email is the unique login identifier for each account.
+  // Email serves as the unique login identifier for each user account.
   @Email
   @NotBlank
   @Column(nullable = false, unique = true)
   private String email;
 
-  // Stored as a BCrypt hash, never as the raw password from the request.
+  // Stored as a BCrypt hash. Raw password strings must never be persisted or logged.
   @NotBlank
   @Column(nullable = false)
   private String password;
 
+  // EnumType.STRING stores 'STUDENT' or 'ADMIN' as readable text, preventing breakage if enum order changes.
   @NotNull
   @Enumerated(EnumType.STRING)
   @Column(nullable = false)
@@ -71,6 +72,7 @@ public class User {
   @Column(name = "avatar_url", length = 1000)
   private String avatarUrl;
 
+  // User preference flags controlling profile privacy and notification options.
   @NotNull
   @Column(name = "public_profile_visible", nullable = false)
   private Boolean publicProfileVisible = true;
@@ -87,6 +89,7 @@ public class User {
   @Column(name = "discussion_mentions", nullable = false)
   private Boolean discussionMentions = true;
 
+  // Gamification metrics updated during check-ins and problem solving.
   @Column(name = "total_xp")
   private Integer totalXp = 0;
 
@@ -102,6 +105,7 @@ public class User {
   @Column(name = "updated_at")
   private LocalDateTime updatedAt;
 
+  // Automatically record creation and modification timestamps before database persist/update.
   @PrePersist
   void onCreate() {
     LocalDateTime now = LocalDateTime.now();

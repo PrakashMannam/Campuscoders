@@ -3,12 +3,13 @@ package com.campuscoders.backend.profile;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import com.campuscoders.backend.profile.dto.ChangePasswordRequest;
 import com.campuscoders.backend.profile.dto.ProfileResponse;
-import com.campuscoders.backend.profile.dto.PublicProfileResponse;
 import com.campuscoders.backend.profile.dto.ProfileSettingsResponse;
+import com.campuscoders.backend.profile.dto.PublicProfileResponse;
 import com.campuscoders.backend.profile.dto.UpdateProfileRequest;
 import com.campuscoders.backend.profile.dto.UpdateProfileSettingsRequest;
 import com.campuscoders.backend.user.User;
@@ -27,12 +28,15 @@ public class ProfileService {
     this.passwordEncoder = passwordEncoder;
   }
 
+  @Transactional(readOnly = true)
   public ProfileResponse getCurrentProfile(String email) {
     User user = findUserByEmail(email);
 
     return toResponse(user);
   }
 
+  // Privacy Rule: If a user has disabled public profile visibility, return NOT_FOUND to hide their information.
+  @Transactional(readOnly = true)
   public PublicProfileResponse getPublicProfile(Long userId) {
     User user = userRepository.findById(userId)
         .orElseThrow(() -> new ResponseStatusException(
@@ -46,10 +50,11 @@ public class ProfileService {
     return toPublicResponse(user);
   }
 
+  // Security Rule: Only profile-safe fields are editable here. Role, email, and password stay protected.
+  @Transactional
   public ProfileResponse updateCurrentProfile(String email, UpdateProfileRequest request) {
     User user = findUserByEmail(email);
 
-    // Only profile-safe fields are editable here. Role, email, and password stay protected.
     user.setFullName(request.fullName());
     user.setUniversity(request.university());
     user.setBio(request.bio());
@@ -64,12 +69,14 @@ public class ProfileService {
     return toResponse(savedUser);
   }
 
+  @Transactional(readOnly = true)
   public ProfileSettingsResponse getCurrentSettings(String email) {
     User user = findUserByEmail(email);
 
     return toSettingsResponse(user);
   }
 
+  @Transactional
   public ProfileSettingsResponse updateCurrentSettings(
       String email,
       UpdateProfileSettingsRequest request) {
@@ -85,6 +92,8 @@ public class ProfileService {
     return toSettingsResponse(savedUser);
   }
 
+  // Security Check: Verify existing password with BCrypt before persisting the newly encoded password hash.
+  @Transactional
   public void changePassword(String email, ChangePasswordRequest request) {
     User user = findUserByEmail(email);
 

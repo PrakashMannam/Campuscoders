@@ -13,6 +13,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 
 import com.campuscoders.backend.security.JwtAuthenticationFilter;
 
+// Enables method-level security annotations like @PreAuthorize("hasRole('ADMIN')") on controllers and services.
 @EnableMethodSecurity
 @Configuration
 public class SecurityConfig {
@@ -23,18 +24,21 @@ public class SecurityConfig {
     this.authenticationFilter = authenticationFilter;
   }
 
-  // BCrypt is a one-way password hash designed for storing user passwords safely.
+  // BCrypt uses adaptive key stretching and automatic salt generation for secure, one-way password hashing.
   @Bean
   public PasswordEncoder passwordEncoder() {
     return new BCryptPasswordEncoder();
   }
 
+  // Configures the HTTP request security filter chain, public route permits, stateless sessions, and custom JWT filter insertion.
   @Bean
   public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
     return http
+        // 1️⃣ Disable CSRF because REST APIs use token-based authentication via headers, not browser session cookies.
         .csrf(csrf -> csrf.disable())
-        // JWT APIs are stateless; the server does not keep login sessions.
+        // 2️⃣ Enforce stateless session policy — no HTTP server sessions (JSESSIONID) are created or stored on the backend.
         .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+        // 3️⃣ Define route access rules: public endpoints are permitted without auth token; all other requests require a valid JWT.
         .authorizeHttpRequests(auth -> auth
             .requestMatchers(
                 "/api/auth/register",
@@ -52,7 +56,7 @@ public class SecurityConfig {
             .permitAll()
             .anyRequest()
             .authenticated())
-        // Run our JWT filter before Spring Security's username/password filter.
+        // 4️⃣ Insert custom JwtAuthenticationFilter into the filter chain BEFORE standard UsernamePasswordAuthenticationFilter.
         .addFilterBefore(authenticationFilter, UsernamePasswordAuthenticationFilter.class)
         .build();
   }

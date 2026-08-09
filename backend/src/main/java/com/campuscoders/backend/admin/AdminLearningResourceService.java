@@ -4,6 +4,7 @@ import java.util.Comparator;
 import java.util.List;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.campuscoders.backend.admin.dto.AdminLearningPathOptionResponse;
 import com.campuscoders.backend.admin.dto.AdminLearningResourceResponse;
@@ -33,6 +34,8 @@ public class AdminLearningResourceService {
     this.learningResourceRepository = learningResourceRepository;
   }
 
+  // Returns lightweight path options sorted alphabetically for admin dropdown select menus.
+  @Transactional(readOnly = true)
   public List<AdminLearningPathOptionResponse> getLearningPathOptions() {
     return learningPathRepository.findAll()
         .stream()
@@ -41,6 +44,8 @@ public class AdminLearningResourceService {
         .toList();
   }
 
+  // Filterable topic options endpoint allowing optional parent path filtering.
+  @Transactional(readOnly = true)
   public List<AdminTopicOptionResponse> getTopicOptions(Long learningPathId) {
     return topicRepository.findAll()
         .stream()
@@ -53,6 +58,8 @@ public class AdminLearningResourceService {
         .toList();
   }
 
+  // Complex multi-attribute admin filter query: Filter by topic, active state, type, and difficulty.
+  @Transactional(readOnly = true)
   public List<AdminLearningResourceResponse> getResourcesForAdmin(
       Long topicId,
       Boolean active,
