@@ -23,6 +23,8 @@ import lombok.Setter;
 @Getter
 @Setter
 @Entity
+// Unique constraint prevents a user from marking the exact same resource as completed multiple times, 
+// protecting database integrity even during concurrent API requests.
 @Table(name = "user_learning_resources", uniqueConstraints = @UniqueConstraint(columnNames = { "user_id", "resource_id" }))
 public class UserLearningResource {
 
@@ -30,11 +32,13 @@ public class UserLearningResource {
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Long id;
 
+  // Lazy loading avoids fetching full User details on every progress lookup.
   @NotNull
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "user_id", nullable = false)
   private User user;
 
+  // Lazy loading ensures we don't bring heavy resource content into memory unless requested.
   @NotNull
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "resource_id", nullable = false)
@@ -43,6 +47,7 @@ public class UserLearningResource {
   @Column(name = "completed_at", nullable = false, updatable = false)
   private LocalDateTime completedAt;
 
+  // Automatically record completion timestamp at entity creation time so callers don't need to pass dates manually.
   @PrePersist
   void onCreate() {
     this.completedAt = LocalDateTime.now();
