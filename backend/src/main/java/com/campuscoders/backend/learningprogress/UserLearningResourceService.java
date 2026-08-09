@@ -8,10 +8,16 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.campuscoders.backend.exception.CustomException;
+import com.campuscoders.backend.learningpath.LearningPath;
 import com.campuscoders.backend.learningpath.LearningResource;
+import com.campuscoders.backend.learningpath.Topic;
+import com.campuscoders.backend.learningpath.repository.LearningPathRepository;
 import com.campuscoders.backend.learningpath.repository.LearningResourceRepository;
+import com.campuscoders.backend.learningpath.repository.TopicRepository;
 import com.campuscoders.backend.learningprogress.dto.CompleteResourceRequest;
 import com.campuscoders.backend.learningprogress.dto.CompletedResourceResponse;
+import com.campuscoders.backend.learningprogress.dto.LearningPathProgressResponse;
+import com.campuscoders.backend.learningprogress.dto.TopicProgressResponse;
 import com.campuscoders.backend.learningprogress.repository.UserLearningResourceRepository;
 import com.campuscoders.backend.user.User;
 import com.campuscoders.backend.user.repository.UserRepository;
@@ -22,14 +28,20 @@ public class UserLearningResourceService {
   private final UserLearningResourceRepository ulrRepo;
   private final UserRepository userRepo;
   private final LearningResourceRepository lrRepo;
+  private final LearningPathRepository learningPathRepository;
+  private final TopicRepository topicRepository;
 
   public UserLearningResourceService(
       UserLearningResourceRepository ulrRepo,
       UserRepository userRepo,
-      LearningResourceRepository lrRepo) {
+      LearningResourceRepository lrRepo,
+      LearningPathRepository learningPathRepository,
+      TopicRepository topicRepository) {
     this.ulrRepo = ulrRepo;
     this.userRepo = userRepo;
     this.lrRepo = lrRepo;
+    this.learningPathRepository = learningPathRepository;
+    this.topicRepository = topicRepository;
   }
 
   // Convenience overload allowing controller to pass user email directly from JWT authentication context.
@@ -85,5 +97,56 @@ public class UserLearningResourceService {
             ulr.getResource().getTitle(),
             ulr.getCompletedAt()))
         .collect(Collectors.toList());
+  }
+
+  // Calculates completion percentage for a Learning Path (handles 0 total resources safely).
+  @Transactional(readOnly = true)
+  public LearningPathProgressResponse getLearningPathProgress(String userEmail, Long learningPathId) {
+    User user = userRepo.findByEmail(userEmail)
+        .orElseThrow(() -> new CustomException("User not found", HttpStatus.NOT_FOUND));
+
+    LearningPath learningPath = learningPathRepository.findById(learningPathId)
+        .orElseThrow(() -> new CustomException("Learning Path not found", HttpStatus.NOT_FOUND));
+
+    long totalResources = lrRepo.countByTopicLearningPathIdAndActiveTrue(learningPathId);
+    long completedResources = ulrRepo.countByUserIdAndResourceTopicLearningPathId(user.getId(), learningPathId);
+    double percentage = calculatePercentage(completedResources, totalResources);
+
+    return new LearningPathProgressResponse(
+        learningPath.getId(),
+        learningPath.getTitle(),
+        totalResources,
+        completedResources,
+        percentage);
+  }
+
+  // Calculates completion percentage for a Topic (handles 0 total resources safely).
+  @Transactional(readOnly = true)
+  public TopicProgressResponse getTopicProgress(String userEmail, Long topicId) {
+    User user = userRepo.findByEmail(userEmail)
+        .orElseThrow(() -> new CustomException("User not found", HttpStatus.NOT_FOUND));
+
+    Topic topic = topicRepository.findById(topicId)
+        .orElseThrow(() -> new CustomException("Topic not found", HttpStatus.NOT_FOUND));
+
+    long totalResources = lrRepo.countByTopicIdAndActiveTrue(topicId);
+    long completedResources = ulrRepo.countByUserIdAndResourceTopicId(user.getId(), topicId);
+    double percentage = calculatePercentage(completedResources, totalResources);
+
+    return new TopicProgressResponse(
+        topic.getId(),
+        topic.getTitle(),
+        totalResources,
+        completedResources,
+        percentage);
+  }
+
+  // Safe percentage calculation rounded to 1 decimal place. Avoids division by zero.
+  private double calculatePercentage(long completed, long total) {
+    if (total == 0) {
+      return 0.0;
+    }
+    double raw = (completed * 100.0) / total;
+    return Math.round(raw * 10.0) / 10.0;
   }
 }
