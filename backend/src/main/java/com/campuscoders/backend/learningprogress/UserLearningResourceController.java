@@ -24,11 +24,13 @@ public class UserLearningResourceController {
     this.userLearningResourceService = userLearningResourceService;
   }
 
+  // Uses Spring Security's Authentication context to identify current user securely via JWT token.
   @GetMapping
   public List<CompletedResourceResponse> listCompleted(Authentication authentication) {
     return userLearningResourceService.listCompleted(authentication.getName());
   }
 
+  // @Valid triggers bean validation rules on CompleteResourceRequest prior to service execution.
   @PostMapping("/complete")
   public CompletedResourceResponse complete(
       Authentication authentication,
