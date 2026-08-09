@@ -1,5 +1,8 @@
 package com.campuscoders.backend.config;
 
+import java.time.LocalDate;
+import java.util.List;
+
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
@@ -8,6 +11,10 @@ import org.springframework.transaction.annotation.Transactional;
 import com.campuscoders.backend.announcement.Announcement;
 import com.campuscoders.backend.announcement.AnnouncementCategory;
 import com.campuscoders.backend.announcement.repository.AnnouncementRepository;
+import com.campuscoders.backend.dailychallenge.CodingProblem;
+import com.campuscoders.backend.dailychallenge.DailyChallenge;
+import com.campuscoders.backend.dailychallenge.repository.CodingProblemRepository;
+import com.campuscoders.backend.dailychallenge.repository.DailyChallengeRepository;
 import com.campuscoders.backend.learningpath.DifficultyLevel;
 import com.campuscoders.backend.learningpath.LearningPath;
 import com.campuscoders.backend.learningpath.LearningResource;
@@ -27,28 +34,45 @@ public class DataInitializer implements CommandLineRunner {
   private final TopicRepository topicRepository;
   private final LearningResourceRepository learningResourceRepository;
   private final AnnouncementRepository announcementRepository;
+  private final CodingProblemRepository codingProblemRepository;
+  private final DailyChallengeRepository dailyChallengeRepository;
 
   public DataInitializer(
       LearningPathRepository learningPathRepository,
       TopicRepository topicRepository,
       LearningResourceRepository learningResourceRepository,
-      AnnouncementRepository announcementRepository) {
+      AnnouncementRepository announcementRepository,
+      CodingProblemRepository codingProblemRepository,
+      DailyChallengeRepository dailyChallengeRepository) {
     this.learningPathRepository = learningPathRepository;
     this.topicRepository = topicRepository;
     this.learningResourceRepository = learningResourceRepository;
     this.announcementRepository = announcementRepository;
+    this.codingProblemRepository = codingProblemRepository;
+    this.dailyChallengeRepository = dailyChallengeRepository;
   }
 
   // Executed automatically by Spring Boot right after application context startup.
   @Override
   @Transactional
   public void run(String... args) throws Exception {
-    // 1️⃣ Idempotency Guard: Only seed sample catalog items if no learning paths exist in MySQL yet.
-    if (learningPathRepository.count() > 0) {
-      return;
+    // Seed Learning Path & Curriculum if empty
+    if (learningPathRepository.count() == 0) {
+      seedCurriculum();
     }
 
-    // 2️⃣ Seed Sample Learning Path: Java Backend Development
+    // Seed System Announcement if empty
+    if (announcementRepository.count() == 0) {
+      seedAnnouncement();
+    }
+
+    // Seed Problem Bank and Today's Daily Challenge if empty
+    if (codingProblemRepository.count() == 0) {
+      seedCodingProblemsAndDailyChallenge();
+    }
+  }
+
+  private void seedCurriculum() {
     LearningPath javaPath = new LearningPath();
     javaPath.setTitle("Java Backend Development");
     javaPath.setSlug("java-backend-development");
@@ -61,7 +85,6 @@ public class DataInitializer implements CommandLineRunner {
     javaPath.setActive(true);
     LearningPath savedJavaPath = learningPathRepository.save(javaPath);
 
-    // 3️⃣ Seed Topic 1 under Java Path
     Topic oopTopic = new Topic();
     oopTopic.setLearningPath(savedJavaPath);
     oopTopic.setTitle("Java Core & OOP Principles");
@@ -72,7 +95,6 @@ public class DataInitializer implements CommandLineRunner {
     oopTopic.setActive(true);
     Topic savedOopTopic = topicRepository.save(oopTopic);
 
-    // Seed Resource 1 under Topic 1
     LearningResource res1 = new LearningResource();
     res1.setTopic(savedOopTopic);
     res1.setTitle("Java Object-Oriented Programming (Video)");
@@ -86,7 +108,6 @@ public class DataInitializer implements CommandLineRunner {
     res1.setActive(true);
     learningResourceRepository.save(res1);
 
-    // Seed Resource 2 under Topic 1
     LearningResource res2 = new LearningResource();
     res2.setTopic(savedOopTopic);
     res2.setTitle("Java 21 Features Guide (Article)");
@@ -100,7 +121,6 @@ public class DataInitializer implements CommandLineRunner {
     res2.setActive(true);
     learningResourceRepository.save(res2);
 
-    // 4️⃣ Seed Topic 2 under Java Path
     Topic springTopic = new Topic();
     springTopic.setLearningPath(savedJavaPath);
     springTopic.setTitle("Spring Boot & REST APIs");
@@ -111,7 +131,6 @@ public class DataInitializer implements CommandLineRunner {
     springTopic.setActive(true);
     Topic savedSpringTopic = topicRepository.save(springTopic);
 
-    // Seed Resource 3 under Topic 2
     LearningResource res3 = new LearningResource();
     res3.setTopic(savedSpringTopic);
     res3.setTitle("Building REST Controllers (Tutorial)");
@@ -124,17 +143,55 @@ public class DataInitializer implements CommandLineRunner {
     res3.setSortOrder(1);
     res3.setActive(true);
     learningResourceRepository.save(res3);
+  }
 
-    // 5️⃣ Seed System Announcement if announcements table is empty
-    if (announcementRepository.count() == 0) {
-      Announcement announcement = new Announcement();
-      announcement.setTitle("Welcome to Campus Coders!");
-      announcement.setMessage("Explore learning paths, track your daily check-in streak, and mark resources as completed.");
-      announcement.setCategory(AnnouncementCategory.PLATFORM_UPDATE);
-      announcement.setActionLabel("Browse Paths");
-      announcement.setActionUrl("/paths");
-      announcement.setActive(true);
-      announcementRepository.save(announcement);
+  private void seedAnnouncement() {
+    Announcement announcement = new Announcement();
+    announcement.setTitle("Welcome to Campus Coders!");
+    announcement.setMessage("Explore learning paths, track your daily check-in streak, and solve the Problem of the Day.");
+    announcement.setCategory(AnnouncementCategory.PLATFORM_UPDATE);
+    announcement.setActionLabel("Browse Paths");
+    announcement.setActionUrl("/paths");
+    announcement.setActive(true);
+    announcementRepository.save(announcement);
+  }
+
+  private void seedCodingProblemsAndDailyChallenge() {
+    List<CodingProblem> problems = List.of(
+        createProblem("Two Sum", "LeetCode", "https://leetcode.com/problems/two-sum/", DifficultyLevel.BEGINNER, "Array, Hash Table"),
+        createProblem("Valid Anagram", "LeetCode", "https://leetcode.com/problems/valid-anagram/", DifficultyLevel.BEGINNER, "String, Hash Table"),
+        createProblem("Reverse Linked List", "LeetCode", "https://leetcode.com/problems/reverse-linked-list/", DifficultyLevel.BEGINNER, "Linked List, Recursion"),
+        createProblem("Binary Search", "LeetCode", "https://leetcode.com/problems/binary-search/", DifficultyLevel.BEGINNER, "Array, Binary Search"),
+        createProblem("Contains Duplicate", "LeetCode", "https://leetcode.com/problems/contains-duplicate/", DifficultyLevel.BEGINNER, "Array, Hash Table"),
+        createProblem("Best Time to Buy and Sell Stock", "LeetCode", "https://leetcode.com/problems/best-time-to-buy-and-sell-stock/", DifficultyLevel.BEGINNER, "Array, Dynamic Programming"),
+        createProblem("Valid Parentheses", "LeetCode", "https://leetcode.com/problems/valid-parentheses/", DifficultyLevel.BEGINNER, "String, Stack"),
+        createProblem("Merge Two Sorted Lists", "LeetCode", "https://leetcode.com/problems/merge-two-sorted-lists/", DifficultyLevel.BEGINNER, "Linked List, Recursion"),
+        createProblem("Maximum Subarray", "LeetCode", "https://leetcode.com/problems/maximum-subarray/", DifficultyLevel.INTERMEDIATE, "Array, Divide and Conquer"),
+        createProblem("Reverse String", "LeetCode", "https://leetcode.com/problems/reverse-string/", DifficultyLevel.BEGINNER, "Two Pointers, String")
+    );
+
+    List<CodingProblem> savedProblems = codingProblemRepository.saveAll(problems);
+
+    // Schedule Today's Daily Challenge if none exists for LocalDate.now()
+    LocalDate today = LocalDate.now();
+    if (!dailyChallengeRepository.existsByChallengeDateAndActiveTrue(today) && !savedProblems.isEmpty()) {
+      DailyChallenge todayChallenge = new DailyChallenge();
+      todayChallenge.setCodingProblem(savedProblems.get(0)); // Two Sum
+      todayChallenge.setChallengeDate(today);
+      todayChallenge.setXpReward(15);
+      todayChallenge.setActive(true);
+      dailyChallengeRepository.save(todayChallenge);
     }
+  }
+
+  private CodingProblem createProblem(String title, String platform, String url, DifficultyLevel diff, String tags) {
+    CodingProblem problem = new CodingProblem();
+    problem.setTitle(title);
+    problem.setPlatform(platform);
+    problem.setProblemUrl(url);
+    problem.setDifficulty(diff);
+    problem.setTags(tags);
+    problem.setActive(true);
+    return problem;
   }
 }

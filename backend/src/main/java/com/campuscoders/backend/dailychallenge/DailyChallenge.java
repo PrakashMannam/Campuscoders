@@ -1,0 +1,57 @@
+package com.campuscoders.backend.dailychallenge;
+
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Table;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
+// Maps a specific coding problem to a target challenge date (e.g. 2026-08-09).
+// Only one active challenge should exist per date to ensure all students focus on the same Problem of the Day.
+@Entity
+@Table(name = "daily_challenges")
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+public class DailyChallenge {
+
+  @Id
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
+  private Long id;
+
+  @ManyToOne(fetch = FetchType.EAGER)
+  @JoinColumn(name = "coding_problem_id", nullable = false)
+  private CodingProblem codingProblem;
+
+  @Column(name = "challenge_date", nullable = false)
+  private LocalDate challengeDate;
+
+  @Column(name = "xp_reward", nullable = false)
+  private Integer xpReward = 10;
+
+  @Column(nullable = false)
+  private Boolean active = true;
+
+  @CreationTimestamp
+  @Column(name = "created_at", nullable = false, updatable = false)
+  private LocalDateTime createdAt;
+
+  @UpdateTimestamp
+  @Column(name = "updated_at")
+  private LocalDateTime updatedAt;
+}
