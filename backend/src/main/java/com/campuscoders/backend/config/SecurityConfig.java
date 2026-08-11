@@ -56,6 +56,8 @@ public class SecurityConfig {
             .permitAll()
             .requestMatchers(HttpMethod.GET, "/api/discussions/**")
             .permitAll()
+            .requestMatchers(HttpMethod.GET, "/api/leaderboard", "/api/leaderboard/top")
+            .permitAll()
             .anyRequest()
             .authenticated())
         // 4️⃣ Insert custom JwtAuthenticationFilter into the filter chain BEFORE standard UsernamePasswordAuthenticationFilter.
