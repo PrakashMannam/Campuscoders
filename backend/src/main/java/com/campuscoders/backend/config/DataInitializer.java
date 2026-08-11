@@ -16,6 +16,11 @@ import com.campuscoders.backend.dailychallenge.CodingProblem;
 import com.campuscoders.backend.dailychallenge.DailyChallenge;
 import com.campuscoders.backend.dailychallenge.repository.CodingProblemRepository;
 import com.campuscoders.backend.dailychallenge.repository.DailyChallengeRepository;
+import com.campuscoders.backend.discussion.DiscussionCategory;
+import com.campuscoders.backend.discussion.DiscussionPost;
+import com.campuscoders.backend.discussion.DiscussionReply;
+import com.campuscoders.backend.discussion.repository.DiscussionPostRepository;
+import com.campuscoders.backend.discussion.repository.DiscussionReplyRepository;
 import com.campuscoders.backend.learningpath.DifficultyLevel;
 import com.campuscoders.backend.learningpath.LearningPath;
 import com.campuscoders.backend.learningpath.LearningResource;
@@ -24,9 +29,9 @@ import com.campuscoders.backend.learningpath.Topic;
 import com.campuscoders.backend.learningpath.repository.LearningPathRepository;
 import com.campuscoders.backend.learningpath.repository.LearningResourceRepository;
 import com.campuscoders.backend.learningpath.repository.TopicRepository;
+import com.campuscoders.backend.user.User;
+import com.campuscoders.backend.user.repository.UserRepository;
 
-// @Component tells Spring Boot to instantiate this class automatically as a managed bean.
-// @Profile({"dev", "default"}) ensures sample seeding only runs in dev/default environments, not in production.
 @Component
 @Profile({"dev", "default"})
 public class DataInitializer implements CommandLineRunner {
@@ -37,6 +42,9 @@ public class DataInitializer implements CommandLineRunner {
   private final AnnouncementRepository announcementRepository;
   private final CodingProblemRepository codingProblemRepository;
   private final DailyChallengeRepository dailyChallengeRepository;
+  private final DiscussionPostRepository discussionPostRepository;
+  private final DiscussionReplyRepository discussionReplyRepository;
+  private final UserRepository userRepository;
 
   public DataInitializer(
       LearningPathRepository learningPathRepository,
@@ -44,32 +52,38 @@ public class DataInitializer implements CommandLineRunner {
       LearningResourceRepository learningResourceRepository,
       AnnouncementRepository announcementRepository,
       CodingProblemRepository codingProblemRepository,
-      DailyChallengeRepository dailyChallengeRepository) {
+      DailyChallengeRepository dailyChallengeRepository,
+      DiscussionPostRepository discussionPostRepository,
+      DiscussionReplyRepository discussionReplyRepository,
+      UserRepository userRepository) {
     this.learningPathRepository = learningPathRepository;
     this.topicRepository = topicRepository;
     this.learningResourceRepository = learningResourceRepository;
     this.announcementRepository = announcementRepository;
     this.codingProblemRepository = codingProblemRepository;
     this.dailyChallengeRepository = dailyChallengeRepository;
+    this.discussionPostRepository = discussionPostRepository;
+    this.discussionReplyRepository = discussionReplyRepository;
+    this.userRepository = userRepository;
   }
 
-  // Executed automatically by Spring Boot right after application context startup.
   @Override
   @Transactional
   public void run(String... args) throws Exception {
-    // Seed Learning Path & Curriculum if empty
     if (learningPathRepository.count() == 0) {
       seedCurriculum();
     }
 
-    // Seed System Announcement if empty
     if (announcementRepository.count() == 0) {
       seedAnnouncement();
     }
 
-    // Seed Problem Bank and Today's Daily Challenge if empty
     if (codingProblemRepository.count() == 0) {
       seedCodingProblemsAndDailyChallenge();
+    }
+
+    if (discussionPostRepository.count() == 0) {
+      seedDiscussions();
     }
   }
 
@@ -173,16 +187,52 @@ public class DataInitializer implements CommandLineRunner {
 
     List<CodingProblem> savedProblems = codingProblemRepository.saveAll(problems);
 
-    // Schedule Today's Daily Challenge if none exists for LocalDate.now(ZoneOffset.UTC)
     LocalDate today = LocalDate.now(ZoneOffset.UTC);
     if (!dailyChallengeRepository.existsByChallengeDateAndActiveTrue(today) && !savedProblems.isEmpty()) {
       DailyChallenge todayChallenge = new DailyChallenge();
-      todayChallenge.setCodingProblem(savedProblems.get(0)); // Two Sum
+      todayChallenge.setCodingProblem(savedProblems.get(0));
       todayChallenge.setChallengeDate(today);
       todayChallenge.setXpReward(15);
       todayChallenge.setActive(true);
       dailyChallengeRepository.save(todayChallenge);
     }
+  }
+
+  private void seedDiscussions() {
+    User firstUser = userRepository.findAll().stream().findFirst().orElse(null);
+    if (firstUser == null) {
+      return;
+    }
+
+    DiscussionPost post1 = new DiscussionPost();
+    post1.setAuthor(firstUser);
+    post1.setCategory(DiscussionCategory.JAVA);
+    post1.setTitle("What is the difference between Comparable and Comparator in Java?");
+    post1.setContent("I'm confused about when to use Comparable vs Comparator in Java 21 collections. Could someone explain with clear code examples?");
+    post1.setTags("java,collections,sorting");
+    post1.setFeatured(true);
+    post1.setClosed(false);
+    post1.setActive(true);
+    DiscussionPost savedPost1 = discussionPostRepository.save(post1);
+
+    DiscussionReply reply1 = new DiscussionReply();
+    reply1.setPost(savedPost1);
+    reply1.setAuthor(firstUser);
+    reply1.setContent("Comparable is implemented by the class itself via compareTo(). Comparator is external via compare() and useful for multiple custom sorting orders.");
+    reply1.setAcceptedAnswer(true);
+    reply1.setActive(true);
+    discussionReplyRepository.save(reply1);
+
+    DiscussionPost post2 = new DiscussionPost();
+    post2.setAuthor(firstUser);
+    post2.setCategory(DiscussionCategory.CAREER_ADVICE);
+    post2.setTitle("How to prepare for Java Backend Developer Internship interviews?");
+    post2.setContent("Share your best tips on preparing core Java, Spring Boot REST APIs, SQL indexing, and Data Structures for campus placements.");
+    post2.setTags("interview,backend,career");
+    post2.setFeatured(false);
+    post2.setClosed(false);
+    post2.setActive(true);
+    discussionPostRepository.save(post2);
   }
 
   private CodingProblem createProblem(String title, String platform, String url, DifficultyLevel diff, String tags) {
