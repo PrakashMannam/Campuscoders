@@ -9,8 +9,6 @@ import com.campuscoders.backend.user.User;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -47,8 +45,8 @@ public class DiscussionPost {
   private User author;
 
   @NotNull
-  @Enumerated(EnumType.STRING)
-  @Column(nullable = false)
+  @ManyToOne(fetch = FetchType.EAGER, optional = false)
+  @JoinColumn(name = "category_id", nullable = false)
   private DiscussionCategory category;
 
   @NotBlank

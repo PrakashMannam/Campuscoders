@@ -54,6 +54,8 @@ public class SecurityConfig {
             .permitAll()
             .requestMatchers(HttpMethod.GET, "/api/announcements")
             .permitAll()
+            .requestMatchers(HttpMethod.GET, "/api/discussion-categories")
+            .permitAll()
             .requestMatchers(HttpMethod.GET, "/api/discussions/**")
             .permitAll()
             .requestMatchers(HttpMethod.GET, "/api/leaderboard", "/api/leaderboard/top")
