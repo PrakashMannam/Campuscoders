@@ -10,7 +10,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.campuscoders.backend.discussion.DiscussionCategory;
 import com.campuscoders.backend.discussion.DiscussionService;
 import com.campuscoders.backend.discussion.dto.DiscussionPostResponse;
 import com.campuscoders.backend.discussion.dto.DiscussionReplyResponse;
@@ -29,11 +28,11 @@ public class AdminDiscussionController {
   // Lists all posts including soft-deleted ones for moderation.
   @GetMapping
   public List<DiscussionPostResponse> getAllDiscussionsForAdmin(
-      @RequestParam(required = false) DiscussionCategory category,
+      @RequestParam(required = false) String categorySlug,
       @RequestParam(required = false) Boolean featured,
       @RequestParam(required = false) Boolean active,
       @RequestParam(required = false) String search) {
-    return discussionService.getAllDiscussionsForAdmin(category, featured, active, search);
+    return discussionService.getAllDiscussionsForAdmin(categorySlug, featured, active, search);
   }
 
   // Highlights a post as featured on the community page.

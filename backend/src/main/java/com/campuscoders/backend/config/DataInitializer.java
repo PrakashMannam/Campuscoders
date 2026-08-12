@@ -19,6 +19,7 @@ import com.campuscoders.backend.dailychallenge.repository.DailyChallengeReposito
 import com.campuscoders.backend.discussion.DiscussionCategory;
 import com.campuscoders.backend.discussion.DiscussionPost;
 import com.campuscoders.backend.discussion.DiscussionReply;
+import com.campuscoders.backend.discussion.repository.DiscussionCategoryRepository;
 import com.campuscoders.backend.discussion.repository.DiscussionPostRepository;
 import com.campuscoders.backend.discussion.repository.DiscussionReplyRepository;
 import com.campuscoders.backend.learningpath.DifficultyLevel;
@@ -42,6 +43,7 @@ public class DataInitializer implements CommandLineRunner {
   private final AnnouncementRepository announcementRepository;
   private final CodingProblemRepository codingProblemRepository;
   private final DailyChallengeRepository dailyChallengeRepository;
+  private final DiscussionCategoryRepository discussionCategoryRepository;
   private final DiscussionPostRepository discussionPostRepository;
   private final DiscussionReplyRepository discussionReplyRepository;
   private final UserRepository userRepository;
@@ -53,6 +55,7 @@ public class DataInitializer implements CommandLineRunner {
       AnnouncementRepository announcementRepository,
       CodingProblemRepository codingProblemRepository,
       DailyChallengeRepository dailyChallengeRepository,
+      DiscussionCategoryRepository discussionCategoryRepository,
       DiscussionPostRepository discussionPostRepository,
       DiscussionReplyRepository discussionReplyRepository,
       UserRepository userRepository) {
@@ -62,6 +65,7 @@ public class DataInitializer implements CommandLineRunner {
     this.announcementRepository = announcementRepository;
     this.codingProblemRepository = codingProblemRepository;
     this.dailyChallengeRepository = dailyChallengeRepository;
+    this.discussionCategoryRepository = discussionCategoryRepository;
     this.discussionPostRepository = discussionPostRepository;
     this.discussionReplyRepository = discussionReplyRepository;
     this.userRepository = userRepository;
@@ -82,8 +86,8 @@ public class DataInitializer implements CommandLineRunner {
       seedCodingProblemsAndDailyChallenge();
     }
 
-    if (discussionPostRepository.count() == 0) {
-      seedDiscussions();
+    if (discussionCategoryRepository.count() == 0) {
+      seedDiscussionCategoriesAndPosts();
     }
   }
 
@@ -198,41 +202,64 @@ public class DataInitializer implements CommandLineRunner {
     }
   }
 
-  private void seedDiscussions() {
-    User firstUser = userRepository.findAll().stream().findFirst().orElse(null);
-    if (firstUser == null) {
-      return;
+  private void seedDiscussionCategoriesAndPosts() {
+    DiscussionCategory catJava = createCategory("Java", "java", "Core Java 21, OOP, Collections, and JVM topics", "#F59E0B", "coffee", 1);
+    DiscussionCategory catPython = createCategory("Python", "python", "Python 3 syntax, Django, FastAPI, and data scripting", "#3B82F6", "terminal", 2);
+    DiscussionCategory catDsa = createCategory("Data Structures & Algorithms", "dsa", "LeetCode problems, dynamic programming, trees, and sorting algorithms", "#10B981", "cpu", 3);
+    DiscussionCategory catWeb = createCategory("Web Development", "web-development", "HTML, CSS, React, RESTful APIs, and full-stack architecture", "#8B5CF6", "globe", 4);
+    DiscussionCategory catCareer = createCategory("Career Advice", "career-advice", "Resume reviews, internship preparation, and placement tips", "#EC4899", "briefcase", 5);
+    DiscussionCategory catGeneral = createCategory("General", "general", "General tech discussions, platform feedback, and community chat", "#6B7280", "message-square", 6);
+
+    discussionCategoryRepository.saveAll(List.of(catJava, catPython, catDsa, catWeb, catCareer, catGeneral));
+
+    if (discussionPostRepository.count() == 0) {
+      User firstUser = userRepository.findAll().stream().findFirst().orElse(null);
+      if (firstUser == null) {
+        return;
+      }
+
+      DiscussionPost post1 = new DiscussionPost();
+      post1.setAuthor(firstUser);
+      post1.setCategory(catJava);
+      post1.setTitle("What is the difference between Comparable and Comparator in Java?");
+      post1.setContent("I'm confused about when to use Comparable vs Comparator in Java 21 collections. Could someone explain with clear code examples?");
+      post1.setTags("java,collections,sorting");
+      post1.setFeatured(true);
+      post1.setClosed(false);
+      post1.setActive(true);
+      DiscussionPost savedPost1 = discussionPostRepository.save(post1);
+
+      DiscussionReply reply1 = new DiscussionReply();
+      reply1.setPost(savedPost1);
+      reply1.setAuthor(firstUser);
+      reply1.setContent("Comparable is implemented by the class itself via compareTo(). Comparator is external via compare() and useful for multiple custom sorting orders.");
+      reply1.setAcceptedAnswer(true);
+      reply1.setActive(true);
+      discussionReplyRepository.save(reply1);
+
+      DiscussionPost post2 = new DiscussionPost();
+      post2.setAuthor(firstUser);
+      post2.setCategory(catCareer);
+      post2.setTitle("How to prepare for Java Backend Developer Internship interviews?");
+      post2.setContent("Share your best tips on preparing core Java, Spring Boot REST APIs, SQL indexing, and Data Structures for campus placements.");
+      post2.setTags("interview,backend,career");
+      post2.setFeatured(false);
+      post2.setClosed(false);
+      post2.setActive(true);
+      discussionPostRepository.save(post2);
     }
+  }
 
-    DiscussionPost post1 = new DiscussionPost();
-    post1.setAuthor(firstUser);
-    post1.setCategory(DiscussionCategory.JAVA);
-    post1.setTitle("What is the difference between Comparable and Comparator in Java?");
-    post1.setContent("I'm confused about when to use Comparable vs Comparator in Java 21 collections. Could someone explain with clear code examples?");
-    post1.setTags("java,collections,sorting");
-    post1.setFeatured(true);
-    post1.setClosed(false);
-    post1.setActive(true);
-    DiscussionPost savedPost1 = discussionPostRepository.save(post1);
-
-    DiscussionReply reply1 = new DiscussionReply();
-    reply1.setPost(savedPost1);
-    reply1.setAuthor(firstUser);
-    reply1.setContent("Comparable is implemented by the class itself via compareTo(). Comparator is external via compare() and useful for multiple custom sorting orders.");
-    reply1.setAcceptedAnswer(true);
-    reply1.setActive(true);
-    discussionReplyRepository.save(reply1);
-
-    DiscussionPost post2 = new DiscussionPost();
-    post2.setAuthor(firstUser);
-    post2.setCategory(DiscussionCategory.CAREER_ADVICE);
-    post2.setTitle("How to prepare for Java Backend Developer Internship interviews?");
-    post2.setContent("Share your best tips on preparing core Java, Spring Boot REST APIs, SQL indexing, and Data Structures for campus placements.");
-    post2.setTags("interview,backend,career");
-    post2.setFeatured(false);
-    post2.setClosed(false);
-    post2.setActive(true);
-    discussionPostRepository.save(post2);
+  private DiscussionCategory createCategory(String name, String slug, String description, String color, String iconName, Integer sortOrder) {
+    DiscussionCategory category = new DiscussionCategory();
+    category.setName(name);
+    category.setSlug(slug);
+    category.setDescription(description);
+    category.setColor(color);
+    category.setIconName(iconName);
+    category.setSortOrder(sortOrder);
+    category.setActive(true);
+    return category;
   }
 
   private CodingProblem createProblem(String title, String platform, String url, DifficultyLevel diff, String tags) {

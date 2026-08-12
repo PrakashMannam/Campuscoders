@@ -6,12 +6,16 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.campuscoders.backend.discussion.dto.CreateDiscussionCategoryRequest;
 import com.campuscoders.backend.discussion.dto.CreateDiscussionPostRequest;
 import com.campuscoders.backend.discussion.dto.CreateDiscussionReplyRequest;
+import com.campuscoders.backend.discussion.dto.DiscussionCategoryResponse;
 import com.campuscoders.backend.discussion.dto.DiscussionPostDetailsResponse;
 import com.campuscoders.backend.discussion.dto.DiscussionPostResponse;
 import com.campuscoders.backend.discussion.dto.DiscussionReplyResponse;
+import com.campuscoders.backend.discussion.dto.UpdateDiscussionCategoryRequest;
 import com.campuscoders.backend.discussion.dto.UpdateDiscussionPostRequest;
+import com.campuscoders.backend.discussion.repository.DiscussionCategoryRepository;
 import com.campuscoders.backend.discussion.repository.DiscussionPostRepository;
 import com.campuscoders.backend.discussion.repository.DiscussionReplyRepository;
 import com.campuscoders.backend.exception.CustomException;
@@ -24,29 +28,109 @@ public class DiscussionService {
 
   private final DiscussionPostRepository postRepository;
   private final DiscussionReplyRepository replyRepository;
+  private final DiscussionCategoryRepository categoryRepository;
   private final UserRepository userRepository;
 
   public DiscussionService(
       DiscussionPostRepository postRepository,
       DiscussionReplyRepository replyRepository,
+      DiscussionCategoryRepository categoryRepository,
       UserRepository userRepository) {
     this.postRepository = postRepository;
     this.replyRepository = replyRepository;
+    this.categoryRepository = categoryRepository;
     this.userRepository = userRepository;
   }
 
-  // --- Student & Public Service Methods ---
+  // --- Discussion Category Management Methods ---
 
-  // Fetches active discussion threads supporting optional filters for category, featured status, and text search.
+  @Transactional(readOnly = true)
+  public List<DiscussionCategoryResponse> getActiveCategories() {
+    return categoryRepository.findByActiveTrueOrderBySortOrderAscNameAsc().stream()
+        .map(this::toCategoryResponse)
+        .toList();
+  }
+
+  @Transactional(readOnly = true)
+  public List<DiscussionCategoryResponse> getAllCategoriesForAdmin() {
+    return categoryRepository.findAllByOrderBySortOrderAscNameAsc().stream()
+        .map(this::toCategoryResponse)
+        .toList();
+  }
+
+  @Transactional
+  public DiscussionCategoryResponse createCategory(CreateDiscussionCategoryRequest req) {
+    String slug = generateSlug(req.name(), req.slug());
+
+    if (categoryRepository.existsBySlug(slug)) {
+      throw new CustomException("Discussion category slug already exists: " + slug, HttpStatus.CONFLICT);
+    }
+
+    DiscussionCategory category = new DiscussionCategory();
+    category.setName(req.name());
+    category.setSlug(slug);
+    category.setDescription(req.description());
+    category.setColor(req.color() != null ? req.color() : "#3B82F6");
+    category.setIconName(req.iconName() != null ? req.iconName() : "message-square");
+    category.setSortOrder(req.sortOrder() != null ? req.sortOrder() : 0);
+    category.setActive(true);
+
+    return toCategoryResponse(categoryRepository.save(category));
+  }
+
+  @Transactional
+  public DiscussionCategoryResponse updateCategory(Long categoryId, UpdateDiscussionCategoryRequest req) {
+    DiscussionCategory category = getCategoryById(categoryId);
+    String slug = generateSlug(req.name(), req.slug());
+
+    if (categoryRepository.existsBySlugAndIdNot(slug, categoryId)) {
+      throw new CustomException("Discussion category slug already exists: " + slug, HttpStatus.CONFLICT);
+    }
+
+    category.setName(req.name());
+    category.setSlug(slug);
+    category.setDescription(req.description());
+    if (req.color() != null) {
+      category.setColor(req.color());
+    }
+    if (req.iconName() != null) {
+      category.setIconName(req.iconName());
+    }
+    if (req.sortOrder() != null) {
+      category.setSortOrder(req.sortOrder());
+    }
+
+    return toCategoryResponse(categoryRepository.save(category));
+  }
+
+  @Transactional
+  public DiscussionCategoryResponse activateCategory(Long categoryId) {
+    DiscussionCategory category = getCategoryById(categoryId);
+    category.setActive(true);
+    return toCategoryResponse(categoryRepository.save(category));
+  }
+
+  // Soft Deactivation: Sets active = false, keeping category data in DB to preserve historical posts.
+  @Transactional
+  public DiscussionCategoryResponse deactivateCategory(Long categoryId) {
+    DiscussionCategory category = getCategoryById(categoryId);
+    category.setActive(false);
+    return toCategoryResponse(categoryRepository.save(category));
+  }
+
+  // --- Student & Public Discussion Post Methods ---
+
+  // Fetches active discussion threads supporting optional filters for categorySlug, featured status, and text search.
   @Transactional(readOnly = true)
   public List<DiscussionPostResponse> getDiscussions(
-      DiscussionCategory category,
+      String categorySlug,
       Boolean featured,
       String search) {
     String query = (search != null) ? search.trim().toLowerCase() : "";
+    String slug = (categorySlug != null) ? categorySlug.trim().toLowerCase() : "";
 
     return postRepository.findByActiveTrueOrderByCreatedAtDesc().stream()
-        .filter(post -> category == null || post.getCategory() == category)
+        .filter(post -> slug.isEmpty() || post.getCategory().getSlug().equalsIgnoreCase(slug))
         .filter(post -> featured == null || post.getFeatured().equals(featured))
         .filter(post -> query.isEmpty()
             || post.getTitle().toLowerCase().contains(query)
@@ -73,10 +157,15 @@ public class DiscussionService {
   @Transactional
   public DiscussionPostResponse createPost(String authorEmail, CreateDiscussionPostRequest req) {
     User author = getUserByEmail(authorEmail);
+    DiscussionCategory category = getCategoryById(req.categoryId());
+
+    if (!category.getActive()) {
+      throw new CustomException("Cannot create post in an inactive category", HttpStatus.BAD_REQUEST);
+    }
 
     DiscussionPost post = new DiscussionPost();
     post.setAuthor(author);
-    post.setCategory(req.category());
+    post.setCategory(category);
     post.setTitle(req.title());
     post.setContent(req.content());
     post.setTags(cleanTags(req.tags()));
@@ -96,7 +185,12 @@ public class DiscussionService {
 
     verifyAuthorOrAdmin(post.getAuthor(), currentUser);
 
-    post.setCategory(req.category());
+    DiscussionCategory category = getCategoryById(req.categoryId());
+    if (!category.getActive()) {
+      throw new CustomException("Cannot move post to an inactive category", HttpStatus.BAD_REQUEST);
+    }
+
+    post.setCategory(category);
     post.setTitle(req.title());
     post.setContent(req.content());
     post.setTags(cleanTags(req.tags()));
@@ -181,14 +275,15 @@ public class DiscussionService {
 
   @Transactional(readOnly = true)
   public List<DiscussionPostResponse> getAllDiscussionsForAdmin(
-      DiscussionCategory category,
+      String categorySlug,
       Boolean featured,
       Boolean active,
       String search) {
     String query = (search != null) ? search.trim().toLowerCase() : "";
+    String slug = (categorySlug != null) ? categorySlug.trim().toLowerCase() : "";
 
     return postRepository.findAllByOrderByCreatedAtDesc().stream()
-        .filter(post -> category == null || post.getCategory() == category)
+        .filter(post -> slug.isEmpty() || post.getCategory().getSlug().equalsIgnoreCase(slug))
         .filter(post -> featured == null || post.getFeatured().equals(featured))
         .filter(post -> active == null || post.getActive().equals(active))
         .filter(post -> query.isEmpty()
@@ -246,6 +341,11 @@ public class DiscussionService {
 
   // --- Helper Methods ---
 
+  private DiscussionCategory getCategoryById(Long categoryId) {
+    return categoryRepository.findById(categoryId)
+        .orElseThrow(() -> new CustomException("Discussion category not found with ID: " + categoryId, HttpStatus.NOT_FOUND));
+  }
+
   private User getUserByEmail(String email) {
     return userRepository.findByEmail(email)
         .orElseThrow(() -> new CustomException("User not found", HttpStatus.NOT_FOUND));
@@ -265,11 +365,32 @@ public class DiscussionService {
     }
   }
 
+  private String generateSlug(String name, String customSlug) {
+    if (customSlug != null && !customSlug.trim().isEmpty()) {
+      return customSlug.trim().toLowerCase().replaceAll("[^a-z0-9-]+", "-");
+    }
+    return name.trim().toLowerCase().replaceAll("[^a-z0-9-]+", "-");
+  }
+
   private String cleanTags(String tags) {
     if (tags == null || tags.trim().isEmpty()) {
       return null;
     }
     return tags.trim().toLowerCase();
+  }
+
+  private DiscussionCategoryResponse toCategoryResponse(DiscussionCategory category) {
+    return new DiscussionCategoryResponse(
+        category.getId(),
+        category.getName(),
+        category.getSlug(),
+        category.getDescription(),
+        category.getColor(),
+        category.getIconName(),
+        category.getSortOrder(),
+        category.getActive(),
+        category.getCreatedAt(),
+        category.getUpdatedAt());
   }
 
   private DiscussionPostResponse toPostResponse(DiscussionPost post) {
@@ -286,7 +407,10 @@ public class DiscussionService {
         post.getAuthor().getId(),
         post.getAuthor().getFullName(),
         post.getAuthor().getAvatarUrl(),
-        post.getCategory(),
+        post.getCategory().getId(),
+        post.getCategory().getName(),
+        post.getCategory().getSlug(),
+        post.getCategory().getColor(),
         post.getTitle(),
         preview,
         post.getTags(),
@@ -307,7 +431,10 @@ public class DiscussionService {
         post.getAuthor().getId(),
         post.getAuthor().getFullName(),
         post.getAuthor().getAvatarUrl(),
-        post.getCategory(),
+        post.getCategory().getId(),
+        post.getCategory().getName(),
+        post.getCategory().getSlug(),
+        post.getCategory().getColor(),
         post.getTitle(),
         post.getContent(),
         post.getTags(),

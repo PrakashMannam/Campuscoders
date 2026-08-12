@@ -2,14 +2,15 @@ package com.campuscoders.backend.discussion.dto;
 
 import java.time.Instant;
 
-import com.campuscoders.backend.discussion.DiscussionCategory;
-
 public record DiscussionPostResponse(
     Long id,
     Long authorId,
     String authorName,
     String authorAvatarUrl,
-    DiscussionCategory category,
+    Long categoryId,
+    String categoryName,
+    String categorySlug,
+    String categoryColor,
     String title,
     String contentPreview,
     String tags,
