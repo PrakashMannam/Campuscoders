@@ -2,6 +2,9 @@ package com.campuscoders.backend.admin;
 
 import java.util.List;
 
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -10,6 +13,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.campuscoders.backend.common.dto.PageResponse;
 import com.campuscoders.backend.discussion.DiscussionService;
 import com.campuscoders.backend.discussion.dto.DiscussionPostResponse;
 import com.campuscoders.backend.discussion.dto.DiscussionReplyResponse;
@@ -27,12 +31,13 @@ public class AdminDiscussionController {
 
   // Lists all posts including soft-deleted ones for moderation.
   @GetMapping
-  public List<DiscussionPostResponse> getAllDiscussionsForAdmin(
+  public PageResponse<DiscussionPostResponse> getAllDiscussionsForAdmin(
       @RequestParam(required = false) String categorySlug,
       @RequestParam(required = false) Boolean featured,
       @RequestParam(required = false) Boolean active,
-      @RequestParam(required = false) String search) {
-    return discussionService.getAllDiscussionsForAdmin(categorySlug, featured, active, search);
+      @RequestParam(required = false) String search,
+      @PageableDefault(page = 0, size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
+    return discussionService.getAllDiscussionsForAdmin(categorySlug, featured, active, search, pageable);
   }
 
   // Highlights a post as featured on the community page.

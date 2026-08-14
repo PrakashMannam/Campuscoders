@@ -2,11 +2,14 @@ package com.campuscoders.backend.learningpath;
 
 import java.util.List;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
+import com.campuscoders.backend.common.dto.PageResponse;
 import com.campuscoders.backend.learningpath.dto.CreateLearningResourceRequest;
 import com.campuscoders.backend.learningpath.dto.LearningResourceResponse;
 import com.campuscoders.backend.learningpath.dto.UpdateLearningResourceRequest;
@@ -50,11 +53,12 @@ public class LearningResourceService {
   }
 
   @Transactional(readOnly = true)
-  public List<LearningResourceResponse> getAllActiveResources() {
-    return learningResourceRepository.findByActiveTrueOrderByTitleAsc()
-        .stream()
+  public PageResponse<LearningResourceResponse> getAllActiveResources(Pageable pageable) {
+    Page<LearningResource> page = learningResourceRepository.findByActiveTrue(pageable);
+    List<LearningResourceResponse> mapped = page.getContent().stream()
         .map(this::toResponse)
         .toList();
+    return PageResponse.from(page, mapped);
   }
 
   @Transactional(readOnly = true)

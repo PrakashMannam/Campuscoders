@@ -2,8 +2,13 @@ package com.campuscoders.backend.discussion;
 
 import java.util.List;
 
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
+
+import com.campuscoders.backend.common.dto.PageResponse;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -39,13 +44,14 @@ public class DiscussionController {
     return discussionService.getActiveCategories();
   }
 
-  // Returns active discussion posts list; supports optional filters by categorySlug, featured status, and search query.
+  // Returns active discussion posts list; supports optional filters by categorySlug, featured status, search query, and pagination.
   @GetMapping("/discussions")
-  public List<DiscussionPostResponse> getDiscussions(
+  public PageResponse<DiscussionPostResponse> getDiscussions(
       @RequestParam(required = false) String categorySlug,
       @RequestParam(required = false) Boolean featured,
-      @RequestParam(required = false) String search) {
-    return discussionService.getDiscussions(categorySlug, featured, search);
+      @RequestParam(required = false) String search,
+      @PageableDefault(page = 0, size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
+    return discussionService.getDiscussions(categorySlug, featured, search, pageable);
   }
 
   // Returns single thread details including content and active replies.

@@ -2,6 +2,9 @@ package com.campuscoders.backend.announcement;
 
 import java.util.List;
 
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -14,6 +17,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.campuscoders.backend.announcement.dto.AnnouncementResponse;
 import com.campuscoders.backend.announcement.dto.CreateAnnouncementRequest;
 import com.campuscoders.backend.announcement.dto.UpdateAnnouncementRequest;
+import com.campuscoders.backend.common.dto.PageResponse;
 
 import jakarta.validation.Valid;
 
@@ -27,14 +31,16 @@ public class AnnouncementController {
   }
 
   @GetMapping("/api/announcements")
-  public List<AnnouncementResponse> getActiveAnnouncements() {
-    return announcementService.getActiveAnnouncements();
+  public PageResponse<AnnouncementResponse> getActiveAnnouncements(
+      @PageableDefault(page = 0, size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
+    return announcementService.getActiveAnnouncements(pageable);
   }
 
   @PreAuthorize("hasRole('ADMIN')")
   @GetMapping("/api/admin/announcements")
-  public List<AnnouncementResponse> getAnnouncementsForAdmin() {
-    return announcementService.getAnnouncementsForAdmin();
+  public PageResponse<AnnouncementResponse> getAnnouncementsForAdmin(
+      @PageableDefault(page = 0, size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
+    return announcementService.getAnnouncementsForAdmin(pageable);
   }
 
   @PreAuthorize("hasRole('ADMIN')")

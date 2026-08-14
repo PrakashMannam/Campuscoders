@@ -2,12 +2,15 @@ package com.campuscoders.backend.leaderboard;
 
 import java.util.List;
 
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.campuscoders.backend.common.dto.PageResponse;
 import com.campuscoders.backend.leaderboard.dto.LeaderboardEntryResponse;
 import com.campuscoders.backend.leaderboard.dto.MyLeaderboardResponse;
 
@@ -21,11 +24,11 @@ public class LeaderboardController {
     this.leaderboardService = leaderboardService;
   }
 
-  // Returns full or limited leaderboard list sorted by total XP, problems solved, streak, and account age.
+  // Returns paginated leaderboard list sorted by total XP, problems solved, streak, and account age.
   @GetMapping
-  public List<LeaderboardEntryResponse> getLeaderboard(
-      @RequestParam(required = false) Integer limit) {
-    return leaderboardService.getLeaderboard(limit);
+  public PageResponse<LeaderboardEntryResponse> getLeaderboard(
+      @PageableDefault(page = 0, size = 10) Pageable pageable) {
+    return leaderboardService.getLeaderboard(pageable);
   }
 
   // Shortcut endpoint returning top leaderboard entries (default top 10).

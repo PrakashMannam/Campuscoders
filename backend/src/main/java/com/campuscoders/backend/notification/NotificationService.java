@@ -2,11 +2,14 @@ package com.campuscoders.backend.notification;
 
 import java.util.List;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
+import com.campuscoders.backend.common.dto.PageResponse;
 import com.campuscoders.backend.notification.dto.CreateNotificationRequest;
 import com.campuscoders.backend.notification.dto.NotificationResponse;
 import com.campuscoders.backend.notification.repository.NotificationRepository;
@@ -26,15 +29,16 @@ public class NotificationService {
     this.userRepository = userRepository;
   }
 
-  // Fetch all notifications for current user ordered by creation date (newest first).
+  // Fetch paginated notifications for current user.
   @Transactional(readOnly = true)
-  public List<NotificationResponse> getCurrentUserNotifications(String email) {
+  public PageResponse<NotificationResponse> getCurrentUserNotifications(String email, Pageable pageable) {
     User user = findUserByEmail(email);
 
-    return notificationRepository.findByRecipientIdOrderByCreatedAtDesc(user.getId())
-        .stream()
+    Page<Notification> page = notificationRepository.findByRecipientId(user.getId(), pageable);
+    List<NotificationResponse> mapped = page.getContent().stream()
         .map(this::toResponse)
         .toList();
+    return PageResponse.from(page, mapped);
   }
 
   @Transactional

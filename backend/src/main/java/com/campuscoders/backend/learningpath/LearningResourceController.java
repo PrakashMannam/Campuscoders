@@ -2,6 +2,9 @@ package com.campuscoders.backend.learningpath;
 
 import java.util.List;
 
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -12,6 +15,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.campuscoders.backend.common.dto.PageResponse;
 import com.campuscoders.backend.learningpath.dto.CreateLearningResourceRequest;
 import com.campuscoders.backend.learningpath.dto.LearningResourceResponse;
 import com.campuscoders.backend.learningpath.dto.UpdateLearningResourceRequest;
@@ -30,8 +34,9 @@ public class LearningResourceController {
 
   // Public endpoint for browsing all visible resources.
   @GetMapping
-  public List<LearningResourceResponse> getAllActiveResources() {
-    return learningResourceService.getAllActiveResources();
+  public PageResponse<LearningResourceResponse> getAllActiveResources(
+      @PageableDefault(page = 0, size = 10, sort = "title", direction = Sort.Direction.ASC) Pageable pageable) {
+    return learningResourceService.getAllActiveResources(pageable);
   }
 
   // Public endpoint for opening one visible resource by database id.

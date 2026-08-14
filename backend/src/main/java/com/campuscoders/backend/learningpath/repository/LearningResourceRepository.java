@@ -3,6 +3,8 @@ package com.campuscoders.backend.learningpath.repository;
 import java.util.List;
 import java.util.Optional;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import com.campuscoders.backend.learningpath.LearningResource;
@@ -11,6 +13,8 @@ public interface LearningResourceRepository extends JpaRepository<LearningResour
 
   // Fetches visible resources for general browsing pages.
   List<LearningResource> findByActiveTrueOrderByTitleAsc();
+
+  Page<LearningResource> findByActiveTrue(Pageable pageable);
 
   long countByActiveTrue();
 

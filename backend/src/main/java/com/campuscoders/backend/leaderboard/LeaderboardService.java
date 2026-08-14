@@ -4,10 +4,14 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.campuscoders.backend.common.dto.PageResponse;
 import com.campuscoders.backend.exception.CustomException;
 import com.campuscoders.backend.leaderboard.dto.LeaderboardEntryResponse;
 import com.campuscoders.backend.leaderboard.dto.MyLeaderboardResponse;
@@ -23,24 +27,27 @@ public class LeaderboardService {
     this.userRepository = userRepository;
   }
 
-  // Calculates and returns full or limited leaderboard rankings for active users.
-  // Why backend assigns rank: Calculating rank on the server ensures consistent 1-based indexing 
-  // across all frontend clients regardless of pagination or device display sizes.
+  // Calculates and returns paginated leaderboard rankings for active users.
   @Transactional(readOnly = true)
-  public List<LeaderboardEntryResponse> getLeaderboard(Integer limit) {
+  public PageResponse<LeaderboardEntryResponse> getLeaderboard(Pageable pageable) {
     List<LeaderboardEntryResponse> fullRankedList = computeRankedUsers();
 
-    if (limit != null && limit > 0 && limit < fullRankedList.size()) {
-      return fullRankedList.subList(0, limit);
-    }
-    return fullRankedList;
+    int start = (int) pageable.getOffset();
+    int end = Math.min((start + pageable.getPageSize()), fullRankedList.size());
+    List<LeaderboardEntryResponse> content = (start <= fullRankedList.size())
+        ? fullRankedList.subList(start, end)
+        : List.of();
+
+    Page<LeaderboardEntryResponse> page = new PageImpl<>(content, pageable, fullRankedList.size());
+    return PageResponse.from(page);
   }
 
   // Returns shortcut top rankings (defaults to top 10).
   @Transactional(readOnly = true)
   public List<LeaderboardEntryResponse> getTopLeaderboard(Integer limit) {
     int effectiveLimit = (limit != null && limit > 0) ? limit : 10;
-    return getLeaderboard(effectiveLimit);
+    List<LeaderboardEntryResponse> fullRankedList = computeRankedUsers();
+    return fullRankedList.stream().limit(effectiveLimit).toList();
   }
 
   // Finds authenticated student's rank and metrics from the global computed leaderboard list.
