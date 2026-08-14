@@ -3,11 +3,14 @@ package com.campuscoders.backend.learningpath;
 import java.util.Comparator;
 import java.util.List;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
+import com.campuscoders.backend.common.dto.PageResponse;
 import com.campuscoders.backend.learningpath.dto.CreateLearningPathRequest;
 import com.campuscoders.backend.learningpath.dto.LearningPathDetailsResponse;
 import com.campuscoders.backend.learningpath.dto.LearningPathDetailsResponse.ResourceDetails;
@@ -61,11 +64,12 @@ public class LearningPathService {
   }
 
   @Transactional(readOnly = true)
-  public List<LearningPathResponse> getAllActiveLearningPaths() {
-    return learningPathRepository.findByActiveTrueOrderByTitleAsc()
-        .stream()
+  public PageResponse<LearningPathResponse> getAllActiveLearningPaths(Pageable pageable) {
+    Page<LearningPath> page = learningPathRepository.findByActiveTrue(pageable);
+    List<LearningPathResponse> mapped = page.getContent().stream()
         .map(this::toResponse)
         .toList();
+    return PageResponse.from(page, mapped);
   }
 
   @Transactional(readOnly = true)

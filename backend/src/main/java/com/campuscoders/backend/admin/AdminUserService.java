@@ -2,11 +2,14 @@ package com.campuscoders.backend.admin;
 
 import java.util.List;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.campuscoders.backend.admin.dto.AdminUserResponse;
+import com.campuscoders.backend.common.dto.PageResponse;
 import com.campuscoders.backend.exception.CustomException;
 import com.campuscoders.backend.user.Role;
 import com.campuscoders.backend.user.User;
@@ -21,19 +24,14 @@ public class AdminUserService {
     this.userRepository = userRepository;
   }
 
-  // Stream-based user listing supporting optional filters by Role, Enabled state, and partial search string.
+  // Paginated user listing supporting optional filters by Role, Enabled state, and partial search string.
   @Transactional(readOnly = true)
-  public List<AdminUserResponse> getUsers(Role role, Boolean enabled, String search) {
-    String query = (search != null) ? search.trim().toLowerCase() : "";
-
-    return userRepository.findAll().stream()
-        .filter(user -> role == null || user.getRole() == role)
-        .filter(user -> enabled == null || user.getEnabled().equals(enabled))
-        .filter(user -> query.isEmpty()
-            || (user.getFullName() != null && user.getFullName().toLowerCase().contains(query))
-            || (user.getEmail() != null && user.getEmail().toLowerCase().contains(query)))
+  public PageResponse<AdminUserResponse> getUsers(Role role, Boolean enabled, String search, Pageable pageable) {
+    Page<User> usersPage = userRepository.findAdminUsers(role, enabled, search, pageable);
+    List<AdminUserResponse> mapped = usersPage.getContent().stream()
         .map(this::toAdminUserResponse)
         .toList();
+    return PageResponse.from(usersPage, mapped);
   }
 
   // Fetches single user detail for administrative review.

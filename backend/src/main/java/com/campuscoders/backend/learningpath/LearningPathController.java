@@ -2,6 +2,9 @@ package com.campuscoders.backend.learningpath;
 
 import java.util.List;
 
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -10,6 +13,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.campuscoders.backend.common.dto.PageResponse;
 import com.campuscoders.backend.learningpath.dto.CreateLearningPathRequest;
 import com.campuscoders.backend.learningpath.dto.LearningPathDetailsResponse;
 import com.campuscoders.backend.learningpath.dto.LearningPathResponse;
@@ -41,8 +45,9 @@ public class LearningPathController {
 
   // Public/student endpoint used by the frontend Learning Hub page.
   @GetMapping
-  public List<LearningPathResponse> getAllLearningPaths() {
-    return learningPathService.getAllActiveLearningPaths();
+  public PageResponse<LearningPathResponse> getAllLearningPaths(
+      @PageableDefault(page = 0, size = 10, sort = "title", direction = Sort.Direction.ASC) Pageable pageable) {
+    return learningPathService.getAllActiveLearningPaths(pageable);
   }
 
   // Page-friendly endpoint for one learning path with its topics and resources.

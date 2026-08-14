@@ -2,9 +2,13 @@ package com.campuscoders.backend.discussion;
 
 import java.util.List;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import com.campuscoders.backend.common.dto.PageResponse;
 
 import com.campuscoders.backend.discussion.dto.CreateDiscussionCategoryRequest;
 import com.campuscoders.backend.discussion.dto.CreateDiscussionPostRequest;
@@ -122,22 +126,17 @@ public class DiscussionService {
 
   // Fetches active discussion threads supporting optional filters for categorySlug, featured status, and text search.
   @Transactional(readOnly = true)
-  public List<DiscussionPostResponse> getDiscussions(
+  public PageResponse<DiscussionPostResponse> getDiscussions(
       String categorySlug,
       Boolean featured,
-      String search) {
-    String query = (search != null) ? search.trim().toLowerCase() : "";
-    String slug = (categorySlug != null) ? categorySlug.trim().toLowerCase() : "";
-
-    return postRepository.findByActiveTrueOrderByCreatedAtDesc().stream()
-        .filter(post -> slug.isEmpty() || post.getCategory().getSlug().equalsIgnoreCase(slug))
-        .filter(post -> featured == null || post.getFeatured().equals(featured))
-        .filter(post -> query.isEmpty()
-            || post.getTitle().toLowerCase().contains(query)
-            || post.getContent().toLowerCase().contains(query)
-            || (post.getTags() != null && post.getTags().toLowerCase().contains(query)))
+      String search,
+      Pageable pageable) {
+    Page<DiscussionPost> postsPage = postRepository.findActiveDiscussions(
+        categorySlug, featured, search, pageable);
+    List<DiscussionPostResponse> mapped = postsPage.getContent().stream()
         .map(this::toPostResponse)
         .toList();
+    return PageResponse.from(postsPage, mapped);
   }
 
   // Fetches detailed thread view including author details and active replies.
@@ -274,24 +273,18 @@ public class DiscussionService {
   // --- Admin Service Methods ---
 
   @Transactional(readOnly = true)
-  public List<DiscussionPostResponse> getAllDiscussionsForAdmin(
+  public PageResponse<DiscussionPostResponse> getAllDiscussionsForAdmin(
       String categorySlug,
       Boolean featured,
       Boolean active,
-      String search) {
-    String query = (search != null) ? search.trim().toLowerCase() : "";
-    String slug = (categorySlug != null) ? categorySlug.trim().toLowerCase() : "";
-
-    return postRepository.findAllByOrderByCreatedAtDesc().stream()
-        .filter(post -> slug.isEmpty() || post.getCategory().getSlug().equalsIgnoreCase(slug))
-        .filter(post -> featured == null || post.getFeatured().equals(featured))
-        .filter(post -> active == null || post.getActive().equals(active))
-        .filter(post -> query.isEmpty()
-            || post.getTitle().toLowerCase().contains(query)
-            || post.getContent().toLowerCase().contains(query)
-            || (post.getTags() != null && post.getTags().toLowerCase().contains(query)))
+      String search,
+      Pageable pageable) {
+    Page<DiscussionPost> postsPage = postRepository.findAdminDiscussions(
+        categorySlug, featured, active, search, pageable);
+    List<DiscussionPostResponse> mapped = postsPage.getContent().stream()
         .map(this::toPostResponse)
         .toList();
+    return PageResponse.from(postsPage, mapped);
   }
 
   @Transactional

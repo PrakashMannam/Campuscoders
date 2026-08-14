@@ -2,6 +2,8 @@ package com.campuscoders.backend.announcement;
 
 import java.util.List;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -11,6 +13,7 @@ import com.campuscoders.backend.announcement.dto.AnnouncementResponse;
 import com.campuscoders.backend.announcement.dto.CreateAnnouncementRequest;
 import com.campuscoders.backend.announcement.dto.UpdateAnnouncementRequest;
 import com.campuscoders.backend.announcement.repository.AnnouncementRepository;
+import com.campuscoders.backend.common.dto.PageResponse;
 
 @Service
 public class AnnouncementService {
@@ -21,22 +24,24 @@ public class AnnouncementService {
     this.announcementRepository = announcementRepository;
   }
 
-  // Public endpoint for students: Filter to active announcements only, ordered newest first.
+  // Public endpoint for students: Filter to active announcements only.
   @Transactional(readOnly = true)
-  public List<AnnouncementResponse> getActiveAnnouncements() {
-    return announcementRepository.findByActiveTrueOrderByCreatedAtDesc()
-        .stream()
+  public PageResponse<AnnouncementResponse> getActiveAnnouncements(Pageable pageable) {
+    Page<Announcement> page = announcementRepository.findByActiveTrue(pageable);
+    List<AnnouncementResponse> mapped = page.getContent().stream()
         .map(this::toResponse)
         .toList();
+    return PageResponse.from(page, mapped);
   }
 
   // Admin endpoint: Fetch all announcements (including archived/inactive ones).
   @Transactional(readOnly = true)
-  public List<AnnouncementResponse> getAnnouncementsForAdmin() {
-    return announcementRepository.findAll()
-        .stream()
+  public PageResponse<AnnouncementResponse> getAnnouncementsForAdmin(Pageable pageable) {
+    Page<Announcement> page = announcementRepository.findAll(pageable);
+    List<AnnouncementResponse> mapped = page.getContent().stream()
         .map(this::toResponse)
         .toList();
+    return PageResponse.from(page, mapped);
   }
 
   @Transactional

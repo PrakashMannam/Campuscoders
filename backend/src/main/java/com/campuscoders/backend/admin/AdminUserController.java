@@ -2,6 +2,9 @@ package com.campuscoders.backend.admin;
 
 import java.util.List;
 
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -14,6 +17,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.campuscoders.backend.admin.dto.AdminUserResponse;
 import com.campuscoders.backend.admin.dto.UpdateUserRoleRequest;
+import com.campuscoders.backend.common.dto.PageResponse;
 import com.campuscoders.backend.user.Role;
 
 import jakarta.validation.Valid;
@@ -29,13 +33,14 @@ public class AdminUserController {
     this.adminUserService = adminUserService;
   }
 
-  // Lists users with optional filters for role, enabled state, and search query string.
+  // Lists users with optional filters for role, enabled state, search query string, and pagination.
   @GetMapping
-  public List<AdminUserResponse> getUsers(
+  public PageResponse<AdminUserResponse> getUsers(
       @RequestParam(required = false) Role role,
       @RequestParam(required = false) Boolean enabled,
-      @RequestParam(required = false) String search) {
-    return adminUserService.getUsers(role, enabled, search);
+      @RequestParam(required = false) String search,
+      @PageableDefault(page = 0, size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
+    return adminUserService.getUsers(role, enabled, search, pageable);
   }
 
   // Fetches detailed information for a single user by ID.
