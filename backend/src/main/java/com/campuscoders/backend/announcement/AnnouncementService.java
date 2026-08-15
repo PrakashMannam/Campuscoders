@@ -24,20 +24,27 @@ public class AnnouncementService {
     this.announcementRepository = announcementRepository;
   }
 
-  // Public endpoint for students: Filter to active announcements only.
+  // Public endpoint for students: Filter to active announcements only with optional category and search string.
   @Transactional(readOnly = true)
-  public PageResponse<AnnouncementResponse> getActiveAnnouncements(Pageable pageable) {
-    Page<Announcement> page = announcementRepository.findByActiveTrue(pageable);
+  public PageResponse<AnnouncementResponse> getActiveAnnouncements(
+      AnnouncementCategory category,
+      String search,
+      Pageable pageable) {
+    Page<Announcement> page = announcementRepository.findAnnouncements(true, category, search, pageable);
     List<AnnouncementResponse> mapped = page.getContent().stream()
         .map(this::toResponse)
         .toList();
     return PageResponse.from(page, mapped);
   }
 
-  // Admin endpoint: Fetch all announcements (including archived/inactive ones).
+  // Admin endpoint: Fetch announcements supporting optional active state, category, and keyword search.
   @Transactional(readOnly = true)
-  public PageResponse<AnnouncementResponse> getAnnouncementsForAdmin(Pageable pageable) {
-    Page<Announcement> page = announcementRepository.findAll(pageable);
+  public PageResponse<AnnouncementResponse> getAnnouncementsForAdmin(
+      Boolean active,
+      AnnouncementCategory category,
+      String search,
+      Pageable pageable) {
+    Page<Announcement> page = announcementRepository.findAnnouncements(active, category, search, pageable);
     List<AnnouncementResponse> mapped = page.getContent().stream()
         .map(this::toResponse)
         .toList();

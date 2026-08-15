@@ -127,7 +127,7 @@ public class DailyChallengeService {
 
   @Transactional(readOnly = true)
   public List<CodingProblemResponse> getAllCodingProblemsForAdmin() {
-    return codingProblemRepository.findAll().stream()
+    return codingProblemRepository.findAllByOrderByCreatedAtDesc().stream()
         .map(this::toCodingProblemResponse)
         .toList();
   }

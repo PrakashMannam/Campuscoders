@@ -11,6 +11,8 @@ public interface CodingProblemRepository extends JpaRepository<CodingProblem, Lo
 
   List<CodingProblem> findByActiveTrueOrderByTitleAsc();
 
+  List<CodingProblem> findAllByOrderByCreatedAtDesc();
+
   Optional<CodingProblem> findByIdAndActiveTrue(Long id);
 
   boolean existsByTitle(String title);
