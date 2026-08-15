@@ -7,6 +7,10 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.campuscoders.backend.auth.dto.ForgotPasswordRequest;
+import com.campuscoders.backend.auth.dto.MessageResponse;
+import com.campuscoders.backend.auth.dto.ResetPasswordRequest;
+
 import jakarta.validation.Valid;
 
 @RestController
@@ -35,5 +39,15 @@ public class AuthController {
   @GetMapping("/me")
   public CurrentUserResponse me(Authentication authentication) {
     return authService.getCurrentUser(authentication.getName());
+  }
+
+  @PostMapping("/forgot-password")
+  public MessageResponse forgotPassword(@Valid @RequestBody ForgotPasswordRequest request) {
+    return authService.forgotPassword(request);
+  }
+
+  @PostMapping("/reset-password")
+  public MessageResponse resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
+    return authService.resetPassword(request);
   }
 }

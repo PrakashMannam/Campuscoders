@@ -1,10 +1,20 @@
 package com.campuscoders.backend.auth;
 
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
+import java.util.UUID;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
+import com.campuscoders.backend.auth.dto.ForgotPasswordRequest;
+import com.campuscoders.backend.auth.dto.MessageResponse;
+import com.campuscoders.backend.auth.dto.ResetPasswordRequest;
+import com.campuscoders.backend.auth.passwordreset.PasswordResetToken;
+import com.campuscoders.backend.auth.passwordreset.PasswordResetTokenRepository;
 import com.campuscoders.backend.security.JwtService;
 import com.campuscoders.backend.user.Role;
 import com.campuscoders.backend.user.User;
@@ -13,17 +23,22 @@ import com.campuscoders.backend.user.repository.UserRepository;
 @Service
 public class AuthService {
 
+  private static final long RESET_TOKEN_EXPIRY_MINUTES = 15;
+
   private final UserRepository userRepository;
   private final PasswordEncoder passwordEncoder;
   private final JwtService jwtService;
+  private final PasswordResetTokenRepository passwordResetTokenRepository;
 
   public AuthService(
       UserRepository userRepository,
       PasswordEncoder passwordEncoder,
-      JwtService jwtService) {
+      JwtService jwtService,
+      PasswordResetTokenRepository passwordResetTokenRepository) {
     this.userRepository = userRepository;
     this.passwordEncoder = passwordEncoder;
     this.jwtService = jwtService;
+    this.passwordResetTokenRepository = passwordResetTokenRepository;
   }
 
   public AuthResponse register(RegisterRequest registerRequest) {
@@ -73,6 +88,61 @@ public class AuthService {
     response.setRole(user.getRole());
 
     return response;
+  }
+
+  // We return the same message whether the email exists or not, so attackers
+  // cannot use this endpoint to discover registered accounts.
+  @Transactional
+  public MessageResponse forgotPassword(ForgotPasswordRequest request) {
+    User user = userRepository.findByEmail(request.email()).orElse(null);
+
+    if (user == null) {
+      return new MessageResponse("If an account exists for this email, password reset instructions have been generated.");
+    }
+
+    passwordResetTokenRepository.findByUserIdAndUsedFalse(user.getId())
+        .forEach(token -> token.setUsed(true));
+
+    String rawToken = UUID.randomUUID().toString();
+
+    PasswordResetToken passwordResetToken = new PasswordResetToken();
+    passwordResetToken.setUser(user);
+    passwordResetToken.setToken(rawToken);
+    passwordResetToken.setExpiresAt(Instant.now().plus(RESET_TOKEN_EXPIRY_MINUTES, ChronoUnit.MINUTES));
+    passwordResetToken.setUsed(false);
+
+    passwordResetTokenRepository.save(passwordResetToken);
+
+    return new MessageResponse("If an account exists for this email, password reset instructions have been generated.");
+  }
+
+  @Transactional
+  public MessageResponse resetPassword(ResetPasswordRequest request) {
+    PasswordResetToken passwordResetToken = passwordResetTokenRepository.findByToken(request.token())
+        .orElseThrow(() -> new ResponseStatusException(
+            HttpStatus.BAD_REQUEST,
+            "Invalid password reset token"));
+
+    if (Boolean.TRUE.equals(passwordResetToken.getUsed())) {
+      throw new ResponseStatusException(
+          HttpStatus.BAD_REQUEST,
+          "Password reset token has already been used");
+    }
+
+    if (passwordResetToken.getExpiresAt().isBefore(Instant.now())) {
+      throw new ResponseStatusException(
+          HttpStatus.BAD_REQUEST,
+          "Password reset token has expired");
+    }
+
+    User user = passwordResetToken.getUser();
+    user.setPassword(passwordEncoder.encode(request.newPassword()));
+    userRepository.save(user);
+
+    passwordResetToken.setUsed(true);
+    passwordResetTokenRepository.save(passwordResetToken);
+
+    return new MessageResponse("Password reset successful");
   }
 
   // Auth responses include the JWT and safe user fields needed by the frontend.

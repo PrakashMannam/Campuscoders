@@ -34,15 +34,17 @@ public class SecurityConfig {
   @Bean
   public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
     return http
-        // 1️⃣ Disable CSRF because REST APIs use token-based authentication via headers, not browser session cookies.
+        // 1. Disable CSRF because REST APIs use token-based authentication via headers, not browser session cookies.
         .csrf(csrf -> csrf.disable())
-        // 2️⃣ Enforce stateless session policy — no HTTP server sessions (JSESSIONID) are created or stored on the backend.
+        // 2. Enforce stateless session policy - no HTTP server sessions (JSESSIONID) are created or stored on the backend.
         .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-        // 3️⃣ Define route access rules: public endpoints are permitted without auth token; all other requests require a valid JWT.
+        // 3. Define route access rules: public endpoints are permitted without auth token; all other requests require a valid JWT.
         .authorizeHttpRequests(auth -> auth
             .requestMatchers(
                 "/api/auth/register",
-                "/api/auth/login")
+                "/api/auth/login",
+                "/api/auth/forgot-password",
+                "/api/auth/reset-password")
             .permitAll()
             .requestMatchers(HttpMethod.GET, "/api/learning-paths/**")
             .permitAll()
@@ -62,7 +64,7 @@ public class SecurityConfig {
             .permitAll()
             .anyRequest()
             .authenticated())
-        // 4️⃣ Insert custom JwtAuthenticationFilter into the filter chain BEFORE standard UsernamePasswordAuthenticationFilter.
+        // 4. Insert custom JwtAuthenticationFilter into the filter chain BEFORE standard UsernamePasswordAuthenticationFilter.
         .addFilterBefore(authenticationFilter, UsernamePasswordAuthenticationFilter.class)
         .build();
   }
