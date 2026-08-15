@@ -1,6 +1,5 @@
 package com.campuscoders.backend.leaderboard;
 
-import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -72,25 +71,14 @@ public class LeaderboardService {
         .orElseThrow(() -> new CustomException("Leaderboard rank unavailable for inactive user", HttpStatus.NOT_FOUND));
   }
 
-  // Helper method fetching enabled users, applying multi-tier tie-break sorting, and mapping 1-based rank numbers.
-  // Why disabled users are excluded: Deactivated accounts (enabled = false) are filtered out to keep competition active.
+  // Database-Driven Ranking:
+  // Uses userRepository.findLeaderboardUsers() which filters enabled = true and applies multi-tier tie-break sorting 
+  // (totalXp DESC, problemsSolved DESC, dailyStreak DESC, createdAt ASC) directly in MySQL SQL query.
+  // Server then simply assigns 1-based ranks (1, 2, 3...) sequentially.
   private List<LeaderboardEntryResponse> computeRankedUsers() {
-    // Multi-tier Tie-Break Comparator:
-    // 1️⃣ totalXp DESC
-    // 2️⃣ problemsSolved DESC
-    // 3️⃣ dailyStreak DESC
-    // 4️⃣ createdAt ASC (earlier registered users receive higher placement on exact tie)
-    Comparator<User> rankComparator = Comparator
-        .comparing((User u) -> safeInteger(u.getTotalXp()), Comparator.reverseOrder())
-        .thenComparing(u -> safeInteger(u.getProblemsSolved()), Comparator.reverseOrder())
-        .thenComparing(u -> safeInteger(u.getDailyStreak()), Comparator.reverseOrder())
-        .thenComparing(User::getCreatedAt, Comparator.nullsLast(Comparator.naturalOrder()));
-
     AtomicInteger rankSequence = new AtomicInteger(1);
 
-    return userRepository.findAll().stream()
-        .filter(user -> Boolean.TRUE.equals(user.getEnabled()))
-        .sorted(rankComparator)
+    return userRepository.findLeaderboardUsers().stream()
         .map(user -> new LeaderboardEntryResponse(
             rankSequence.getAndIncrement(),
             user.getId(),

@@ -29,12 +29,12 @@ public class NotificationService {
     this.userRepository = userRepository;
   }
 
-  // Fetch paginated notifications for current user.
+  // Fetch paginated notifications for current user with optional readStatus filtering at DB level.
   @Transactional(readOnly = true)
-  public PageResponse<NotificationResponse> getCurrentUserNotifications(String email, Pageable pageable) {
+  public PageResponse<NotificationResponse> getCurrentUserNotifications(String email, Boolean readStatus, Pageable pageable) {
     User user = findUserByEmail(email);
 
-    Page<Notification> page = notificationRepository.findByRecipientId(user.getId(), pageable);
+    Page<Notification> page = notificationRepository.findUserNotifications(user.getId(), readStatus, pageable);
     List<NotificationResponse> mapped = page.getContent().stream()
         .map(this::toResponse)
         .toList();

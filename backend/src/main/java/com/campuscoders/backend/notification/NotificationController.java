@@ -1,7 +1,5 @@
 package com.campuscoders.backend.notification;
 
-import java.util.List;
-
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
@@ -13,6 +11,7 @@ import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -34,8 +33,9 @@ public class NotificationController {
   @GetMapping("/api/notifications")
   public PageResponse<NotificationResponse> getCurrentUserNotifications(
       Authentication authentication,
+      @RequestParam(required = false) Boolean readStatus,
       @PageableDefault(page = 0, size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
-    return notificationService.getCurrentUserNotifications(authentication.getName(), pageable);
+    return notificationService.getCurrentUserNotifications(authentication.getName(), readStatus, pageable);
   }
 
   @PatchMapping("/api/notifications/{notificationId}/read")
