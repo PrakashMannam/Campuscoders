@@ -18,6 +18,8 @@ public record DiscussionPostDetailsResponse(
     Boolean featured,
     Boolean closed,
     Boolean active,
+    Integer voteScore,
+    Integer userVote,
     long repliesCount,
     List<DiscussionReplyResponse> replies,
     Instant createdAt,

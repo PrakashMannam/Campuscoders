@@ -70,6 +70,14 @@ public class DiscussionPost {
   @Column(nullable = false)
   private Boolean active = true;
 
+  // Cached count of upvotes - downvotes for fast sorting
+  @Column(name = "vote_score", nullable = false)
+  private Integer voteScore = 0;
+
+  // Cached count of replies for fast sorting by most replied
+  @Column(name = "replies_count", nullable = false)
+  private Integer repliesCount = 0;
+
   @OneToMany(mappedBy = "post", cascade = CascadeType.ALL, orphanRemoval = true)
   private List<DiscussionReply> replies = new ArrayList<>();
 

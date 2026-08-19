@@ -1,13 +1,20 @@
 package com.campuscoders.backend.dashboard.dto;
 
-// DTO consolidating high-level user metrics and platform statistics for the main dashboard view.
+import com.campuscoders.backend.checkin.dto.CheckInStatusResponse;
+import com.campuscoders.backend.dailychallenge.dto.DailyChallengeResponse;
+import com.campuscoders.backend.user.Role;
+
 public record DashboardSummaryResponse(
+    Long userId,
+    String fullName,
+    String email,
+    Role role,
     Integer totalXp,
     Integer dailyStreak,
     Integer problemsSolved,
-    long completedResources,
-    long activeLearningPaths,
-    long activeResources,
-    long activeAnnouncements,
-    long unreadNotifications) {
-}
+    String avatarUrl,
+    CheckInStatusResponse checkInStatus,
+    DailyChallengeResponse todayChallenge,
+    long unreadNotificationsCount,
+    Integer myLeaderboardRank
+) {}

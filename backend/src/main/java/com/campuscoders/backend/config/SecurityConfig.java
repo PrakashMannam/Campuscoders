@@ -1,5 +1,8 @@
 package com.campuscoders.backend.config;
 
+import java.util.Arrays;
+import java.util.List;
+
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -10,6 +13,9 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import com.campuscoders.backend.security.JwtAuthenticationFilter;
 
@@ -24,21 +30,44 @@ public class SecurityConfig {
     this.authenticationFilter = authenticationFilter;
   }
 
-  // BCrypt uses adaptive key stretching and automatic salt generation for secure, one-way password hashing.
+  // BCrypt uses adaptive key stretching and automatic salt generation for secure,
+  // one-way password hashing.
   @Bean
   public PasswordEncoder passwordEncoder() {
     return new BCryptPasswordEncoder();
   }
 
-  // Configures the HTTP request security filter chain, public route permits, stateless sessions, and custom JWT filter insertion.
+  // Allow React dev servers on ports 3000 and 3030 to call the Spring Boot API.
+  @Bean
+  public CorsConfigurationSource corsConfigurationSource() {
+    CorsConfiguration config = new CorsConfiguration();
+    config.setAllowedOrigins(List.of(
+        "http://localhost:3000",
+        "http://localhost:3030"));
+    config.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
+    config.setAllowedHeaders(List.of("*"));
+    config.setAllowCredentials(true);
+
+    UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+    source.registerCorsConfiguration("/**", config);
+    return source;
+  }
+
+  // Configures the HTTP request security filter chain, public route permits,
+  // stateless sessions, and custom JWT filter insertion.
   @Bean
   public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
     return http
-        // 1. Disable CSRF because REST APIs use token-based authentication via headers, not browser session cookies.
+        // 0. Enable CORS using the bean above so browsers allow cross-origin API calls.
+        .cors(c -> c.configurationSource(corsConfigurationSource()))
+        // 1. Disable CSRF because REST APIs use token-based authentication via headers,
+        // not browser session cookies.
         .csrf(csrf -> csrf.disable())
-        // 2. Enforce stateless session policy - no HTTP server sessions (JSESSIONID) are created or stored on the backend.
+        // 2. Enforce stateless session policy - no HTTP server sessions (JSESSIONID)
+        // are created or stored on the backend.
         .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-        // 3. Define route access rules: public endpoints are permitted without auth token; all other requests require a valid JWT.
+        // 3. Define route access rules: public endpoints are permitted without auth
+        // token; all other requests require a valid JWT.
         .authorizeHttpRequests(auth -> auth
             .requestMatchers(
                 "/api/auth/register",
@@ -64,7 +93,8 @@ public class SecurityConfig {
             .permitAll()
             .anyRequest()
             .authenticated())
-        // 4. Insert custom JwtAuthenticationFilter into the filter chain BEFORE standard UsernamePasswordAuthenticationFilter.
+        // 4. Insert custom JwtAuthenticationFilter into the filter chain BEFORE
+        // standard UsernamePasswordAuthenticationFilter.
         .addFilterBefore(authenticationFilter, UsernamePasswordAuthenticationFilter.class)
         .build();
   }

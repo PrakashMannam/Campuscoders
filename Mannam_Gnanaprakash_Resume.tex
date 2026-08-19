@@ -1,0 +1,364 @@
+\documentclass[a4paper]{article}
+
+\usepackage[paperwidth=210mm,paperheight=297mm,margin=0pt]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{tgheros}
+\renewcommand{\familydefault}{\sfdefault}
+\usepackage{xcolor}
+\usepackage[hidelinks]{hyperref}
+\usepackage{enumitem}
+\usepackage{tikz}
+\usepackage{ragged2e}
+\usepackage{microtype}
+\usepackage{fontawesome5}
+
+\pagestyle{empty}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{0pt}
+\setlength{\tabcolsep}{0pt}
+
+% ---------- Colors ----------
+\definecolor{navy}{HTML}{153A78}
+\definecolor{darknavy}{HTML}{0E2952}
+\definecolor{sidebar}{HTML}{EDF1F7}
+\definecolor{text}{HTML}{20242A}
+\definecolor{muted}{HTML}{59636F}
+\definecolor{rulecolor}{HTML}{B9C7DB}
+\definecolor{accent}{HTML}{2E6BC6}
+
+\hypersetup{
+    colorlinks=true,
+    urlcolor=navy,
+    linkcolor=navy,
+    pdftitle={Mannam Gnanaprakash - Java Backend Developer Resume},
+    pdfauthor={Mannam Gnanaprakash},
+    pdfsubject={Java Backend Developer | Spring Boot | REST APIs | DSA},
+    pdfkeywords={Java, Spring Boot, Spring Security, REST API, JWT, MySQL, JPA, Hibernate, Spring Data JPA, Backend Developer, Full Stack Developer, Data Structures, Algorithms, Git, Maven, Postman, WebSockets, OOP, DBMS, JavaScript, Problem Solving, Computer Science}
+}
+
+% ---------- Section formatting (main column) ----------
+\newcommand{\sectionrule}[1]{%
+    \vspace{2pt}%
+    {\color{navy}\large\bfseries #1}\par
+    \vspace{2pt}%
+    {\color{navy}\rule{\linewidth}{0.70pt}}%
+    \vspace{4pt}\par
+}
+
+% ---------- Section formatting (sidebar) ----------
+\newcommand{\sidehead}[1]{%
+    {\color{navy}\bfseries\normalsize #1}\par
+    \vspace{2pt}%
+    {\color{navy}\rule{\linewidth}{0.65pt}}%
+    \vspace{4pt}\par
+}
+
+\newcommand{\projecttitle}[1]{%
+    {\color{navy}\bfseries\normalsize #1}%
+}
+
+\newcommand{\techline}[1]{%
+    {\color{muted}\small\itshape #1}%
+}
+
+\newcommand{\bullets}{%
+    \begin{itemize}[
+        leftmargin=1.2em,
+        itemsep=1.5pt,
+        topsep=1.5pt,
+        parsep=0pt,
+        partopsep=0pt,
+        label={\color{navy}\textbullet}
+    ]
+}
+
+\begin{document}
+\color{text}
+
+% =========================================================
+% BACKGROUND DRAWING
+% =========================================================
+\begin{tikzpicture}[remember picture,overlay]
+
+    % Navy accent strip at the very top
+    \fill[navy]
+        (current page.north west)
+        rectangle
+        ([yshift=-4pt]current page.north east);
+
+    % Sidebar background -- full height
+    \fill[sidebar]
+        ([yshift=-4pt]current page.north west)
+        rectangle
+        ([xshift=75mm]current page.south west);
+
+    % Thin vertical separator line
+    \draw[rulecolor, line width=0.5pt]
+        ([xshift=75mm, yshift=-4pt]current page.north west)
+        --
+        ([xshift=75mm]current page.south west);
+
+\end{tikzpicture}
+
+% =========================================================
+% FULL-WIDTH HEADER (Name, Role, Contact)
+% =========================================================
+
+\noindent
+\begin{minipage}[t]{75mm}
+    \vspace*{12pt}
+    \hspace*{8mm}%
+    \begin{minipage}[t]{60mm}
+        \raggedright
+        \small
+        \vspace{2pt}
+        {\color{navy}\faEnvelope}~~\href{mailto:prakashmannam8@gmail.com}{\small prakashmannam8@gmail.com}\par
+        \vspace{2.5pt}
+        {\color{navy}\faPhone}~~{\small 8019603919}\par
+        \vspace{2.5pt}
+        {\color{navy}\faMapMarker*}~~{\small Ongole, Andhra Pradesh}\par
+    \end{minipage}
+\end{minipage}%
+\begin{minipage}[t]{135mm}
+    \vspace*{12pt}
+    \hspace*{6mm}%
+    \begin{minipage}[t]{123mm}
+
+        % ---------- Name ----------
+        {\fontsize{24}{28}\selectfont\bfseries
+        \textcolor{navy}{MANNAM~GNANAPRAKASH}}\par
+
+        \vspace{3pt}
+
+        % ---------- Role ----------
+        {\large\bfseries\textcolor{navy}{%
+        JAVA BACKEND DEVELOPER%
+        \quad{\color{rulecolor}|}\quad
+        DSA ENTHUSIAST%
+        }}\par
+
+        \vspace{4pt}
+
+        % ---------- Profile Links (inline, text only) ----------
+        {\small\color{muted}%
+        \href{https://github.com/PrakashMannam}{\color{navy}\faGithub~GitHub}%
+        \quad{\color{rulecolor}|}\quad
+        \href{https://www.linkedin.com/in/prakash-mannam-19326b374}{\color{navy}\faLinkedin~LinkedIn}%
+        \quad{\color{rulecolor}|}\quad
+        \href{https://leetcode.com/u/prakash_mannam/}{\color{navy}\faCode~LeetCode\;(1450)}%
+        \quad{\color{rulecolor}|}\quad
+        \href{https://codolio.com/profile/Prakash\%20Mannam1}{\color{navy}\faCode~Codolio}%
+        }\par
+
+    \end{minipage}
+\end{minipage}
+
+\vspace{5pt}
+
+% Full-width rule under header
+\noindent
+\begin{tikzpicture}
+    \draw[navy, line width=0.8pt] (0,0) -- (\paperwidth,0);
+\end{tikzpicture}
+
+\vspace{3pt}
+
+% =========================================================
+% TWO-COLUMN BODY
+% =========================================================
+
+\noindent
+\begin{minipage}[t]{75mm}
+
+    \hspace*{8mm}%
+    \begin{minipage}[t]{60mm}
+        \small
+
+        \vspace{3pt}
+
+        % ---------- Education ----------
+        \sidehead{EDUCATION}
+
+        \textbf{B.Tech, Computer Science and Engineering}\par
+        \vspace{1pt}
+        QIS College of Engineering and Technology, Ongole\par
+        \vspace{1pt}
+        2022\,--\,2026\par
+        \vspace{1pt}
+        CGPA:\;{\color{navy}\bfseries 7.67\,/\,10}
+
+        \vspace{5pt}
+
+        \textbf{Intermediate (12th)}\par
+        \vspace{1pt}
+        Sri Chaitanya Junior College, Ongole, AP\par
+        \vspace{1pt}
+        Score:\;{\color{navy}\bfseries 899\,/\,1000}
+
+        \vspace{5pt}
+
+        \textbf{Secondary (10th)}\par
+        \vspace{1pt}
+        Sri Chaitanya High School, Ongole, AP\par
+        \vspace{1pt}
+        Score:\;{\color{navy}\bfseries 588\,/\,600}
+
+        \vspace{8pt}
+
+        % ---------- Technical Skills ----------
+        \sidehead{TECHNICAL SKILLS}
+
+        \textbf{Languages}\par
+        {\small Java, JavaScript}\par
+        \vspace{3pt}
+
+        \textbf{Core CS}\par
+        {\small Data Structures \& Algorithms, OOP, DBMS}\par
+        \vspace{3pt}
+
+        \textbf{Backend}\par
+        {\small Spring Boot, Spring Security, Spring Data JPA, Hibernate, REST APIs, JWT}\par
+        \vspace{3pt}
+
+        \textbf{Database}\par
+        {\small MySQL}\par
+        \vspace{3pt}
+
+        \textbf{Tools}\par
+        {\small Git, Maven, Postman, Docker}
+
+        \vspace{8pt}
+
+        % ---------- Certifications ----------
+        \sidehead{CERTIFICATIONS}
+
+        {\small Java Programming}\par
+        {\footnotesize\color{muted} Codetantra, 2025}\par
+        \vspace{3pt}
+        {\small Java Advanced Concepts}\par
+        {\footnotesize\color{muted} Udemy, 2026}\par
+
+        \vspace{8pt}
+
+        % ---------- Languages Known ----------
+        \sidehead{LANGUAGES KNOWN}
+
+        \textbf{English}\;\;{\small -- Speak \& Write}\par
+        \vspace{2pt}
+        \textbf{Telugu}\;\;{\small -- Speak \& Write}\par
+        \vspace{2pt}
+        \textbf{Hindi}\;\;{\small -- Speak \& Read}\par
+
+        \vspace{8pt}
+
+        % ---------- Strengths & Interests ----------
+        \sidehead{STRENGTHS \& INTERESTS}
+
+        {\small\textbf{Strengths}}\par
+        {\small Problem Solving, Analytical Thinking, Team Collaboration, Adaptability}\par
+        \vspace{3pt}
+        {\small\textbf{Interests}}\par
+        {\small Competitive Coding, Exploring New Technologies, Reading Tech Blogs}\par
+
+    \end{minipage}
+
+\end{minipage}%
+% =========================================================
+% RIGHT / MAIN COLUMN
+% =========================================================
+\begin{minipage}[t]{135mm}
+
+    \hspace*{6mm}%
+    \begin{minipage}[t]{123mm}
+        \small
+
+        \vspace{3pt}
+
+        % =====================================================
+        % PROFILE
+        % =====================================================
+        \sectionrule{PROFILE}
+
+        {\justifying
+        Java backend developer with hands-on experience building \textbf{REST APIs} and backend modules using \textbf{Spring Boot}, \textbf{Spring Security}, \textbf{JPA/Hibernate}, and \textbf{MySQL}. Strong foundation in DSA and problem solving, with \textbf{750+} problems solved across competitive coding platforms.\par}
+
+        \vspace{5pt}
+
+        % =====================================================
+        % PROJECTS
+        % =====================================================
+        \sectionrule{PROJECTS}
+
+        % ---------- Campus Coders ----------
+        \projecttitle{Campus Coders\,--\,Full-Stack Student Learning Platform}\par
+        \vspace{1pt}
+        \techline{Java, Spring Boot, Spring Security, JWT, MySQL, JPA/Hibernate}\par
+        \vspace{2pt}
+
+        \bullets
+            \item Co-developed a full-stack student learning platform with learning paths, daily check-ins, progress tracking, coding challenges, discussions, leaderboard, notifications, and admin management.
+            \item Built backend \textbf{REST APIs} and business logic using \textbf{Java} and \textbf{Spring Boot} for user registration, learning progress, challenges, discussions, and leaderboard workflows.
+            \item Implemented \textbf{JWT}-based authentication and role-based authorization using \textbf{Spring Security} for secure student and admin access.
+            \item Designed relational entities and database mappings using \textbf{JPA/Hibernate} and \textbf{MySQL} for users, learning resources, discussions, challenges, and notifications.
+        \end{itemize}
+
+        \vspace{2pt}
+        {\small\color{navy}\faGithub}\;\;\href{https://github.com/PrakashMannam/campuscoders}{\small\color{navy}View on GitHub}\par
+
+        \vspace{5pt}
+        {\color{rulecolor}\rule{\linewidth}{0.45pt}}
+        \vspace{6pt}
+
+        % ---------- HyperEats ----------
+        \projecttitle{HyperEats\,--\,Hyperlocal Food Delivery Platform}\par
+        \vspace{1pt}
+        \techline{Java, Spring Boot, Spring Security, MySQL, REST APIs, JWT, JPA/Hibernate, WebSockets}\par
+        \vspace{2pt}
+
+        \bullets
+            \item Built a \textbf{Spring Boot} backend for a hyperlocal food delivery platform supporting Customer, Restaurant, and Driver modules.
+            \item Implemented \textbf{JWT}-based authentication and role-based authorization using \textbf{Spring Security} for secure platform access.
+            \item Developed \textbf{REST APIs} for restaurants, menus, orders, and delivery workflows with backend business logic for order placement and status management.
+            \item Designed relational data models using \textbf{MySQL} and \textbf{Spring Data JPA} for users, restaurants, menu items, and orders.
+            \item Planned real-time driver location tracking using \textbf{WebSockets} for live delivery updates.
+        \end{itemize}
+
+        \vspace{2pt}
+        {\small\color{navy}\faGithub}\;\;\href{https://github.com/PrakashMannam/HyperEats}{\small\color{navy}View on GitHub}\par
+
+        \vspace{7pt}
+
+        % =====================================================
+        % WORK EXPERIENCE
+        % =====================================================
+        \sectionrule{WORK EXPERIENCE}
+
+        {\bfseries Java Full Stack Developer\,--\,EduSkills (AICTE) Virtual Internship}%
+        \hfill
+        {\color{navy}\small Apr 2026\,--\,Jun 2026}\par
+        \vspace{2pt}
+
+        \bullets
+            \item Completed a 10-week backend-focused development internship with hands-on work in \textbf{Spring Boot}, \textbf{REST APIs}, and database-driven application development.
+        \end{itemize}
+
+        \vspace{5pt}
+
+        % =====================================================
+        % ACHIEVEMENTS
+        % =====================================================
+        \sectionrule{ACHIEVEMENTS}
+
+        \bullets
+            \item Solved \textbf{750+} Data Structures and Algorithms problems across LeetCode, CodeChef, and Codolio.
+            \item Maintained a \textbf{90+ day} problem-solving streak across coding platforms.
+            \item Achieved a LeetCode rating of \textbf{1450} and participated in \textbf{30+} coding contests.
+            \item Earned Java Programming Certification (Codetantra, 2025) and Java Advanced Concepts Certification (Udemy, 2026).
+        \end{itemize}
+
+    \end{minipage}
+
+\end{minipage}
+
+\end{document}

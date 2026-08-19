@@ -47,17 +47,23 @@ public class DiscussionController {
   // Returns active discussion posts list; supports optional filters by categorySlug, featured status, search query, and pagination.
   @GetMapping("/discussions")
   public PageResponse<DiscussionPostResponse> getDiscussions(
+      Authentication authentication,
       @RequestParam(required = false) String categorySlug,
       @RequestParam(required = false) Boolean featured,
+      @RequestParam(required = false) String filter,
       @RequestParam(required = false) String search,
       @PageableDefault(page = 0, size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
-    return discussionService.getDiscussions(categorySlug, featured, search, pageable);
+    String userEmail = (authentication != null && authentication.isAuthenticated() && !"anonymousUser".equals(authentication.getName())) 
+        ? authentication.getName() : null;
+    return discussionService.getDiscussions(userEmail, categorySlug, featured, filter, search, pageable);
   }
 
   // Returns single thread details including content and active replies.
   @GetMapping("/discussions/{postId}")
-  public DiscussionPostDetailsResponse getPostDetails(@PathVariable Long postId) {
-    return discussionService.getPostDetails(postId);
+  public DiscussionPostDetailsResponse getPostDetails(Authentication authentication, @PathVariable Long postId) {
+    String userEmail = (authentication != null && authentication.isAuthenticated() && !"anonymousUser".equals(authentication.getName())) 
+        ? authentication.getName() : null;
+    return discussionService.getPostDetails(userEmail, postId);
   }
 
   // Authenticated user creates a new discussion post using categoryId.
@@ -108,5 +114,26 @@ public class DiscussionController {
       Authentication authentication,
       @PathVariable Long replyId) {
     return discussionService.markReplyAsAccepted(authentication.getName(), replyId);
+  }
+
+  // Upvote or Downvote a discussion post
+  @PostMapping("/discussions/{postId}/vote")
+  public DiscussionPostResponse votePost(
+      Authentication authentication,
+      @PathVariable Long postId,
+      @Valid @RequestBody com.campuscoders.backend.discussion.dto.VoteDiscussionPostRequest request) {
+    return discussionService.votePost(authentication.getName(), postId, request.voteValue());
+  }
+
+  // Get Top Contributors (sidebar)
+  @GetMapping("/discussions/contributors/top")
+  public List<com.campuscoders.backend.discussion.dto.TopContributorResponse> getTopContributors() {
+    return discussionService.getTopContributors();
+  }
+
+  // Get Popular Tags (sidebar)
+  @GetMapping("/discussions/tags/popular")
+  public List<com.campuscoders.backend.discussion.dto.PopularTagResponse> getPopularTags() {
+    return discussionService.getPopularTags();
   }
 }

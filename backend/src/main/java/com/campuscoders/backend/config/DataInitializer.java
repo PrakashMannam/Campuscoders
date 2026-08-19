@@ -6,6 +6,7 @@ import java.util.List;
 
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Profile;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -30,6 +31,7 @@ import com.campuscoders.backend.learningpath.Topic;
 import com.campuscoders.backend.learningpath.repository.LearningPathRepository;
 import com.campuscoders.backend.learningpath.repository.LearningResourceRepository;
 import com.campuscoders.backend.learningpath.repository.TopicRepository;
+import com.campuscoders.backend.user.Role;
 import com.campuscoders.backend.user.User;
 import com.campuscoders.backend.user.repository.UserRepository;
 
@@ -47,6 +49,7 @@ public class DataInitializer implements CommandLineRunner {
   private final DiscussionPostRepository discussionPostRepository;
   private final DiscussionReplyRepository discussionReplyRepository;
   private final UserRepository userRepository;
+  private final PasswordEncoder passwordEncoder;
 
   public DataInitializer(
       LearningPathRepository learningPathRepository,
@@ -58,7 +61,8 @@ public class DataInitializer implements CommandLineRunner {
       DiscussionCategoryRepository discussionCategoryRepository,
       DiscussionPostRepository discussionPostRepository,
       DiscussionReplyRepository discussionReplyRepository,
-      UserRepository userRepository) {
+      UserRepository userRepository,
+      PasswordEncoder passwordEncoder) {
     this.learningPathRepository = learningPathRepository;
     this.topicRepository = topicRepository;
     this.learningResourceRepository = learningResourceRepository;
@@ -69,11 +73,14 @@ public class DataInitializer implements CommandLineRunner {
     this.discussionPostRepository = discussionPostRepository;
     this.discussionReplyRepository = discussionReplyRepository;
     this.userRepository = userRepository;
+    this.passwordEncoder = passwordEncoder;
   }
 
   @Override
   @Transactional
   public void run(String... args) throws Exception {
+    seedDefaultUsers();
+
     if (learningPathRepository.count() == 0) {
       seedCurriculum();
     }
@@ -89,6 +96,30 @@ public class DataInitializer implements CommandLineRunner {
     if (discussionCategoryRepository.count() == 0) {
       seedDiscussionCategoriesAndPosts();
     }
+  }
+
+  private void seedDefaultUsers() {
+    User student = userRepository.findByEmail("student@campus.com").orElseGet(User::new);
+    student.setFullName("Alex Rivera");
+    student.setEmail("student@campus.com");
+    student.setPassword(passwordEncoder.encode("student123"));
+    student.setRole(Role.STUDENT);
+    student.setEnabled(true);
+    if (student.getTotalXp() == null) student.setTotalXp(120);
+    if (student.getDailyStreak() == null) student.setDailyStreak(5);
+    if (student.getProblemsSolved() == null) student.setProblemsSolved(15);
+    userRepository.save(student);
+
+    User admin = userRepository.findByEmail("admin@campus.com").orElseGet(User::new);
+    admin.setFullName("Shaik Khaleed");
+    admin.setEmail("admin@campus.com");
+    admin.setPassword(passwordEncoder.encode("admin123"));
+    admin.setRole(Role.ADMIN);
+    admin.setEnabled(true);
+    if (admin.getTotalXp() == null) admin.setTotalXp(500);
+    if (admin.getDailyStreak() == null) admin.setDailyStreak(20);
+    if (admin.getProblemsSolved() == null) admin.setProblemsSolved(50);
+    userRepository.save(admin);
   }
 
   private void seedCurriculum() {

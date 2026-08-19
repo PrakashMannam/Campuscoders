@@ -1,57 +1,12 @@
-import React, { useState, useCallback } from 'react';
-import { FiBell, FiCheck, FiInfo, FiAward, FiStar, FiCalendar, FiMessageSquare, FiX, FiCheckCircle } from 'react-icons/fi';
+import React, { useState, useEffect, useCallback } from 'react';
+import { FiCheck, FiCheckCircle, FiBell } from 'react-icons/fi';
 import DashboardLayout from '../components/DashboardLayout';
 import Toast from '../components/Toast';
-
-const initialNotifications = [
-  {
-    id: 1,
-    type: 'EVENT',
-    icon: <FiStar size={16} />,
-    iconBg: '#ECFDF5',
-    iconColor: '#059669',
-    title: 'Winter Hackathon Open',
-    desc: 'Registration is now live for the Annual Campus Coders Hackathon. Win up to $10,000!',
-    time: '2 hours ago',
-    unread: true,
-  },
-  {
-    id: 2,
-    type: 'ACHIEVEMENT',
-    icon: <FiAward size={16} />,
-    iconBg: '#FFFBE6',
-    iconColor: '#D4AF37',
-    title: 'XP Awarded: Daily Check-in',
-    desc: 'Congratulations! You checked in today and earned +1 XP to your score.',
-    time: '5 hours ago',
-    unread: true,
-  },
-  {
-    id: 3,
-    type: 'CURRICULUM',
-    icon: <FiCalendar size={16} />,
-    iconBg: '#EEF5FF',
-    iconColor: '#1E6BFA',
-    title: 'New Course Resources Available',
-    desc: 'New reference manuals and PDF guides have been added to the DSA Intensive track.',
-    time: '1 day ago',
-    unread: false,
-  },
-  {
-    id: 4,
-    type: 'COMMUNITY',
-    icon: <FiMessageSquare size={16} />,
-    iconBg: '#FCE8E6',
-    iconColor: '#EA4335',
-    title: 'New Reply in Discussions',
-    desc: 'A student replied to your thread "FastAPI vs Flask for telemetry dashboards".',
-    time: '2 days ago',
-    unread: false,
-  },
-];
+import api from '../api/client';
 
 export default function Notifications() {
-  const [notifications, setNotifications] = useState(initialNotifications);
+  const [notifications, setNotifications] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   /* ── Toast ── */
   const [toast, setToast] = useState({ show: false, type: 'success', message: '' });
@@ -62,24 +17,42 @@ export default function Notifications() {
     setToast(prev => ({ ...prev, show: false }));
   }, []);
 
-  const handleMarkAllRead = () => {
-    const updated = notifications.map(n => ({ ...n, unread: false }));
-    setNotifications(updated);
-    showToast('success', 'All notifications marked as read.');
+  const fetchNotifications = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await api.get('/notifications');
+      setNotifications(res.data || []);
+    } catch (err) {
+      showToast('error', 'Failed to load notifications.');
+    } finally {
+      setLoading(false);
+    }
+  }, [showToast]);
+
+  useEffect(() => {
+    fetchNotifications();
+  }, [fetchNotifications]);
+
+  const handleMarkAllRead = async () => {
+    try {
+      await api.patch('/notifications/read-all');
+      showToast('success', 'All notifications marked as read.');
+      fetchNotifications();
+    } catch (err) {
+      showToast('error', 'Failed to mark notifications as read.');
+    }
   };
 
-  const handleClearNotification = (id) => {
-    const updated = notifications.filter(n => n.id !== id);
-    setNotifications(updated);
-    showToast('info', 'Notification dismissed.');
+  const handleMarkOneRead = async (id) => {
+    try {
+      await api.patch(`/notifications/${id}/read`);
+      fetchNotifications();
+    } catch (err) {
+      console.error(err);
+    }
   };
 
-  const handleMarkOneRead = (id) => {
-    const updated = notifications.map(n => n.id === id ? { ...n, unread: false } : n);
-    setNotifications(updated);
-  };
-
-  const unreadCount = notifications.filter(n => n.unread).length;
+  const unreadCount = notifications.filter(n => !n.read).length;
 
   return (
     <DashboardLayout>
@@ -94,11 +67,11 @@ export default function Notifications() {
 
         <div className="nt-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '28px' }}>
           <div>
-            <h2 className="nt-title" style={{ fontFamily: 'var(--font-title)', fontSize: '1.8rem', fontWeight: 800, color: '#111827', margin: '0 0 6px' }}>
+            <h2 className="nt-title" style={{ fontSize: '1.8rem', fontWeight: 800, color: '#111827', margin: '0 0 6px' }}>
               Notifications Hub
             </h2>
             <p className="nt-subtitle" style={{ fontSize: '0.9rem', color: '#6B7280', margin: 0 }}>
-              Stay updated with course releases, daily check-ins, mentions, and community announcements.
+              Stay updated with daily check-ins, achievements, and announcements.
             </p>
           </div>
           {unreadCount > 0 && (
@@ -116,8 +89,6 @@ export default function Notifications() {
                 display: 'flex',
                 alignItems: 'center',
                 gap: '6px',
-                boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
-                transition: 'all 0.15s ease'
               }}
             >
               <FiCheck size={14} /> Mark all as read
@@ -126,14 +97,15 @@ export default function Notifications() {
         </div>
 
         <div className="nt-list" style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-          {notifications.length === 0 ? (
+          {loading ? (
+            <p style={{ color: '#64748b' }}>Loading notifications...</p>
+          ) : notifications.length === 0 ? (
             <div style={{
               background: '#FFFFFF',
               border: '1px solid #E5E7EB',
               borderRadius: '12px',
               padding: '40px',
               textAlign: 'center',
-              boxShadow: '0 1px 3px rgba(0,0,0,0.02)'
             }}>
               <FiCheckCircle size={42} style={{ color: '#059669', marginBottom: '12px' }} />
               <h3 style={{ margin: '0 0 4px', fontSize: '1.05rem', fontWeight: 700, color: '#111827' }}>You're all caught up!</h3>
@@ -153,11 +125,8 @@ export default function Notifications() {
                   display: 'flex',
                   alignItems: 'flex-start',
                   justifyContent: 'space-between',
-                  boxShadow: n.unread ? '0 3px 10px rgba(212,175,55,0.04)' : '0 1px 3px rgba(0,0,0,0.02)',
-                  borderLeft: n.unread ? '4px solid #D4AF37' : '1px solid #E5E7EB',
-                  transition: 'all 0.2s ease',
-                  cursor: n.unread ? 'pointer' : 'default',
-                  position: 'relative'
+                  borderLeft: !n.read ? '4px solid #D4AF37' : '1px solid #E5E7EB',
+                  cursor: !n.read ? 'pointer' : 'default',
                 }}
               >
                 <div style={{ display: 'flex', gap: '16px', alignItems: 'flex-start' }}>
@@ -168,18 +137,18 @@ export default function Notifications() {
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    background: n.iconBg,
-                    color: n.iconColor,
+                    background: '#FFFBE6',
+                    color: '#D4AF37',
                     flexShrink: 0
                   }}>
-                    {n.icon}
+                    <FiBell size={18} />
                   </div>
                   <div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                       <h4 style={{ margin: '0 0 2px', fontSize: '0.92rem', fontWeight: 800, color: '#111827' }}>
                         {n.title}
                       </h4>
-                      {n.unread && (
+                      {!n.read && (
                         <span style={{
                           width: '6px',
                           height: '6px',
@@ -189,33 +158,13 @@ export default function Notifications() {
                       )}
                     </div>
                     <p style={{ margin: '0 0 4px', fontSize: '0.85rem', color: '#4B5563', lineHeight: '1.5' }}>
-                      {n.desc}
+                      {n.message}
                     </p>
-                    <span style={{ fontSize: '0.75rem', color: '#9CA3AF' }}>{n.time}</span>
+                    <span style={{ fontSize: '0.75rem', color: '#9CA3AF' }}>
+                      {n.createdAt ? new Date(n.createdAt).toLocaleTimeString() : 'Recent'}
+                    </span>
                   </div>
                 </div>
-                <button 
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleClearNotification(n.id);
-                  }}
-                  style={{
-                    background: 'none',
-                    border: 'none',
-                    color: '#9CA3AF',
-                    cursor: 'pointer',
-                    padding: '4px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    borderRadius: '4px',
-                    transition: 'all 0.15s ease'
-                  }}
-                  onMouseEnter={(e) => e.target.style.color = '#ef4444'}
-                  onMouseLeave={(e) => e.target.style.color = '#9CA3AF'}
-                >
-                  <FiX size={16} />
-                </button>
               </div>
             ))
           )}
