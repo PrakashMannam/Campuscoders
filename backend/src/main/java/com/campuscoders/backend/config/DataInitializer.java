@@ -36,7 +36,7 @@ import com.campuscoders.backend.user.User;
 import com.campuscoders.backend.user.repository.UserRepository;
 
 @Component
-@Profile({"dev", "default"})
+@Profile("dev")
 public class DataInitializer implements CommandLineRunner {
 
   private final LearningPathRepository learningPathRepository;

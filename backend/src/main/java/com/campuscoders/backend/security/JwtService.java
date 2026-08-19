@@ -7,6 +7,7 @@ import java.util.Map;
 
 import javax.crypto.SecretKey;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
@@ -20,8 +21,15 @@ import io.jsonwebtoken.security.Keys;
 @Service
 public class JwtService {
 
-  // Development HMAC secret key (at least 256 bits for HS256 algorithm). Move to application.properties in production.
-  private static final String SECRET_KEY = "campus-coders-secret-key-campus-coders-secret-key";
+  private final String secretKey;
+  private final long expirationMs;
+
+  public JwtService(
+      @Value("${jwt.secret}") String secretKey,
+      @Value("${jwt.expiration-ms}") long expirationMs) {
+    this.secretKey = secretKey;
+    this.expirationMs = expirationMs;
+  }
 
   // Generates a signed JWT with user email as subject, user role claim, and a 24-hour expiration window.
   public String generateToken(User user) {
@@ -32,7 +40,7 @@ public class JwtService {
         .claims(claims)
         .subject(user.getEmail())
         .issuedAt(new Date(System.currentTimeMillis()))
-        .expiration(new Date(System.currentTimeMillis() + 1000 * 60 * 60 * 24)) // 24 Hours
+        .expiration(new Date(System.currentTimeMillis() + expirationMs))
         .signWith(getSigningKey())
         .compact();
   }
@@ -78,6 +86,6 @@ public class JwtService {
   }
 
   private SecretKey getSigningKey() {
-    return Keys.hmacShaKeyFor(SECRET_KEY.getBytes(StandardCharsets.UTF_8));
+    return Keys.hmacShaKeyFor(secretKey.getBytes(StandardCharsets.UTF_8));
   }
 }
