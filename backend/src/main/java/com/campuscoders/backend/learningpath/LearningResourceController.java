@@ -1,7 +1,5 @@
 package com.campuscoders.backend.learningpath;
 
-import java.util.List;
-
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
@@ -62,7 +60,8 @@ public class LearningResourceController {
     return learningResourceService.updateLearningResource(resourceId, request);
   }
 
-  // Admin-facing endpoint for hiding a resource without deleting its database row.
+  // Admin-facing endpoint for hiding a resource without deleting its database
+  // row.
   @PreAuthorize("hasRole('ADMIN')")
   @PatchMapping("/{resourceId}/deactivate")
   public LearningResourceResponse deactivateLearningResource(@PathVariable Long resourceId) {

@@ -1,7 +1,5 @@
 package com.campuscoders.backend.admin;
 
-import java.util.List;
-
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
@@ -33,7 +31,8 @@ public class AdminUserController {
     this.adminUserService = adminUserService;
   }
 
-  // Lists users with optional filters for role, enabled state, search query string, and pagination.
+  // Lists users with optional filters for role, enabled state, search query
+  // string, and pagination.
   @GetMapping
   public PageResponse<AdminUserResponse> getUsers(
       @RequestParam(required = false) Role role,
@@ -55,7 +54,8 @@ public class AdminUserController {
     return adminUserService.activateUser(userId);
   }
 
-  // Disables a user account, preventing further authentication until re-activated.
+  // Disables a user account, preventing further authentication until
+  // re-activated.
   @PatchMapping("/{userId}/deactivate")
   public AdminUserResponse deactivateUser(
       Authentication authentication,
