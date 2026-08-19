@@ -1,57 +1,20 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import {
-  FiClock,
   FiChevronLeft,
   FiChevronRight,
   FiCode,
   FiExternalLink,
+  FiCheckCircle
 } from "react-icons/fi";
 import DashboardLayout from "../components/DashboardLayout";
 import Toast from "../components/Toast";
 import { useAuth } from "../context/AuthContext";
-
-/* ── Static data ── */
-const announcements = [
-  {
-    id: 1,
-    tag: "HACKATHON UPDATE",
-    title: "Spring Code Jam registration is now open",
-    desc: "Register before March 15th to get a…",
-  },
-  {
-    id: 2,
-    tag: "SYSTEM MAINTENANCE",
-    title: "Lab server downtime: Sunday 2AM-4AM",
-    desc: "Upgrading GPU nodes for the ML…",
-  },
-  {
-    id: 3,
-    tag: "CAREER CENTER",
-    title: "Google Technical Workshop next Wednesday",
-    desc: "Learn about scalable architecture…",
-  },
-];
-
-const upcoming = [
-  { month: "OCT", day: "12", title: "Web3 Dev Meetup", meta: "18:00 • Hall B" },
-  {
-    month: "OCT",
-    day: "14",
-    title: "Algo Study Group",
-    meta: "15:30 • Discord",
-  },
-  {
-    month: "OCT",
-    day: "18",
-    title: "Cloud Final Prep",
-    meta: "09:00 • Online",
-  },
-];
+import api from "../api/client";
 
 /* Simple calendar generator */
-function MiniCalendar({ solvedToday }) {
-  const [currentDate, setCurrentDate] = useState(new Date()); // Dynamic current date
+function MiniCalendar({ checkedInToday }) {
+  const [currentDate, setCurrentDate] = useState(new Date());
   const todayDate = new Date();
 
   const year = currentDate.getFullYear();
@@ -67,21 +30,18 @@ function MiniCalendar({ solvedToday }) {
   const todayVal = todayDate.getDate();
 
   const cells = [];
-  // Previous month trailing days
   for (let i = firstDay - 1; i >= 0; i--) {
     cells.push({ day: prevDays - i, current: false });
   }
-  // Current month
   for (let d = 1; d <= daysInMonth; d++) {
     const isToday = isCurrentMonthYear && d === todayVal;
     cells.push({
       day: d,
       current: true,
       isToday,
-      solvedTodayState: isToday && solvedToday,
+      checkedInTodayState: isToday && checkedInToday,
     });
   }
-  // Fill remaining
   const remaining = 42 - cells.length;
   for (let d = 1; d <= remaining; d++) {
     cells.push({ day: d, current: false });
@@ -121,7 +81,7 @@ function MiniCalendar({ solvedToday }) {
               <span className="sd-cal-day-num">{c.day}</span>
               {c.isToday && (
                 <span
-                  className={`sd-cal-dot ${c.solvedTodayState ? "green" : "red"}`}
+                  className={`sd-cal-dot ${c.checkedInTodayState ? "green" : "red"}`}
                 ></span>
               )}
             </div>
@@ -133,12 +93,12 @@ function MiniCalendar({ solvedToday }) {
 }
 
 export default function Dashboard() {
-  const { user, updateUser } = useAuth();
+  const { user } = useAuth();
   const navigate = useNavigate();
 
-  const [solvedToday, setSolvedToday] = useState(user?.solvedToday || false);
-  const [openedChallenge, setOpenedChallenge] = useState(false);
-  const [userRank, setUserRank] = useState("#5");
+  const [summary, setSummary] = useState(null);
+  const [announcements, setAnnouncements] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   /* ── Toast ── */
   const [toast, setToast] = useState({
@@ -146,160 +106,63 @@ export default function Dashboard() {
     type: "success",
     message: "",
   });
+
   const showToast = useCallback((type, message) => {
     setToast({ show: true, type, message });
   }, []);
+
   const hideToast = useCallback(() => {
     setToast((prev) => ({ ...prev, show: false }));
   }, []);
 
-  const solvedCount = user?.solvedCount || 48;
-  const getTodayKey = () => {
-    const now = new Date();
-    const month = String(now.getMonth() + 1).padStart(2, "0");
-    const day = String(now.getDate()).padStart(2, "0");
-    return `${now.getFullYear()}-${month}-${day}`;
-  };
-  const todayKey = getTodayKey();
+  const fetchDashboardData = useCallback(async () => {
+    setLoading(true);
+    try {
+      const [sumRes, annRes] = await Promise.all([
+        api.get('/dashboard/summary'),
+        api.get('/announcements?page=0&size=3')
+      ]);
+
+      setSummary(sumRes.data);
+      setAnnouncements(annRes.data.content || []);
+    } catch (err) {
+      showToast('error', 'Failed to load dashboard summary.');
+    } finally {
+      setLoading(false);
+    }
+  }, [showToast]);
 
   useEffect(() => {
-    if (!user || user.checkinDate === todayKey) return;
+    fetchDashboardData();
+  }, [fetchDashboardData]);
 
-    // compute streak continuity: if last streak date is yesterday -> +1, if absent or older -> reset to 1
-    const yesterday = new Date();
-    yesterday.setDate(yesterday.getDate() - 1);
-    const yMonth = String(yesterday.getMonth() + 1).padStart(2, "0");
-    const yDay = String(yesterday.getDate()).padStart(2, "0");
-    const yesterdayKey = `${yesterday.getFullYear()}-${yMonth}-${yDay}`;
-
-    const lastStreakDate = user?.streakDate || user?.checkinDate || null;
-    let newStreak = 1;
-    if (lastStreakDate === todayKey) {
-      newStreak = user?.dailyStreak || 0;
-    } else if (lastStreakDate === yesterdayKey) {
-      newStreak = (user?.dailyStreak || 0) + 1;
-    } else {
-      newStreak = 1;
+  const handleDailyCheckIn = async () => {
+    try {
+      await api.post('/check-ins/today');
+      showToast('success', 'Daily check-in completed! +1 XP awarded!');
+      fetchDashboardData();
+    } catch (err) {
+      showToast('info', err.response?.data?.message || 'Already checked in today!');
     }
-
-    updateUser({
-      xp: (user.xp ?? 0) + 1,
-      checkedInToday: true,
-      checkinDate: todayKey,
-      dailyStreak: newStreak,
-      streakDate: todayKey,
-    });
-    showToast(
-      "success",
-      "Daily check-in completed automatically. +1 XP awarded!",
-    );
-  }, [showToast, todayKey, updateUser, user]);
-
-  // Reset solved status only if the active challenge changes.
-  useEffect(() => {
-    // tie active challenge slug to today's date so POTD resets each day
-    const activeChallengeSlug = `roman-to-integer-${todayKey}`;
-    const lastChallengeSlug = localStorage.getItem("cc-last-challenge-slug");
-    if (lastChallengeSlug !== activeChallengeSlug) {
-      localStorage.setItem("cc-last-challenge-slug", activeChallengeSlug);
-      localStorage.removeItem("cc-user-solved-today");
-      setSolvedToday(false);
-      updateUser({ solvedToday: false });
-    }
-  }, [updateUser, todayKey]);
-
-  // Track rank dynamically from leaderboard in local storage
-  useEffect(() => {
-    const stored = localStorage.getItem("cc-leaderboard");
-    let ranks = [];
-    if (stored) {
-      ranks = JSON.parse(stored);
-    } else {
-      ranks = [
-        { name: "Rohit Sharma", solved: 92 },
-        { name: "Sneha Patel", solved: 87 },
-        { name: "Arjun Das", solved: 84 },
-        { name: "Priya Nair", solved: 75 },
-        { name: user?.name || "Alex Rivera", solved: solvedCount, isYou: true },
-      ];
-      ranks.sort((a, b) => b.solved - a.solved);
-      localStorage.setItem("cc-leaderboard", JSON.stringify(ranks));
-    }
-
-    const index = ranks.findIndex(
-      (r) => r.name === (user?.name || "Alex Rivera") || r.isYou,
-    );
-    if (index !== -1) {
-      setUserRank(`#${index + 1}`);
-    }
-  }, [solvedCount, user]);
-
-  const handleRedirectChallenge = () => {
-    // Open challenge link in new tab
-    window.open("https://leetcode.com/problems/roman-to-integer/", "_blank");
-    setOpenedChallenge(true);
-    showToast(
-      "info",
-      "Redirecting to LeetCode. Submit an accepted solution, then verify it here.",
-    );
   };
 
-  // verification removed; manual marking is used instead
-
-  const handleMarkSolvedManual = () => {
-    const ok = window.confirm(
-      "Mark this Problem of the Day as solved manually? This will increase your solved count and streak.",
-    );
-    if (!ok) return;
-
-    if (!solvedToday) {
-      const newSolvedCount = solvedCount + 1;
-      const newXp = (user?.xp ?? 0) + 10;
-
-      // compute streak as in other places
-      const yesterday = new Date();
-      yesterday.setDate(yesterday.getDate() - 1);
-      const yMonth = String(yesterday.getMonth() + 1).padStart(2, "0");
-      const yDay = String(yesterday.getDate()).padStart(2, "0");
-      const yesterdayKey = `${yesterday.getFullYear()}-${yMonth}-${yDay}`;
-      const lastStreakDate = user?.streakDate || user?.checkinDate || null;
-      let newStreak = 1;
-      if (lastStreakDate === todayKey) {
-        newStreak = user?.dailyStreak || 0;
-      } else if (lastStreakDate === yesterdayKey) {
-        newStreak = (user?.dailyStreak || 0) + 1;
-      } else {
-        newStreak = 1;
-      }
-
-      setSolvedToday(true);
-      updateUser({
-        solvedCount: newSolvedCount,
-        solvedToday: true,
-        xp: newXp,
-        dailyStreak: newStreak,
-        streakDate: todayKey,
+  const handleCompleteChallenge = async () => {
+    if (!summary?.todayChallenge) return;
+    try {
+      await api.post('/daily-challenges/today/attempt', {
+        challengeId: summary.todayChallenge.id,
+        solutionNotes: 'Completed on platform'
       });
-
-      // update leaderboard
-      const stored = localStorage.getItem("cc-leaderboard");
-      if (stored) {
-        const ranks = JSON.parse(stored);
-        const userItem = ranks.find(
-          (r) => r.name === (user?.name || "Alex Rivera") || r.isYou,
-        );
-        if (userItem) userItem.solved = newSolvedCount;
-        ranks.sort((a, b) => b.solved - a.solved);
-        localStorage.setItem("cc-leaderboard", JSON.stringify(ranks));
-      }
-
-      showToast("success", "Marked as solved. +10 XP awarded!");
-    } else {
-      showToast("info", "Already marked solved for today.");
+      showToast('success', `Daily Challenge completed! +${summary.todayChallenge.xpReward} XP awarded!`);
+      fetchDashboardData();
+    } catch (err) {
+      showToast('info', err.response?.data?.message || 'Already completed today!');
     }
   };
 
-  const firstName = user?.name?.split(" ")[0] || "Student";
+  const firstName = summary?.fullName?.split(" ")[0] || user?.name?.split(" ")[0] || "Student";
+  const potd = summary?.todayChallenge;
+  const checkedIn = summary?.checkInStatus?.checkedInToday;
 
   return (
     <DashboardLayout>
@@ -317,8 +180,7 @@ export default function Dashboard() {
           <div className="sd-welcome-text">
             <h1>Welcome back, {firstName}!</h1>
             <p>
-              Ready to continue your journey towards engineering excellence?
-              Let's dive back in.
+              Track your daily streak, complete learning paths, and solve the Problem of the Day.
             </p>
           </div>
           <div className="sd-welcome-icon">
@@ -328,13 +190,17 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* ── Leaderboard ── */}
+        {/* ── Metrics Row ── */}
         <div
           className="sd-stats-row"
           style={{
             marginBottom: "24px",
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
+            gap: "16px"
           }}
         >
+          {/* Leaderboard Stat Card */}
           <div
             className="sd-stat-pill clickable-stat"
             onClick={() => navigate("/dashboard/leaderboard")}
@@ -344,7 +210,6 @@ export default function Dashboard() {
               alignItems: "center",
               justifyContent: "space-between",
               padding: "20px 24px",
-              height: "auto",
               background: "#ffffff",
               border: "1px solid #e2e8f0",
               borderRadius: "14px", 
@@ -355,15 +220,52 @@ export default function Dashboard() {
               <span className="sd-stat-pill-icon" style={{ fontSize: "2rem" }}>🏆</span>
               <div>
                 <div className="sd-stat-pill-label" style={{ fontSize: "0.8rem", fontWeight: 700, color: "#64748b", textTransform: "uppercase" }}>
-                  STUDENT LEADERBOARD
+                  LEADERBOARD RANK
                 </div>
                 <div className="sd-stat-pill-value" style={{ fontSize: "1.4rem", fontWeight: 800, color: "#0f172a" }}>
-                  Current Rank: {userRank}
+                  {summary?.myLeaderboardRank ? `#${summary.myLeaderboardRank}` : 'Unranked'}
                 </div>
               </div>
             </div>
-            <button className="res-view-all-btn" style={{ fontSize: "0.9rem" }}>
-              View Leaderboard →
+          </div>
+
+          {/* Daily Streak & XP Card */}
+          <div
+            className="sd-stat-pill"
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              padding: "20px 24px",
+              background: "#ffffff",
+              border: "1px solid #e2e8f0",
+              borderRadius: "14px", 
+              boxShadow: "0 2px 8px rgba(0, 0, 0, 0.03)"
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+              <span className="sd-stat-pill-icon" style={{ fontSize: "2rem" }}>🔥</span>
+              <div>
+                <div className="sd-stat-pill-label" style={{ fontSize: "0.8rem", fontWeight: 700, color: "#64748b", textTransform: "uppercase" }}>
+                  DAILY STREAK & XP
+                </div>
+                <div className="sd-stat-pill-value" style={{ fontSize: "1.4rem", fontWeight: 800, color: "#0f172a" }}>
+                  {summary?.dailyStreak || 0} Days • {summary?.totalXp || 0} XP
+                </div>
+              </div>
+            </div>
+            <button
+              onClick={handleDailyCheckIn}
+              disabled={checkedIn}
+              className="btn btn-sm"
+              style={{
+                background: checkedIn ? '#ECFDF5' : '#10b981',
+                color: checkedIn ? '#059669' : '#ffffff',
+                border: checkedIn ? '1px solid #A7F3D0' : 'none',
+                fontWeight: 600
+              }}
+            >
+              {checkedIn ? 'Checked In ✓' : 'Check In Today'}
             </button>
           </div>
         </div>
@@ -373,37 +275,53 @@ export default function Dashboard() {
           <div className="sd-potd-header-row">
             <span className="sd-potd-badge">PROBLEM OF THE DAY</span>
             <span className="sd-potd-platform-badge">
-              Platform: <strong>LeetCode</strong>
+              Platform: <strong>{potd?.platform || 'LeetCode'}</strong>
             </span>
           </div>
-          <h2 className="sd-potd-title">Roman to Integer</h2>
+          <h2 className="sd-potd-title">{potd?.title || 'Daily Coding Challenge'}</h2>
           <p className="sd-potd-desc">
-            Roman numerals are represented by seven different symbols: I, V, X,
-            L, C, D and M. Given a roman numeral, convert it to an integer.
+            Difficulty: <strong>{potd?.difficulty || 'BEGINNER'}</strong> • Reward: <strong>+{potd?.xpReward || 10} XP</strong>
           </p>
           <div className="sd-potd-footer">
             <div className="sd-potd-tags">
-              <span className="sd-potd-tag">Math</span>
-              <span className="sd-potd-tag">String</span>
-              <span className="sd-potd-tag">Hash Table</span>
+              {potd?.tags?.split(',').map((tag, i) => (
+                <span key={i} className="sd-potd-tag">{tag.trim()}</span>
+              )) || <span className="sd-potd-tag">Algorithms</span>}
             </div>
 
             <div
               className="sd-potd-actions-row"
               style={{ display: "flex", gap: "12px", alignItems: "center" }}
             >
-              <button
-                className="sd-potd-solve-btn"
-                id="solve-potd-btn"
-                onClick={handleRedirectChallenge}
-              >
-                Open Question <FiExternalLink size={14} style={{ marginLeft: "6px" }} />
-              </button>
+              {potd?.problemUrl && (
+                <a
+                  href={potd.problemUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="sd-potd-solve-btn"
+                  style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center' }}
+                >
+                  Open Problem <FiExternalLink size={14} style={{ marginLeft: "6px" }} />
+                </a>
+              )}
+              {potd && !potd.completedToday ? (
+                <button
+                  className="btn btn-primary"
+                  onClick={handleCompleteChallenge}
+                  style={{ padding: '8px 16px' }}
+                >
+                  Mark Solved (+{potd.xpReward} XP)
+                </button>
+              ) : potd?.completedToday ? (
+                <span style={{ color: '#059669', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                  <FiCheckCircle size={16} /> Solved Today!
+                </span>
+              ) : null}
             </div>
           </div>
         </div>
 
-        {/* ── Bottom Row: Announcements | Upcoming | Calendar ── */}
+        {/* ── Bottom Row: Announcements | Calendar ── */}
         <div className="sd-bottom-grid">
           {/* Announcements */}
           <div className="sd-card">
@@ -413,49 +331,28 @@ export default function Dashboard() {
               </h3>
             </div>
             <div className="sd-announce-list">
-              {announcements.map((a) => (
-                <div key={a.id} className="sd-announce-item">
-                  <span className="sd-announce-tag">{a.tag}</span>
-                  <h4>{a.title}</h4>
-                  <p>{a.desc}</p>
-                </div>
-              ))}
+              {announcements.length > 0 ? (
+                announcements.map((a) => (
+                  <div key={a.id} className="sd-announce-item">
+                    <span className="sd-announce-tag">{a.category}</span>
+                    <h4>{a.title}</h4>
+                    <p>{a.message}</p>
+                  </div>
+                ))
+              ) : (
+                <p style={{ color: '#64748b', fontSize: '0.9rem' }}>No announcements available.</p>
+              )}
             </div>
             <button
               className="sd-card-footer-btn"
-              id="see-all-alerts-btn"
               onClick={() => navigate("/dashboard/announcements")}
             >
-              See all alerts
+              See all announcements
             </button>
           </div>
 
-          {/* Upcoming */}
-          <div className="sd-card">
-            <div className="sd-card-header">
-              <h3>Upcoming</h3>
-              <span className="sd-card-header-sub">Current Month</span>
-            </div>
-            <div className="sd-upcoming-list">
-              {upcoming.map((u, i) => (
-                <div key={i} className="sd-upcoming-item">
-                  <div className="sd-upcoming-date">
-                    <span className="sd-upcoming-month">{u.month}</span>
-                    <span className="sd-upcoming-day">{u.day}</span>
-                  </div>
-                  <div className="sd-upcoming-info">
-                    <h4>{u.title}</h4>
-                    <p>
-                      <FiClock size={12} /> {u.meta}
-                    </p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
           {/* Calendar */}
-          <MiniCalendar solvedToday={solvedToday} />
+          <MiniCalendar checkedInToday={checkedIn} />
         </div>
       </div>
     </DashboardLayout>

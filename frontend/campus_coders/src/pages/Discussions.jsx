@@ -1,77 +1,21 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { FiMessageSquare, FiStar, FiChevronUp, FiChevronDown, FiEdit3, FiX, FiCheck, FiSend, FiSearch } from 'react-icons/fi';
+import { FiMessageSquare, FiEdit3, FiX, FiSend, FiChevronUp, FiCheckCircle } from 'react-icons/fi';
 import DashboardLayout from '../components/DashboardLayout';
 import Toast from '../components/Toast';
-import { useAuth } from '../context/AuthContext';
-
-const categories = [
-  { name: 'All Topics', count: null, color: '#D4AF37' },
-  { name: 'General',  count: null, color: '#6B7280' },
-  { name: 'Java',     count: null, color: '#D4AF37' },
-  { name: 'Python',   count: null, color: '#1E6BFA' },
-  { name: 'Career Advice', count: null, color: '#6366f1' },
-];
-
-const trendingTags = ['#algorithms', '#internship', '#react', '#interview_prep', '#data_structures'];
-
-const defaultDiscussions = [
-  {
-    id: 1,
-    category: 'Java',
-    catColor: '#D4AF37',
-    time: 'Posted 2 hours ago',
-    votes: 24,
-    title: 'Optimization techniques for massive JSON processing in Spring Boot?',
-    preview: "I'm working on a microservice that needs to handle 5GB+ JSON payloads daily. Jackson is getting slow, what are the best streaming parser…",
-    content: "I'm working on a Spring Boot microservice that needs to parse and process over 5GB of JSON payloads daily. Jackson's default ObjectMapper is consuming too much memory and garbage collection is causing significant latency spikes. What are the best streaming parsing strategies or alternative libraries (like GSON, FastJSON, or DSL-JSON) to optimize memory footprint and throughput?",
-    author: 'Sarah J.',
-    tags: ['#data_structures', '#algorithms'],
-    replies: [
-      { author: 'Devon Miller', content: 'You should look into Jackson Streaming API (JsonParser and JsonGenerator). It processes tokens sequentially without building the full tree in memory.', time: '1 hour ago' },
-      { author: 'Priya Nair', content: 'Seconding Devon. ObjectMapper.readValues() is also great for streaming lists of objects. Avoid loading the whole 5GB array.', time: '45 mins ago' }
-    ],
-    featured: true,
-  },
-  {
-    id: 2,
-    category: 'Career Advice',
-    catColor: '#6366f1',
-    time: 'Posted 5 hours ago',
-    votes: 156,
-    title: 'How to choose between Big Tech and early-stage AI startups?',
-    preview: 'I have offers from a FAANG company and a Series A startup working on LLM infrastructure. The pay gap is significant but the equity potential is temptin…',
-    content: "I'm currently at a crossroads in my career. I have two offers: one from a FAANG company as an L4 Software Engineer with great base compensation and stock options, and another from an early-stage Series A startup focused on LLM routing infrastructure. The startup offers less cash but significant equity upside and a chance to build from scratch. What factors should I weigh to make this decision?",
-    author: 'Devon Miller',
-    tags: ['#internship', '#interview_prep'],
-    replies: [
-      { author: 'Sarah J.', content: 'If you are early in your career, FAANG gives you great processes, mentorship, and a solid brand name. Startups are fantastic if you want to wear multiple hats.', time: '3 hours ago' }
-    ],
-    featured: false,
-  },
-  {
-    id: 3,
-    category: 'Python',
-    catColor: '#1E6BFA',
-    time: 'Posted 8 hours ago',
-    votes: 8,
-    title: 'FastAPI vs Flask for real-time sensor data dashboards?',
-    preview: "Need to build a dashboard that updates every 200ms. I'm leaning towards FastAPI due to native async support but my team is more comfortable with…",
-    content: "We are designing a telemetry dashboard that needs to display real-time sensor data streaming at 200ms intervals. I am leaning heavily towards FastAPI because of its native WebSocket and async capabilities. However, the rest of my development team is more familiar with Flask. Is it worth the transition effort to FastAPI?",
-    author: 'Aria_Code',
-    tags: ['#react', '#algorithms'],
-    replies: [],
-    featured: false,
-  },
-];
+import api from '../api/client';
 
 export default function Discussions() {
-  const { user } = useAuth();
-
   /* ── State ── */
+  const [categories, setCategories] = useState([]);
   const [discussionList, setDiscussionList] = useState([]);
-  const [activeCategory, setActiveCategory] = useState('All Topics');
+  const [activeCategorySlug, setActiveCategorySlug] = useState('all');
   const [activeTag, setActiveTag] = useState(null);
-  const [sidebarSearch, setSidebarSearch] = useState('');
+  const [activeFilter, setActiveFilter] = useState('latest');
+  const [loading, setLoading] = useState(true);
+
+  // Sidebar states
+  const [topContributors, setTopContributors] = useState([]);
+  const [popularTags, setPopularTags] = useState([]);
 
   // Modals state
   const [isNewModalOpen, setIsNewModalOpen] = useState(false);
@@ -79,7 +23,7 @@ export default function Discussions() {
 
   // New Discussion Form state
   const [newTitle, setNewTitle] = useState('');
-  const [newCategory, setNewCategory] = useState('General');
+  const [newCategoryId, setNewCategoryId] = useState('');
   const [newContent, setNewContent] = useState('');
   const [newTags, setNewTags] = useState('');
 
@@ -95,123 +39,130 @@ export default function Discussions() {
     setToast(prev => ({ ...prev, show: false }));
   }, []);
 
-  // Initialize from LocalStorage
-  useEffect(() => {
-    const stored = localStorage.getItem('cc-discussions');
-    if (stored) {
-      setDiscussionList(JSON.parse(stored));
-    } else {
-      localStorage.setItem('cc-discussions', JSON.stringify(defaultDiscussions));
-      setDiscussionList(defaultDiscussions);
+  const fetchCategories = useCallback(async () => {
+    try {
+      const res = await api.get('/discussion-categories');
+      setCategories(res.data || []);
+      if (res.data && res.data.length > 0) {
+        setNewCategoryId(res.data[0].id);
+      }
+    } catch (err) {
+      showToast('error', 'Failed to load discussion categories.');
+    }
+  }, [showToast]);
+
+  const fetchDiscussions = useCallback(async () => {
+    setLoading(true);
+    try {
+      let url = `/discussions?page=0&size=20&filter=${activeFilter}`;
+      if (activeCategorySlug !== 'all') {
+        url += `&categorySlug=${activeCategorySlug}`;
+      }
+      const res = await api.get(url);
+      setDiscussionList(res.data.content || []);
+    } catch (err) {
+      showToast('error', 'Failed to load discussions.');
+    } finally {
+      setLoading(false);
+    }
+  }, [activeCategorySlug, activeFilter, showToast]);
+
+  const fetchSidebars = useCallback(async () => {
+    try {
+      const [contribRes, tagRes] = await Promise.all([
+        api.get('/discussions/contributors/top'),
+        api.get('/discussions/tags/popular')
+      ]);
+      setTopContributors(contribRes.data || []);
+      setPopularTags(tagRes.data || []);
+    } catch (err) {
+      console.error('Failed to load sidebars', err);
     }
   }, []);
 
-  // Update localStorage when discussionList changes
-  const saveDiscussions = (newList) => {
-    setDiscussionList(newList);
-    localStorage.setItem('cc-discussions', JSON.stringify(newList));
+  useEffect(() => {
+    fetchCategories();
+    fetchSidebars();
+  }, [fetchCategories, fetchSidebars]);
+
+  useEffect(() => {
+    fetchDiscussions();
+  }, [fetchDiscussions]);
+
+  const handleVote = async (e, postId, value) => {
+    e.stopPropagation();
+    try {
+      const res = await api.post(`/discussions/${postId}/vote`, { voteValue: value });
+      // Optimistically update list
+      setDiscussionList(prev => prev.map(p => p.id === postId ? res.data : p));
+      if (activeDiscussion && activeDiscussion.id === postId) {
+        setActiveDiscussion(res.data);
+      }
+    } catch (err) {
+      showToast('error', 'Failed to vote.');
+    }
   };
 
-  // Filter discussions list
+  // Filter discussions by active tag or local search
   const filteredDiscussions = discussionList.filter(d => {
-    const matchesCategory = activeCategory === 'All Topics' || d.category.toLowerCase() === activeCategory.toLowerCase();
-    const matchesTag = !activeTag || d.tags.includes(activeTag);
-    return matchesCategory && matchesTag;
+    const matchesTag = !activeTag || (d.tags && d.tags.includes(activeTag));
+    return matchesTag;
   });
 
-  // Sidebar search — filters categories and tags
-  const sidebarQuery = sidebarSearch.trim().toLowerCase();
-  const filteredCategories = sidebarQuery
-    ? categories.filter(cat => cat.name.toLowerCase().includes(sidebarQuery))
-    : categories;
-  const filteredTrendingTags = sidebarQuery
-    ? trendingTags.filter(tag => tag.toLowerCase().includes(sidebarQuery))
-    : trendingTags;
-
-
-
   // Create new discussion
-  const handleCreateDiscussion = (e) => {
+  const handleCreateDiscussion = async (e) => {
     e.preventDefault();
-    if (!newTitle.trim() || !newContent.trim()) {
-      showToast('error', 'Please fill in the title and description.');
+    if (!newTitle.trim() || !newContent.trim() || !newCategoryId) {
+      showToast('error', 'Please fill in all required fields.');
       return;
     }
 
-    const catObj = categories.find(c => c.name.toLowerCase() === newCategory.toLowerCase()) || categories[1];
-    
-    // Parse tags: split by comma, clean whitespaces, prepend # if missing
-    const parsedTags = newTags
-      .split(',')
-      .map(t => t.trim().toLowerCase())
-      .filter(t => t.length > 0)
-      .map(t => t.startsWith('#') ? t : `#${t}`);
+    try {
+      await api.post('/discussions', {
+        title: newTitle.trim(),
+        content: newContent.trim(),
+        categoryId: Number(newCategoryId),
+        tags: newTags.trim()
+      });
 
-    const newDiscussion = {
-      id: Date.now(),
-      category: newCategory,
-      catColor: catObj.color,
-      time: 'Just now',
-      votes: 1,
-      title: newTitle.trim(),
-      preview: newContent.trim().slice(0, 140) + (newContent.trim().length > 140 ? '…' : ''),
-      content: newContent.trim(),
-      author: user?.name || 'Alex Rivera',
-      tags: parsedTags,
-      replies: [],
-      featured: false,
-    };
-
-    const updated = [newDiscussion, ...discussionList];
-    saveDiscussions(updated);
-
-    // Reset form & close
-    setNewTitle('');
-    setNewCategory('General');
-    setNewContent('');
-    setNewTags('');
-    setIsNewModalOpen(false);
-    showToast('success', 'Discussion thread posted successfully!');
+      setNewTitle('');
+      setNewContent('');
+      setNewTags('');
+      setIsNewModalOpen(false);
+      showToast('success', 'Discussion thread posted successfully!');
+      fetchDiscussions();
+    } catch (err) {
+      showToast('error', err.response?.data?.message || 'Failed to post discussion.');
+    }
   };
 
   // Post a reply
-  const handlePostReply = (e) => {
+  const handlePostReply = async (e) => {
     e.preventDefault();
-    if (!replyText.trim()) {
+    if (!replyText.trim() || !activeDiscussion) {
       showToast('error', 'Reply comment cannot be empty.');
       return;
     }
 
-    const newReply = {
-      author: user?.name || 'Alex Rivera',
-      content: replyText.trim(),
-      time: 'Just now'
-    };
+    try {
+      const res = await api.post(`/discussions/${activeDiscussion.id}/replies`, {
+        content: replyText.trim()
+      });
 
-    const updatedDiscussions = discussionList.map(d => {
-      if (d.id === activeDiscussion.id) {
-        const newReplies = [...d.replies, newReply];
-        return { ...d, replies: newReplies };
-      }
-      return d;
-    });
+      const newReply = res.data;
+      
+      // Update active discussion state to render the reply immediately
+      setActiveDiscussion(prev => ({
+        ...prev,
+        replies: [...(prev.replies || []), newReply]
+      }));
 
-    saveDiscussions(updatedDiscussions);
-    
-    // Update active discussion state to render the reply immediately
-    setActiveDiscussion(prev => ({
-      ...prev,
-      replies: [...prev.replies, newReply]
-    }));
-
-    setReplyText('');
-    showToast('success', 'Comment posted!');
-  };
-
-  // Helper to count category totals
-  const getCategoryCount = (catName) => {
-    if (catName === 'All Topics') return discussionList.length;
-    return discussionList.filter(d => d.category.toLowerCase() === catName.toLowerCase()).length;
+      setReplyText('');
+      showToast('success', 'Comment posted!');
+      fetchDiscussions();
+    } catch (err) {
+      showToast('error', err.response?.data?.message || 'Failed to post reply.');
+    }
   };
 
   return (
@@ -240,159 +191,177 @@ export default function Discussions() {
         <div className="disc-layout">
           {/* Left sidebar */}
           <div className="disc-sidebar">
-
-            {/* Sidebar search */}
-            <div className="disc-sidebar-search-box">
-              <FiSearch className="disc-sidebar-search-icon" size={15} />
-              <input
-                type="text"
-                className="disc-sidebar-search-input"
-                placeholder="Search topics or tags..."
-                value={sidebarSearch}
-                onChange={e => setSidebarSearch(e.target.value)}
-              />
-              {sidebarSearch && (
-                <button
-                  className="disc-sidebar-search-clear"
-                  onClick={() => setSidebarSearch('')}
-                  aria-label="Clear search"
-                >
-                  <FiX size={13} />
-                </button>
-              )}
-            </div>
-
             <div className="disc-sidebar-card">
               <h4 className="disc-sidebar-title">CATEGORIES</h4>
-              {filteredCategories.length === 0 ? (
-                <p className="disc-sidebar-no-results">No categories match.</p>
-              ) : (
-                <ul className="disc-cat-list">
-                  {filteredCategories.map(cat => {
-                    const isActive = activeCategory === cat.name && !activeTag;
-                    return (
-                      <li
-                        key={cat.name}
-                        className={`disc-cat-item ${isActive ? 'active' : ''}`}
-                        onClick={() => {
-                          setActiveCategory(cat.name);
-                          setActiveTag(null);
-                          setSidebarSearch('');
-                        }}
-                      >
-                        <span className="disc-cat-dot" style={{ background: cat.color }} />
-                        <span className="disc-cat-name">{cat.name}</span>
-                        <span className="disc-cat-count">{getCategoryCount(cat.name)}</span>
-                      </li>
-                    );
-                  })}
-                </ul>
-              )}
-            </div>
-
-            <div className="disc-sidebar-card">
-              <h4 className="disc-sidebar-title">TRENDING TAGS</h4>
-              {filteredTrendingTags.length === 0 ? (
-                <p className="disc-sidebar-no-results">No tags match.</p>
-              ) : (
-                <div className="disc-tags-wrap">
-                  {filteredTrendingTags.map(tag => {
-                    const isActive = activeTag === tag;
-                    return (
-                      <span
-                        key={tag}
-                        className={`disc-tag ${isActive ? 'active' : ''}`}
-                        onClick={() => {
-                          setActiveTag(isActive ? null : tag);
-                          setActiveCategory('All Topics');
-                          setSidebarSearch('');
-                        }}
-                        style={{ cursor: 'pointer' }}
-                      >
-                        {tag}
-                      </span>
-                    );
-                  })}
-                </div>
-              )}
+              <ul className="disc-cat-list">
+                <li
+                  className={`disc-cat-item ${activeCategorySlug === 'all' ? 'active' : ''}`}
+                  onClick={() => {
+                    setActiveCategorySlug('all');
+                    setActiveTag(null);
+                  }}
+                >
+                  <span className="disc-cat-dot" style={{ background: '#D4AF37' }} />
+                  <span className="disc-cat-name">All Topics</span>
+                </li>
+                {categories.map(cat => {
+                  const isActive = activeCategorySlug === cat.slug;
+                  return (
+                    <li
+                      key={cat.id}
+                      className={`disc-cat-item ${isActive ? 'active' : ''}`}
+                      onClick={() => {
+                        setActiveCategorySlug(cat.slug);
+                        setActiveTag(null);
+                      }}
+                    >
+                      <span className="disc-cat-dot" style={{ background: cat.colorHex || '#6366f1' }} />
+                      <span className="disc-cat-name">{cat.name}</span>
+                    </li>
+                  );
+                })}
+              </ul>
             </div>
           </div>
 
           {/* Main List */}
-          <div className="disc-main">
-            {/* Active Filter Indicator */}
-            {(activeCategory !== 'All Topics' || activeTag) && (
-              <div className="disc-filter-badge-row">
-                <span className="disc-filter-info">
-                  Showing threads in{' '}
-                  <strong>
-                    {activeTag ? `tag: ${activeTag}` : `category: ${activeCategory}`}
-                  </strong>
-                </span>
-                <button 
-                  className="disc-clear-filter-btn"
-                  onClick={() => {
-                    setActiveCategory('All Topics');
-                    setActiveTag(null);
-                  }}
-                >
-                  Clear filter <FiX size={12} />
-                </button>
-              </div>
-            )}
-
-            <div className="disc-thread-list">
-              {filteredDiscussions.length === 0 ? (
-                <div className="disc-empty-state">
-                  <p>No discussion threads found matching this filter.</p>
-                  <button className="disc-empty-reset" onClick={() => { setActiveCategory('All Topics'); setActiveTag(null); }}>Show All Topics</button>
-                </div>
-              ) : (
-                filteredDiscussions.map(d => (
-                  <div 
-                    key={d.id} 
-                    className="disc-thread" 
-                    id={`discussion-${d.id}`}
-                    onClick={() => setActiveDiscussion(d)}
-                    style={{ cursor: 'pointer' }}
+          <div className="disc-main" style={{ display: 'flex', gap: '24px' }}>
+            
+            <div className="disc-thread-section" style={{ flex: 1 }}>
+              {/* Filter Tabs */}
+              <div className="disc-filters" style={{ display: 'flex', gap: '16px', marginBottom: '16px', borderBottom: '1px solid #e2e8f0', paddingBottom: '8px' }}>
+                {['latest', 'unanswered', 'most_replied', 'featured'].map(filter => (
+                  <button 
+                    key={filter}
+                    className={`disc-filter-btn ${activeFilter === filter ? 'active' : ''}`}
+                    onClick={() => setActiveFilter(filter)}
+                    style={{ 
+                      background: 'none', border: 'none', cursor: 'pointer', 
+                      color: activeFilter === filter ? '#D4AF37' : '#64748b',
+                      fontWeight: activeFilter === filter ? 'bold' : 'normal',
+                      padding: '4px 8px'
+                    }}
                   >
-                    <div className="disc-thread-body">
-                      <div className="disc-thread-meta">
-                        <span className="disc-thread-cat" style={{ background: `${d.catColor}18`, color: d.catColor }}>
-                          {d.category}
-                        </span>
-                        <span className="disc-thread-time">• {d.time}</span>
-                      </div>
-                      <h3 className="disc-thread-title">{d.title}</h3>
-                      <p className="disc-thread-preview">{d.preview}</p>
-                      
-                      <div className="disc-thread-tags">
-                        {d.tags && d.tags.map(t => (
-                          <span key={t} className="disc-thread-tag-pill">{t}</span>
-                        ))}
+                    {filter.charAt(0).toUpperCase() + filter.slice(1).replace('_', ' ')}
+                  </button>
+                ))}
+              </div>
+
+              <div className="disc-thread-list">
+                {loading ? (
+                  <p style={{ color: '#64748b' }}>Loading discussions...</p>
+                ) : filteredDiscussions.length === 0 ? (
+                  <div className="disc-empty-state">
+                    <p>No discussion threads found in this category.</p>
+                    <button className="disc-empty-reset" onClick={() => { setActiveCategorySlug('all'); setActiveTag(null); }}>Show All Topics</button>
+                  </div>
+                ) : (
+                  filteredDiscussions.map(d => (
+                    <div 
+                      key={d.id} 
+                      className="disc-thread" 
+                      id={`discussion-${d.id}`}
+                      onClick={() => setActiveDiscussion(d)}
+                      style={{ cursor: 'pointer', display: 'flex', gap: '16px', alignItems: 'flex-start' }}
+                    >
+                      {/* Upvote column */}
+                      <div className="disc-thread-vote" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: '40px' }}>
+                        <button 
+                          onClick={(e) => handleVote(e, d.id, 1)} 
+                          style={{ 
+                            background: 'none', border: 'none', cursor: 'pointer', 
+                            color: d.userVote === 1 ? '#ef4444' : '#94a3b8' 
+                          }}
+                        >
+                          <FiChevronUp size={24} />
+                        </button>
+                        <span style={{ fontWeight: 'bold', color: '#334155' }}>{d.voteScore || 0}</span>
                       </div>
 
-                      <div className="disc-thread-footer">
-                        <div className="disc-thread-author">
-                          <div className="disc-author-avatar">
-                            {d.author.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
-                          </div>
-                          <span>{d.author}</span>
-                        </div>
-                        <span className="disc-thread-replies">
-                          <FiMessageSquare size={13} style={{ marginRight: '4px' }} /> {d.replies.length} replies
-                        </span>
-                        {d.featured && (
-                          <span className="disc-thread-featured">
-                            <FiStar size={12} /> Featured
+                      <div className="disc-thread-body" style={{ flex: 1 }}>
+                        <div className="disc-thread-meta">
+                          <span className="disc-thread-cat" style={{ background: '#6366f118', color: '#6366f1' }}>
+                            {d.categoryName}
                           </span>
-                        )}
+                          <span className="disc-thread-time">• {d.createdAt ? new Date(d.createdAt).toLocaleDateString() : 'Recent'}</span>
+                        </div>
+                        <h3 className="disc-thread-title">{d.title}</h3>
+                        
+                        <div className="disc-thread-tags" style={{ display: 'flex', gap: '6px', margin: '8px 0' }}>
+                          {d.tags && d.tags.split(',').map(tag => (
+                            <span key={tag} style={{ background: '#f1f5f9', color: '#475569', padding: '2px 8px', borderRadius: '12px', fontSize: '11px' }}>
+                              {tag}
+                            </span>
+                          ))}
+                        </div>
+
+                        <div className="disc-thread-footer">
+                          <div className="disc-thread-author">
+                            <div className="disc-author-avatar">
+                              {d.authorName ? d.authorName.slice(0, 2).toUpperCase() : 'U'}
+                            </div>
+                            <span>{d.authorName}</span>
+                          </div>
+                          <span className="disc-thread-replies">
+                            <FiMessageSquare size={13} style={{ marginRight: '4px' }} /> {d.repliesCount || 0} replies
+                          </span>
+                          {d.hasAcceptedAnswer && (
+                            <span style={{ color: '#10b981', display: 'flex', alignItems: 'center', fontSize: '12px', gap: '4px' }}>
+                              <FiCheckCircle size={14} /> Accepted Answer
+                            </span>
+                          )}
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))
-              )}
+                  ))
+                )}
+              </div>
             </div>
+
+            {/* Right Sidebars */}
+            <div className="disc-right-sidebar" style={{ width: '280px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+              
+              {/* Top Contributors */}
+              <div className="disc-sidebar-card" style={{ background: '#fff', borderRadius: '8px', padding: '16px', border: '1px solid #e2e8f0' }}>
+                <h4 style={{ margin: '0 0 16px 0', fontSize: '14px', color: '#1e293b' }}>Top Contributors</h4>
+                <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  {topContributors.map((c, i) => (
+                    <li key={c.userId} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '13px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <span style={{ color: '#94a3b8', fontSize: '12px' }}>{i + 1}</span>
+                        <div className="disc-author-avatar" style={{ width: '24px', height: '24px', fontSize: '10px' }}>
+                          {c.fullName.slice(0, 2).toUpperCase()}
+                        </div>
+                        <span style={{ color: '#334155', fontWeight: '500' }}>{c.fullName}</span>
+                      </div>
+                      <span style={{ color: '#64748b', fontSize: '11px' }}>{c.repliesCount} replies</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              {/* Popular Tags */}
+              <div className="disc-sidebar-card" style={{ background: '#fff', borderRadius: '8px', padding: '16px', border: '1px solid #e2e8f0' }}>
+                <h4 style={{ margin: '0 0 16px 0', fontSize: '14px', color: '#1e293b' }}>Popular Tags</h4>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                  {popularTags.map(t => (
+                    <span 
+                      key={t.tag} 
+                      style={{ 
+                        background: '#f8fafc', color: '#475569', padding: '4px 10px', 
+                        borderRadius: '16px', fontSize: '12px', border: '1px solid #e2e8f0',
+                        cursor: 'pointer'
+                      }}
+                      onClick={() => setActiveTag(t.tag)}
+                    >
+                      {t.tag} <span style={{ color: '#94a3b8', fontSize: '10px' }}>{t.count}</span>
+                    </span>
+                  ))}
+                </div>
+              </div>
+
+            </div>
+
           </div>
         </div>
       </div>
@@ -423,24 +392,14 @@ export default function Discussions() {
                 <div className="disc-form-group" style={{ flex: 1 }}>
                   <label>Category</label>
                   <select 
-                    value={newCategory} 
-                    onChange={e => setNewCategory(e.target.value)}
+                    value={newCategoryId} 
+                    onChange={e => setNewCategoryId(e.target.value)}
+                    required
                   >
-                    <option value="General">General</option>
-                    <option value="Java">Java</option>
-                    <option value="Python">Python</option>
-                    <option value="Career Advice">Career Advice</option>
+                    {categories.map(c => (
+                      <option key={c.id} value={c.id}>{c.name}</option>
+                    ))}
                   </select>
-                </div>
-
-                <div className="disc-form-group" style={{ flex: 1.2 }}>
-                  <label>Tags (comma separated)</label>
-                  <input 
-                    type="text" 
-                    value={newTags} 
-                    onChange={e => setNewTags(e.target.value)} 
-                    placeholder="e.g. react, algorithms, vscode"
-                  />
                 </div>
               </div>
 
@@ -449,7 +408,7 @@ export default function Discussions() {
                 <textarea 
                   value={newContent} 
                   onChange={e => setNewContent(e.target.value)} 
-                  placeholder="Provide context, details, code snippets, or anything to help others understand..."
+                  placeholder="Provide details or questions..."
                   rows={6}
                   required
                 />
@@ -473,8 +432,8 @@ export default function Discussions() {
         <div className="disc-modal-overlay">
           <div className="disc-modal-container detail-modal">
             <div className="disc-modal-header">
-              <span className="disc-thread-cat" style={{ background: `${activeDiscussion.catColor}18`, color: activeDiscussion.catColor }}>
-                {activeDiscussion.category}
+              <span className="disc-thread-cat" style={{ background: '#6366f118', color: '#6366f1' }}>
+                {activeDiscussion.categoryName}
               </span>
               <button className="disc-modal-close" onClick={() => setActiveDiscussion(null)}>
                 <FiX size={20} />
@@ -482,52 +441,41 @@ export default function Discussions() {
             </div>
 
             <div className="disc-detail-scrollable">
-              {/* Opener post */}
               <div className="disc-detail-main">
                 <h2 className="disc-detail-title">{activeDiscussion.title}</h2>
                 <div className="disc-detail-meta">
                   <div className="disc-thread-author">
                     <div className="disc-author-avatar">
-                      {activeDiscussion.author.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
+                      {activeDiscussion.authorName ? activeDiscussion.authorName.slice(0, 2).toUpperCase() : 'U'}
                     </div>
-                    <span><strong>{activeDiscussion.author}</strong></span>
+                    <span><strong>{activeDiscussion.authorName}</strong></span>
                   </div>
-                  <span className="disc-detail-time">• {activeDiscussion.time}</span>
                 </div>
 
-                <div className="disc-detail-content">
+                <div className="disc-detail-content" style={{ marginTop: '16px' }}>
                   {activeDiscussion.content}
                 </div>
-
-                <div className="disc-detail-tags">
-                  {activeDiscussion.tags && activeDiscussion.tags.map(t => (
-                    <span key={t} className="disc-thread-tag-pill">{t}</span>
-                  ))}
-                </div>
-
-
               </div>
 
               {/* Replies Section */}
               <div className="disc-replies-section">
-                <h3>Replies ({activeDiscussion.replies.length})</h3>
+                <h3>Replies ({activeDiscussion.replies ? activeDiscussion.replies.length : 0})</h3>
                 
                 <div className="disc-replies-list">
-                  {activeDiscussion.replies.length === 0 ? (
+                  {!activeDiscussion.replies || activeDiscussion.replies.length === 0 ? (
                     <div className="disc-no-replies">
                       <p>No replies yet. Be the first to answer!</p>
                     </div>
                   ) : (
-                    activeDiscussion.replies.map((reply, index) => (
-                      <div key={index} className="disc-reply-item">
+                    activeDiscussion.replies.map((reply) => (
+                      <div key={reply.id} className="disc-reply-item">
                         <div className="disc-reply-header">
                           <div className="disc-thread-author">
                             <div className="disc-author-avatar small">
-                              {reply.author.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
+                              {reply.authorName ? reply.authorName.slice(0, 2).toUpperCase() : 'U'}
                             </div>
-                            <span><strong>{reply.author}</strong></span>
+                            <span><strong>{reply.authorName}</strong></span>
                           </div>
-                          <span className="disc-reply-time">{reply.time}</span>
                         </div>
                         <div className="disc-reply-body">
                           {reply.content}

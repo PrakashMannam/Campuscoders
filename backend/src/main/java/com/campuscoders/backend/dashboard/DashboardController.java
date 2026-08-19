@@ -17,9 +17,8 @@ public class DashboardController {
     this.dashboardService = dashboardService;
   }
 
-  // Exposes user dashboard statistics. Authenticated user identity is retrieved securely from JWT context.
   @GetMapping("/summary")
-  public DashboardSummaryResponse getCurrentUserSummary(Authentication authentication) {
-    return dashboardService.getCurrentUserSummary(authentication.getName());
+  public DashboardSummaryResponse getDashboardSummary(Authentication authentication) {
+    return dashboardService.getDashboardSummary(authentication.getName());
   }
 }

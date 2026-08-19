@@ -13,7 +13,7 @@ export default function Login() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
 
@@ -23,24 +23,18 @@ export default function Login() {
     }
 
     setLoading(true);
+    const result = await login(email, password);
+    setLoading(false);
 
-    setTimeout(() => {
-      // Determine role from email for demo
-      const role = email.toLowerCase().includes('admin') ? 'admin' : 'student';
-      const result = login(email, password, role);
-
-      setLoading(false);
-
-      if (result.success) {
-        if (result.role === 'admin') {
-          navigate('/admin');
-        } else {
-          navigate('/dashboard');
-        }
+    if (result.success) {
+      if (result.role === 'admin') {
+        navigate('/admin');
       } else {
-        setError('Invalid email or password. Try: student@campus.com / student123');
+        navigate('/dashboard');
       }
-    }, 800);
+    } else {
+      setError(result.error || 'Invalid email or password.');
+    }
   };
 
   return (

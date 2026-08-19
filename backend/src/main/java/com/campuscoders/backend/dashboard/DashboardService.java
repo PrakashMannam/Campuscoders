@@ -5,11 +5,13 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
-import com.campuscoders.backend.announcement.repository.AnnouncementRepository;
+import com.campuscoders.backend.checkin.CheckInService;
+import com.campuscoders.backend.checkin.dto.CheckInStatusResponse;
+import com.campuscoders.backend.dailychallenge.DailyChallengeService;
+import com.campuscoders.backend.dailychallenge.dto.DailyChallengeResponse;
 import com.campuscoders.backend.dashboard.dto.DashboardSummaryResponse;
-import com.campuscoders.backend.learningpath.repository.LearningPathRepository;
-import com.campuscoders.backend.learningpath.repository.LearningResourceRepository;
-import com.campuscoders.backend.learningprogress.repository.UserLearningResourceRepository;
+import com.campuscoders.backend.leaderboard.LeaderboardService;
+import com.campuscoders.backend.leaderboard.dto.MyLeaderboardResponse;
 import com.campuscoders.backend.notification.NotificationService;
 import com.campuscoders.backend.user.User;
 import com.campuscoders.backend.user.repository.UserRepository;
@@ -18,49 +20,61 @@ import com.campuscoders.backend.user.repository.UserRepository;
 public class DashboardService {
 
   private final UserRepository userRepository;
-  private final LearningPathRepository learningPathRepository;
-  private final LearningResourceRepository learningResourceRepository;
-  private final UserLearningResourceRepository userLearningResourceRepository;
-  private final AnnouncementRepository announcementRepository;
+  private final CheckInService checkInService;
+  private final DailyChallengeService dailyChallengeService;
   private final NotificationService notificationService;
+  private final LeaderboardService leaderboardService;
 
   public DashboardService(
       UserRepository userRepository,
-      LearningPathRepository learningPathRepository,
-      LearningResourceRepository learningResourceRepository,
-      UserLearningResourceRepository userLearningResourceRepository,
-      AnnouncementRepository announcementRepository,
-      NotificationService notificationService) {
+      CheckInService checkInService,
+      DailyChallengeService dailyChallengeService,
+      NotificationService notificationService,
+      LeaderboardService leaderboardService) {
     this.userRepository = userRepository;
-    this.learningPathRepository = learningPathRepository;
-    this.learningResourceRepository = learningResourceRepository;
-    this.userLearningResourceRepository = userLearningResourceRepository;
-    this.announcementRepository = announcementRepository;
+    this.checkInService = checkInService;
+    this.dailyChallengeService = dailyChallengeService;
     this.notificationService = notificationService;
+    this.leaderboardService = leaderboardService;
   }
 
-  // readOnly = true avoids unnecessary Hibernate dirty-checking on retrieved entities.
-  @Transactional(readOnly = true)
-  public DashboardSummaryResponse getCurrentUserSummary(String email) {
-    User user = userRepository.findByEmail(email)
+  public DashboardSummaryResponse getDashboardSummary(String userEmail) {
+    User user = userRepository.findByEmail(userEmail)
         .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
 
-    // Aggregate user metrics along with platform-wide counts for an instant dashboard overview.
-    long completedResourcesCount = userLearningResourceRepository.findAllByUserId(user.getId()).size();
+    CheckInStatusResponse checkInStatus = checkInService.getTodayStatus(userEmail);
+
+    DailyChallengeResponse todayChallenge = null;
+    try {
+      todayChallenge = dailyChallengeService.getTodayChallenge(userEmail);
+    } catch (Exception e) {
+      // If no daily challenge is created for today, return null without failing the entire summary call
+    }
+
+    long unreadCount = notificationService.countUnreadForUser(user.getId());
+
+    Integer myRank = null;
+    try {
+      MyLeaderboardResponse rankResponse = leaderboardService.getMyLeaderboardRank(userEmail);
+      if (rankResponse != null) {
+        myRank = rankResponse.rank();
+      }
+    } catch (Exception e) {
+      // Fallback if leaderboard is unavailable for unranked accounts
+    }
 
     return new DashboardSummaryResponse(
-        safeInteger(user.getTotalXp()),
-        safeInteger(user.getDailyStreak()),
-        safeInteger(user.getProblemsSolved()),
-        completedResourcesCount,
-        learningPathRepository.countByActiveTrue(),
-        learningResourceRepository.countByActiveTrue(),
-        announcementRepository.countByActiveTrue(),
-        notificationService.countUnreadForUser(user.getId()));
-  }
-
-  // Prevents NullPointerExceptions if streak or XP numbers haven't been initialized yet.
-  private Integer safeInteger(Integer value) {
-    return value == null ? 0 : value;
+        user.getId(),
+        user.getFullName(),
+        user.getEmail(),
+        user.getRole(),
+        user.getTotalXp() != null ? user.getTotalXp() : 0,
+        user.getDailyStreak() != null ? user.getDailyStreak() : 0,
+        user.getProblemsSolved() != null ? user.getProblemsSolved() : 0,
+        user.getAvatarUrl(),
+        checkInStatus,
+        todayChallenge,
+        unreadCount,
+        myRank);
   }
 }

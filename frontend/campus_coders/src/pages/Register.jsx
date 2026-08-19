@@ -9,53 +9,50 @@ import {
   FiEye,
   FiEyeOff,
 } from "react-icons/fi";
-import { FaFingerprint } from "react-icons/fa";
+import { useAuth } from "../context/AuthContext";
 import Logo from "../components/Logo";
 
 export default function Register() {
   const navigate = useNavigate();
+  const { register } = useAuth();
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
-  const [rollNumber, setRollNumber] = useState("");
-  const [department, setDepartment] = useState("Computer Science");
-  const [year, setYear] = useState("First Year");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
 
-    if (!fullName || !email || !rollNumber || !password) {
-      setError("Please fill in all fields.");
+    if (!fullName || !email || !password) {
+      setError("Please fill in all required fields.");
       return;
     }
 
-    if (password.length < 12) {
-      setError("Password must be at least 12 characters.");
+    if (password.length < 6) {
+      setError("Password must be at least 6 characters.");
       return;
     }
 
     setLoading(true);
+    const result = await register(fullName, email, password);
+    setLoading(false);
 
-    // Simulate account registration
-    setTimeout(() => {
-      setLoading(false);
+    if (result.success) {
       setSuccess(true);
-
-      // Store temporary signup email and info to simulate OTP verification
-      sessionStorage.setItem("pending-login-email", email);
-      sessionStorage.setItem("pending-login-password", password);
-      sessionStorage.setItem("pending-login-role", "student");
-      sessionStorage.setItem("pending-login-name", fullName);
-
       setTimeout(() => {
-        navigate("/verify-otp");
+        if (result.role === 'admin') {
+          navigate('/admin');
+        } else {
+          navigate('/dashboard');
+        }
       }, 1000);
-    }, 1200);
+    } else {
+      setError(result.error || 'Registration failed.');
+    }
   };
 
   return (
@@ -67,14 +64,14 @@ export default function Register() {
           BACK TO HOME
         </Link>
         <Logo size={38} showText={true} layout="inline" theme="light" />
-        <div style={{ width: "90px" }}></div> {/* Spacer for symmetry */}
+        <div style={{ width: "90px" }}></div>
       </div>
 
       {/* Main Card */}
       <div className="auth-card" style={{ maxWidth: "520px" }}>
         <h2>Join the Cohort</h2>
         <p className="subtitle" style={{ marginBottom: "28px" }}>
-          Create your engineer profile to access documentation and peer reviews.
+          Create your engineer profile to access resources and peer discussions.
         </p>
 
         {error && (
@@ -109,7 +106,7 @@ export default function Register() {
               border: "1px solid #A7F3D0",
             }}
           >
-            Profile created successfully! Redirecting to Login Page...
+            Account created successfully! Redirecting to Dashboard...
           </div>
         )}
 
@@ -132,78 +129,21 @@ export default function Register() {
             </div>
           </div>
 
-          {/* Email & College Roll Number Row */}
-          <div className="form-group-row">
-            <div className="form-group">
-              <label className="form-label">Email</label>
-              <div className="input-wrapper">
-                <span className="input-icon-left">
-                  <FiMail size={18} />
-                </span>
-                <input
-                  type="email"
-                  placeholder="name@college.edu"
-                  className="form-input"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                />
-              </div>
-            </div>
-
-            <div className="form-group">
-              <label className="form-label">College Roll Number</label>
-              <div className="input-wrapper">
-                <span className="input-icon-left">
-                  <FaFingerprint size={18} />
-                </span>
-                <input
-                  type="text"
-                  placeholder="2024CS101"
-                  className="form-input"
-                  value={rollNumber}
-                  onChange={(e) => setRollNumber(e.target.value)}
-                  required
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Department & Year Dropdowns Row */}
-          <div className="form-group-row">
-            <div className="form-group">
-              <label className="form-label">Department</label>
-              <select
-                className="form-select"
-                value={department}
-                onChange={(e) => setDepartment(e.target.value)}
-              >
-                <option value="Computer Science">Computer Science</option>
-                <option value="Information Technology">
-                  Information Technology
-                </option>
-                <option value="Electronics & Communication">
-                  Electronics & Communication
-                </option>
-                <option value="Mechanical Engineering">
-                  Mechanical Engineering
-                </option>
-                <option value="Civil Engineering">Civil Engineering</option>
-              </select>
-            </div>
-
-            <div className="form-group">
-              <label className="form-label">Year</label>
-              <select
-                className="form-select"
-                value={year}
-                onChange={(e) => setYear(e.target.value)}
-              >
-                <option value="First Year">First Year</option>
-                <option value="Second Year">Second Year</option>
-                <option value="Third Year">Third Year</option>
-                <option value="Fourth Year">Fourth Year</option>
-              </select>
+          {/* Email */}
+          <div className="form-group">
+            <label className="form-label">Email Address</label>
+            <div className="input-wrapper">
+              <span className="input-icon-left">
+                <FiMail size={18} />
+              </span>
+              <input
+                type="email"
+                placeholder="name@college.edu"
+                className="form-input"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+              />
             </div>
           </div>
 

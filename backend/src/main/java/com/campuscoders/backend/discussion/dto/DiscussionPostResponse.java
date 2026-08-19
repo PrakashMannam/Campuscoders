@@ -17,6 +17,8 @@ public record DiscussionPostResponse(
     Boolean featured,
     Boolean closed,
     Boolean active,
+    Integer voteScore,
+    Integer userVote,
     long repliesCount,
     Boolean hasAcceptedAnswer,
     Instant createdAt,
