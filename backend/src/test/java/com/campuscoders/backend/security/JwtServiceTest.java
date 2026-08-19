@@ -15,7 +15,9 @@ class JwtServiceTest {
 
   @BeforeEach
   void setUp() {
-    jwtService = new JwtService();
+    jwtService = new JwtService(
+        "campus-coders-secret-key-campus-coders-secret-key",
+        86400000L);
   }
 
   @Test
