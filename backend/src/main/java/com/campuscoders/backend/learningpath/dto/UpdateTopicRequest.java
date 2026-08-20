@@ -2,6 +2,7 @@ package com.campuscoders.backend.learningpath.dto;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.PositiveOrZero;
 
 // Request body accepted when an admin edits an existing topic.
 public record UpdateTopicRequest(
@@ -9,7 +10,7 @@ public record UpdateTopicRequest(
     @NotBlank String title,
     @NotBlank String slug,
     String description,
-    Integer estimatedMinutes,
-    Integer sortOrder,
+    @PositiveOrZero(message = "Estimated minutes must be zero or positive") Integer estimatedMinutes,
+    @PositiveOrZero(message = "Sort order must be zero or positive") Integer sortOrder,
     @NotNull Boolean active) {
 }

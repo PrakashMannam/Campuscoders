@@ -4,12 +4,13 @@ import com.campuscoders.backend.announcement.AnnouncementCategory;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
 
 public record UpdateAnnouncementRequest(
     @NotBlank String title,
     @NotBlank String message,
     @NotNull AnnouncementCategory category,
     String actionLabel,
-    String actionUrl,
+    @Pattern(regexp = "^$|https?://.+", message = "Action URL must start with http:// or https://") String actionUrl,
     @NotNull Boolean active) {
 }
