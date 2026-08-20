@@ -64,8 +64,8 @@ export default function Login() {
           {/* Email */}
           <div className="form-group">
             <label className="form-label">Email Address</label>
-            <div className="input-wrapper">
-              <span className="input-icon-left"><FiMail size={18} /></span>
+            <div className="input-wrapper" style={{ position: 'relative' }}>
+              <span className="input-icon-left" style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8', display: 'flex', alignItems: 'center' }}><FiMail size={18} /></span>
               <input
                 type="email"
                 placeholder="name@college.edu"
@@ -73,6 +73,7 @@ export default function Login() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
+                style={{ paddingLeft: '40px' }}
               />
             </div>
           </div>
@@ -83,8 +84,8 @@ export default function Login() {
               <label className="form-label">Password</label>
               <Link to="/forgot-password" className="forgot-link">Forgot Password?</Link>
             </div>
-            <div className="input-wrapper">
-              <span className="input-icon-left"><FiLock size={18} /></span>
+            <div className="input-wrapper" style={{ position: 'relative' }}>
+              <span className="input-icon-left" style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8', display: 'flex', alignItems: 'center' }}><FiLock size={18} /></span>
               <input
                 type={showPassword ? 'text' : 'password'}
                 placeholder="••••••••"
@@ -92,13 +93,14 @@ export default function Login() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                style={{ letterSpacing: showPassword ? 'normal' : '0.2em' }}
+                style={{ paddingLeft: '40px', letterSpacing: showPassword ? 'normal' : '0.2em' }}
               />
               <button
                 type="button"
                 className="input-icon-right"
                 onClick={() => setShowPassword(!showPassword)}
                 aria-label="Toggle password visibility"
+                style={{ position: 'absolute', right: '14px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
               >
                 {showPassword ? <FiEyeOff size={18} /> : <FiEye size={18} />}
               </button>

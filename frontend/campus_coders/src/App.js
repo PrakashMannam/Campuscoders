@@ -11,7 +11,6 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import ForgotPassword from './pages/ForgotPassword';
 import Dashboard from './pages/Dashboard';
-import AdminDashboard from './pages/AdminDashboard';
 import Resources from './pages/Resources';
 import AllLearningPaths from './pages/AllLearningPaths';
 import LearningPathDetail from './pages/LearningPathDetail';
@@ -24,163 +23,163 @@ import Settings from './pages/Settings';
 import ChangePassword from './pages/ChangePassword';
 import Leaderboard from './pages/Leaderboard';
 import Notifications from './pages/Notifications';
-
-/* Hide main Navbar + Footer when inside the student dashboard (it has its own sidebar) */
-function LayoutWrapper({ children }) {
-  const location = useLocation();
-  const isDashboard = location.pathname.startsWith('/dashboard');
-
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
-      {!isDashboard && <Navbar />}
-      <main style={{ flex: '1 0 auto' }}>{children}</main>
-      {!isDashboard && <Footer />}
-    </div>
-  );
-}
+import PageTransition from './components/PageTransition';
+import { AnimatePresence } from 'framer-motion';
+import AdminRoutes from './pages/admin/AdminRoutes';
 
 function App() {
   return (
     <AuthProvider>
       <ProgressProvider>
         <Router>
-        <LayoutWrapper>
-          <Routes>
-            {/* Public Pages */}
-            <Route path="/" element={<Home />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/register" element={<Register />} />
-            <Route path="/forgot-password" element={<ForgotPassword />} />
-
-            {/* Protected Student Dashboard */}
-            <Route
-              path="/dashboard"
-              element={
-                <ProtectedRoute requiredRole="student">
-                  <Dashboard />
-                </ProtectedRoute>
-              }
-            />
-            {/* Resources Hub */}
-            <Route
-              path="/dashboard/resources"
-              element={
-                <ProtectedRoute requiredRole="student">
-                  <Resources />
-                </ProtectedRoute>
-              }
-            />
-            {/* All Learning Paths */}
-            <Route
-              path="/dashboard/resources/paths"
-              element={
-                <ProtectedRoute requiredRole="student">
-                  <AllLearningPaths />
-                </ProtectedRoute>
-              }
-            />
-            {/* Learning Path Detail */}
-            <Route
-              path="/dashboard/resources/paths/:pathId"
-              element={
-                <ProtectedRoute requiredRole="student">
-                  <LearningPathDetail />
-                </ProtectedRoute>
-              }
-            />
-            {/* Topic Detail */}
-            <Route
-              path="/dashboard/resources/topics/:topicId"
-              element={
-                <ProtectedRoute requiredRole="student">
-                  <TopicDetail />
-                </ProtectedRoute>
-              }
-            />
-            {/* Legacy Course Resources fallback */}
-            <Route
-              path="/dashboard/resources/:courseId"
-              element={
-                <ProtectedRoute requiredRole="student">
-                  <CourseResources />
-                </ProtectedRoute>
-              }
-            />
-
-            <Route
-              path="/dashboard/discussions"
-              element={
-                <ProtectedRoute requiredRole="student">
-                  <Discussions />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/dashboard/announcements"
-              element={
-                <ProtectedRoute requiredRole="student">
-                  <Announcements />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/dashboard/profile"
-              element={
-                <ProtectedRoute requiredRole="student">
-                  <Profile />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/dashboard/settings"
-              element={
-                <ProtectedRoute requiredRole="student">
-                  <Settings />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/dashboard/change-password"
-              element={
-                <ProtectedRoute requiredRole="student">
-                  <ChangePassword />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/dashboard/leaderboard"
-              element={
-                <ProtectedRoute requiredRole="student">
-                  <Leaderboard />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/dashboard/notifications"
-              element={
-                <ProtectedRoute requiredRole="student">
-                  <Notifications />
-                </ProtectedRoute>
-              }
-            />
-
-            {/* Protected Admin Dashboard */}
-            <Route
-              path="/admin"
-              element={
-                <ProtectedRoute requiredRole="admin">
-                  <AdminDashboard />
-                </ProtectedRoute>
-              }
-            />
-
-            {/* Fallback routing */}
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Routes>
-        </LayoutWrapper>
+        <AppContent />
       </Router>
       </ProgressProvider>
     </AuthProvider>
+  );
+}
+
+function AppContent() {
+  const location = useLocation();
+  const isDashboard = location.pathname.startsWith('/dashboard') || location.pathname.startsWith('/admin');
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
+      {!isDashboard && <Navbar />}
+      <main style={{ flex: '1 0 auto' }}>
+        <AnimatePresence mode="wait">
+          <Routes location={location} key={location.pathname}>
+              <Route path="/" element={<PageTransition><Home /></PageTransition>} />
+              <Route path="/login" element={<PageTransition><Login /></PageTransition>} />
+              <Route path="/register" element={<PageTransition><Register /></PageTransition>} />
+              <Route path="/forgot-password" element={<PageTransition><ForgotPassword /></PageTransition>} />
+
+              {/* Protected Student Dashboard */}
+              <Route
+                path="/dashboard"
+                element={
+                  <ProtectedRoute requiredRole="student">
+                    <PageTransition><Dashboard /></PageTransition>
+                  </ProtectedRoute>
+                }
+              />
+              {/* Resources Hub */}
+              <Route
+                path="/dashboard/resources"
+                element={
+                  <ProtectedRoute requiredRole="student">
+                    <PageTransition><Resources /></PageTransition>
+                  </ProtectedRoute>
+                }
+              />
+              {/* All Learning Paths */}
+              <Route
+                path="/dashboard/resources/paths"
+                element={
+                  <ProtectedRoute requiredRole="student">
+                    <PageTransition><AllLearningPaths /></PageTransition>
+                  </ProtectedRoute>
+                }
+              />
+              {/* Learning Path Detail */}
+              <Route
+                path="/dashboard/resources/paths/:pathId"
+                element={
+                  <ProtectedRoute requiredRole="student">
+                    <PageTransition><LearningPathDetail /></PageTransition>
+                  </ProtectedRoute>
+                }
+              />
+              {/* Topic Detail */}
+              <Route
+                path="/dashboard/resources/topics/:topicId"
+                element={
+                  <ProtectedRoute requiredRole="student">
+                    <PageTransition><TopicDetail /></PageTransition>
+                  </ProtectedRoute>
+                }
+              />
+              {/* Legacy Course Resources fallback */}
+              <Route
+                path="/dashboard/resources/:courseId"
+                element={
+                  <ProtectedRoute requiredRole="student">
+                    <PageTransition><CourseResources /></PageTransition>
+                  </ProtectedRoute>
+                }
+              />
+
+              <Route
+                path="/dashboard/discussions"
+                element={
+                  <ProtectedRoute requiredRole="student">
+                    <PageTransition><Discussions /></PageTransition>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/dashboard/announcements"
+                element={
+                  <ProtectedRoute requiredRole="student">
+                    <PageTransition><Announcements /></PageTransition>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/dashboard/profile"
+                element={
+                  <ProtectedRoute requiredRole="student">
+                    <PageTransition><Profile /></PageTransition>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/dashboard/settings"
+                element={
+                  <ProtectedRoute requiredRole="student">
+                    <PageTransition><Settings /></PageTransition>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/dashboard/change-password"
+                element={
+                  <ProtectedRoute requiredRole="student">
+                    <PageTransition><ChangePassword /></PageTransition>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/dashboard/leaderboard"
+                element={
+                  <ProtectedRoute requiredRole="student">
+                    <PageTransition><Leaderboard /></PageTransition>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/dashboard/notifications"
+                element={
+                  <ProtectedRoute requiredRole="student">
+                    <PageTransition><Notifications /></PageTransition>
+                  </ProtectedRoute>
+                }
+              />
+
+              {/* Protected Admin Routes */}
+              <Route path="/admin/*" element={
+                <ProtectedRoute requiredRole="admin">
+                  <AdminRoutes />
+                </ProtectedRoute>
+              } />
+
+              {/* Fallback routing */}
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Routes>
+          </AnimatePresence>
+        </main>
+      {!isDashboard && <Footer />}
+    </div>
   );
 }
 
