@@ -5,6 +5,8 @@ import com.campuscoders.backend.learningpath.ResourceType;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.PositiveOrZero;
 
 // Request body accepted when creating a resource under an existing topic.
 public record CreateLearningResourceRequest(
@@ -13,9 +15,9 @@ public record CreateLearningResourceRequest(
     String description,
     @NotNull ResourceType type,
     @NotNull DifficultyLevel difficulty,
-    @NotBlank String url,
+    @NotBlank @Pattern(regexp = "^https?://.+", message = "URL must start with http:// or https://") String url,
     String provider,
-    String thumbnailUrl,
-    Integer estimatedMinutes,
-    Integer sortOrder) {
+    @Pattern(regexp = "^$|https?://.+", message = "Thumbnail URL must start with http:// or https://") String thumbnailUrl,
+    @PositiveOrZero(message = "Estimated minutes must be zero or positive") Integer estimatedMinutes,
+    @PositiveOrZero(message = "Sort order must be zero or positive") Integer sortOrder) {
 }

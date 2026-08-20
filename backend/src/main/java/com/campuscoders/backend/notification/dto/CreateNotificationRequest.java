@@ -4,11 +4,12 @@ import com.campuscoders.backend.notification.NotificationType;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
 
 public record CreateNotificationRequest(
     @NotNull Long recipientUserId,
     @NotBlank String title,
     @NotBlank String message,
     @NotNull NotificationType type,
-    String targetUrl) {
+    @Pattern(regexp = "^$|^(/|https?://).+", message = "Target URL must be a valid path or URL") String targetUrl) {
 }
