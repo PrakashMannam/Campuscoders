@@ -17,6 +17,8 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
+import com.campuscoders.backend.security.CustomAccessDeniedHandler;
+import com.campuscoders.backend.security.CustomAuthenticationEntryPoint;
 import com.campuscoders.backend.security.JwtAuthenticationFilter;
 
 // Enables method-level security annotations like @PreAuthorize("hasRole('ADMIN')") on controllers and services.
@@ -25,9 +27,16 @@ import com.campuscoders.backend.security.JwtAuthenticationFilter;
 public class SecurityConfig {
 
   private final JwtAuthenticationFilter authenticationFilter;
+  private final CustomAuthenticationEntryPoint authenticationEntryPoint;
+  private final CustomAccessDeniedHandler accessDeniedHandler;
 
-  public SecurityConfig(JwtAuthenticationFilter authenticationFilter) {
+  public SecurityConfig(
+      JwtAuthenticationFilter authenticationFilter,
+      CustomAuthenticationEntryPoint authenticationEntryPoint,
+      CustomAccessDeniedHandler accessDeniedHandler) {
     this.authenticationFilter = authenticationFilter;
+    this.authenticationEntryPoint = authenticationEntryPoint;
+    this.accessDeniedHandler = accessDeniedHandler;
   }
 
   // BCrypt uses adaptive key stretching and automatic salt generation for secure,
@@ -63,6 +72,10 @@ public class SecurityConfig {
         // 1. Disable CSRF because REST APIs use token-based authentication via headers,
         // not browser session cookies.
         .csrf(csrf -> csrf.disable())
+        // Configure centralized error handling for authentication (401) and authorization (403)
+        .exceptionHandling(exceptions -> exceptions
+            .authenticationEntryPoint(authenticationEntryPoint)
+            .accessDeniedHandler(accessDeniedHandler))
         // 2. Enforce stateless session policy - no HTTP server sessions (JSESSIONID)
         // are created or stored on the backend.
         .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
