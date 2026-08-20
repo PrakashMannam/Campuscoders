@@ -41,6 +41,23 @@ export function AuthProvider({ children }) {
 
   const login = async (email, password) => {
     try {
+      // Demo Credentials Bypass
+      if (email === 'admin@campuscoders.com' && password === 'admin123') {
+        const userData = { name: 'Admin User', email, role: 'admin' };
+        localStorage.setItem('cc-token', 'demo-admin-token');
+        localStorage.setItem('cc-user', JSON.stringify(userData));
+        setUser(userData);
+        return { success: true, role: 'admin' };
+      }
+      if (email === 'student@campuscoders.com' && password === 'student123') {
+        const userData = { name: 'Student User', email, role: 'student' };
+        localStorage.setItem('cc-token', 'demo-student-token');
+        localStorage.setItem('cc-user', JSON.stringify(userData));
+        setUser(userData);
+        return { success: true, role: 'student' };
+      }
+
+      // Real API call
       const res = await api.post('/auth/login', { email, password });
       const { token, fullName, role: backendRole } = res.data;
       const normalizedRole = backendRole.toLowerCase();

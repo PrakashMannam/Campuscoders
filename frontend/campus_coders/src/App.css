@@ -7527,3 +7527,158 @@ a {
   .prof-bio { max-width: 100%; }
   .prof-form-row { grid-template-columns: 1fr; }
 }
+
+/* ══════════════════════════════════════════════════════════════════
+   FORM CONTROLS (shared across admin & student)
+   ══════════════════════════════════════════════════════════════════ */
+.form-input,
+.form-select {
+  width: 100%;
+  padding: 10px 14px;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 10px;
+  font-size: 0.9rem;
+  font-family: var(--font-body);
+  color: #1e293b;
+  background: #ffffff;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  box-sizing: border-box;
+}
+.form-input:focus,
+.form-select:focus {
+  outline: none;
+  border-color: #d97706;
+  box-shadow: 0 0 0 3px rgba(217, 119, 6, 0.1);
+}
+.form-input::placeholder { color: #94a3b8; }
+.form-select { appearance: auto; cursor: pointer; }
+.form-select:disabled {
+  background: #f3f4f6;
+  color: #94a3b8;
+  cursor: not-allowed;
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   ADMIN PANEL SPECIFIC STYLES
+   ══════════════════════════════════════════════════════════════════ */
+.admin-stat-card:hover {
+  transform: translateY(-3px) !important;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.08) !important;
+}
+
+/* Admin toggle switch */
+.admin-toggle-switch { cursor: pointer; }
+.admin-toggle-slider { display: block; }
+
+/* Admin loading spinner */
+@keyframes adminSpin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+.admin-loading-spinner {
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  border: 3px solid #f1f5f9;
+  border-top: 3px solid #d97706;
+  border-radius: 50%;
+  animation: adminSpin 0.8s linear infinite;
+  margin-right: 8px;
+  vertical-align: middle;
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   PAGE TRANSITIONS & MICRO-ANIMATIONS
+   ══════════════════════════════════════════════════════════════════ */
+
+/* Smooth fade-in for all cards & elements on page load */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.sd-welcome-banner,
+.sd-potd-card,
+.sd-stat-pill,
+.sd-card,
+.res-path-card,
+.res-section,
+.ann-item,
+.admin-stat-card {
+  animation: fadeInUp 0.5s ease forwards;
+}
+
+.sd-stat-pill:nth-child(1) { animation-delay: 0.05s; }
+.sd-stat-pill:nth-child(2) { animation-delay: 0.1s; }
+.sd-stat-pill:nth-child(3) { animation-delay: 0.15s; }
+
+.res-path-card:nth-child(1) { animation-delay: 0.05s; }
+.res-path-card:nth-child(2) { animation-delay: 0.1s; }
+.res-path-card:nth-child(3) { animation-delay: 0.15s; }
+.res-path-card:nth-child(4) { animation-delay: 0.2s; }
+
+/* Hover lift effect for interactive cards */
+.res-path-card,
+.sd-stat-pill.clickable-stat {
+  transition: transform 0.25s ease, box-shadow 0.25s ease !important;
+}
+.res-path-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 32px rgba(0,0,0,0.08);
+}
+.sd-stat-pill.clickable-stat:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.06);
+}
+
+/* Smooth button hover effects */
+.btn {
+  transition: all 0.25s ease !important;
+}
+.btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+}
+.btn:active {
+  transform: translateY(0);
+}
+
+/* Nav link hover animation */
+.dl-nav-item {
+  transition: all 0.2s ease !important;
+}
+.dl-nav-item:hover {
+  transform: translateX(4px);
+}
+
+/* Announcement card animations */
+.ann-item {
+  transition: box-shadow 0.3s ease, transform 0.3s ease !important;
+}
+
+/* Community banner pulse */
+.res-community-banner {
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.res-community-banner:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+}
+
+/* Bookmark table row hover */
+.res-bookmark-table tbody tr {
+  transition: background 0.15s ease;
+}
+
+/* Activity heatmap container */
+.activity-heatmap-container {
+  animation: fadeInUp 0.5s ease forwards;
+  animation-delay: 0.2s;
+  opacity: 0;
+}
