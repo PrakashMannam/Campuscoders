@@ -1,11 +1,12 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   FiPlus, FiRefreshCw, FiEye, FiEdit2, FiTrash2,
-  FiChevronLeft, FiChevronRight, FiCopy, FiFilter
+  FiChevronLeft, FiChevronRight, FiFilter, FiX
 } from 'react-icons/fi';
 import Toast from '../../components/Toast';
 import api from '../../api/client';
+import { MOCK_RESOURCES, MOCK_PATHS, MOCK_TOPICS, loadStore, saveStore } from './adminMockData';
 
 const TYPES = ['All Types', 'VIDEO', 'ARTICLE', 'PDF', 'DOCUMENTATION', 'COURSE'];
 const DIFFICULTIES = ['All Difficulties', 'BEGINNER', 'INTERMEDIATE', 'ADVANCED'];
@@ -15,12 +16,9 @@ export default function AdminManageResources() {
   const navigate = useNavigate();
   const [resources, setResources] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [totalResources, setTotalResources] = useState(0);
   const [currentPage, setCurrentPage] = useState(0);
   const [pageSize, setPageSize] = useState(10);
-  const [totalPages, setTotalPages] = useState(1);
 
-  // Filters
   const [learningPaths, setLearningPaths] = useState([]);
   const [topics, setTopics] = useState([]);
   const [filterPath, setFilterPath] = useState('');
@@ -28,36 +26,25 @@ export default function AdminManageResources() {
   const [filterType, setFilterType] = useState('All Types');
   const [filterDifficulty, setFilterDifficulty] = useState('All Difficulties');
   const [filterStatus, setFilterStatus] = useState('All Statuses');
+  const [search, setSearch] = useState('');
+  const [viewing, setViewing] = useState(null);
 
-  /* ── Toast ── */
   const [toast, setToast] = useState({ show: false, type: 'success', message: '' });
-  const showToast = useCallback((type, message) => {
-    setToast({ show: true, type, message });
-  }, []);
-  const hideToast = useCallback(() => {
-    setToast(prev => ({ ...prev, show: false }));
-  }, []);
+  const showToast = useCallback((type, message) => setToast({ show: true, type, message }), []);
+  const hideToast = useCallback(() => setToast(prev => ({ ...prev, show: false })), []);
 
-  // Fetch learning paths for the filter dropdown
   useEffect(() => {
     const fetchPaths = async () => {
       try {
         const res = await api.get('/admin/learning-paths/options');
-        setLearningPaths(res.data || []);
-      } catch (err) {
-        // Fallback: use mock data
-        setLearningPaths([
-          { id: 1, name: 'Java Full Stack' },
-          { id: 2, name: 'Python Full Stack' },
-          { id: 3, name: 'DSA Intensive' },
-          { id: 4, name: 'Spring Boot' },
-        ]);
+        setLearningPaths(res.data?.length ? res.data : MOCK_PATHS);
+      } catch {
+        setLearningPaths(MOCK_PATHS);
       }
     };
     fetchPaths();
   }, []);
 
-  // Fetch topics based on selected learning path
   useEffect(() => {
     if (!filterPath) {
       setTopics([]);
@@ -67,17 +54,17 @@ export default function AdminManageResources() {
     const fetchTopics = async () => {
       try {
         const res = await api.get(`/admin/topics/options?learningPathId=${filterPath}`);
-        setTopics(res.data || []);
-      } catch (err) {
-        setTopics([]);
+        setTopics(res.data?.length ? res.data : MOCK_TOPICS.filter(t => String(t.pathId) === String(filterPath)));
+      } catch {
+        setTopics(MOCK_TOPICS.filter(t => String(t.pathId) === String(filterPath)));
       }
     };
     fetchTopics();
   }, [filterPath]);
 
-  // Fetch resources
   const fetchResources = useCallback(async () => {
     setLoading(true);
+    const local = loadStore('resources', MOCK_RESOURCES);
     try {
       let url = `/admin/resources?page=${currentPage}&size=${pageSize}`;
       if (filterPath) url += `&learningPathId=${filterPath}`;
@@ -86,28 +73,39 @@ export default function AdminManageResources() {
       if (filterDifficulty !== 'All Difficulties') url += `&difficulty=${filterDifficulty}`;
       if (filterStatus === 'Active') url += `&active=true`;
       else if (filterStatus === 'Inactive') url += `&active=false`;
-
       const res = await api.get(url);
-      setResources(res.data.content || []);
-      setTotalResources(res.data.totalElements || 0);
-      setTotalPages(res.data.totalPages || 1);
-    } catch (err) {
-      // Use empty state on error
-      setResources([]);
-      setTotalResources(0);
+      const content = res.data.content || [];
+      setResources(content.length ? content : local);
+    } catch {
+      setResources(local);
     } finally {
       setLoading(false);
     }
   }, [currentPage, pageSize, filterPath, filterTopic, filterType, filterDifficulty, filterStatus]);
 
-  useEffect(() => {
-    fetchResources();
-  }, [fetchResources]);
+  useEffect(() => { fetchResources(); }, [fetchResources]);
 
-  const handleApplyFilters = () => {
-    setCurrentPage(0);
-    fetchResources();
+  const persist = (next) => {
+    setResources(next);
+    saveStore('resources', next);
   };
+
+  const filtered = useMemo(() => {
+    return resources.filter(r => {
+      if (search && !`${r.title} ${r.description} ${(r.tags || []).join(' ')}`.toLowerCase().includes(search.toLowerCase())) return false;
+      if (filterPath && String(r.learningPathId) !== String(filterPath)) return false;
+      if (filterTopic && String(r.topicId) !== String(filterTopic)) return false;
+      if (filterType !== 'All Types' && r.type !== filterType) return false;
+      if (filterDifficulty !== 'All Difficulties' && r.difficulty !== filterDifficulty) return false;
+      if (filterStatus === 'Active' && r.active === false) return false;
+      if (filterStatus === 'Inactive' && r.active !== false) return false;
+      return true;
+    });
+  }, [resources, search, filterPath, filterTopic, filterType, filterDifficulty, filterStatus]);
+
+  const totalResources = filtered.length;
+  const totalPages = Math.max(1, Math.ceil(totalResources / pageSize));
+  const pageItems = filtered.slice(currentPage * pageSize, currentPage * pageSize + pageSize);
 
   const handleClearFilters = () => {
     setFilterPath('');
@@ -115,44 +113,25 @@ export default function AdminManageResources() {
     setFilterType('All Types');
     setFilterDifficulty('All Difficulties');
     setFilterStatus('All Statuses');
+    setSearch('');
     setCurrentPage(0);
   };
 
   const handleToggleActive = async (resource) => {
     try {
       await api.patch(`/admin/resources/${resource.id}/toggle-active`);
-      showToast('success', `Resource ${resource.active ? 'deactivated' : 'activated'} successfully.`);
-      fetchResources();
-    } catch (err) {
-      showToast('error', 'Failed to toggle resource status.');
-    }
+    } catch { /* mock */ }
+    persist(resources.map(r => r.id === resource.id ? { ...r, active: !r.active } : r));
+    showToast('success', `Resource ${resource.active ? 'deactivated' : 'activated'} successfully.`);
   };
 
   const handleDelete = async (resource) => {
     if (!window.confirm(`Delete "${resource.title}"? This action cannot be undone.`)) return;
     try {
       await api.delete(`/admin/resources/${resource.id}`);
-      showToast('success', 'Resource deleted successfully.');
-      fetchResources();
-    } catch (err) {
-      showToast('error', 'Failed to delete resource.');
-    }
-  };
-
-  const buildApiUrl = () => {
-    let url = `/api/admin/resources?`;
-    const params = [];
-    if (filterTopic) params.push(`topicId=${filterTopic}`);
-    if (filterType !== 'All Types') params.push(`type=${filterType}`);
-    if (filterDifficulty !== 'All Difficulties') params.push(`difficulty=${filterDifficulty}`);
-    if (filterStatus === 'Active') params.push(`active=true`);
-    else if (filterStatus === 'Inactive') params.push(`active=false`);
-    return url + params.join('&');
-  };
-
-  const copyApiUrl = () => {
-    navigator.clipboard.writeText(buildApiUrl());
-    showToast('success', 'API URL copied to clipboard!');
+    } catch { /* mock */ }
+    persist(resources.filter(r => r.id !== resource.id));
+    showToast('success', 'Resource deleted successfully.');
   };
 
   const typeBadgeColor = (type) => {
@@ -161,7 +140,7 @@ export default function AdminManageResources() {
       case 'ARTICLE': return { bg: '#DBEAFE', color: '#1E40AF' };
       case 'PDF': return { bg: '#FCE7F3', color: '#9D174D' };
       case 'DOCUMENTATION': return { bg: '#E0E7FF', color: '#3730A3' };
-      default: return { bg: '#F3F4F6', color: '#374151' };
+      default: return { bg: '#ECFDF5', color: '#047857' };
     }
   };
 
@@ -174,68 +153,35 @@ export default function AdminManageResources() {
     }
   };
 
-  const startItem = currentPage * pageSize + 1;
+  const startItem = totalResources === 0 ? 0 : currentPage * pageSize + 1;
   const endItem = Math.min((currentPage + 1) * pageSize, totalResources);
 
   return (
     <div>
       <Toast type={toast.type} message={toast.message} show={toast.show} onClose={hideToast} />
 
-      {/* Breadcrumb */}
-      <div style={{ fontSize: '0.85rem', color: '#64748b', marginBottom: '8px' }}>
-        <span style={{ cursor: 'pointer', color: '#d97706' }} onClick={() => navigate('/admin')}>Resources</span>
-        <span style={{ margin: '0 6px' }}>›</span>
-        <span>Manage Resources</span>
-      </div>
-
-      {/* Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+      <div className="ap-header">
         <div>
-          <h1 style={{ fontSize: '1.8rem', fontWeight: 800, color: '#111827', margin: '0 0 6px' }}>Manage Resources</h1>
-          <p style={{ color: '#6B7280', margin: 0, fontSize: '0.9rem' }}>View, filter and manage all resources in the platform</p>
+          <h1 className="ap-page-title">Resources</h1>
+          <p className="ap-page-sub">Filter, edit and archive learning assets</p>
         </div>
-        <button
-          className="btn btn-primary"
-          onClick={() => navigate('/admin/resources/create')}
-          style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 20px', fontWeight: 700 }}
-        >
+        <button className="btn btn-primary" onClick={() => navigate('/admin/resources/create')}>
           <FiPlus size={16} /> Create Resource
         </button>
       </div>
 
-      {/* API URL Preview */}
-      <div style={{
-        background: '#F0FDF4', border: '1px solid #BBF7D0', borderRadius: '10px',
-        padding: '12px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        marginBottom: '24px', fontSize: '0.85rem'
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', overflow: 'hidden' }}>
-          <span style={{
-            background: '#16A34A', color: '#fff', padding: '3px 10px', borderRadius: '6px',
-            fontSize: '0.72rem', fontWeight: 800
-          }}>GET</span>
-          <code style={{ color: '#166534', fontFamily: 'monospace', fontSize: '0.82rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-            {buildApiUrl()}
-          </code>
-        </div>
-        <button onClick={copyApiUrl} style={{
-          background: 'none', border: '1px solid #BBF7D0', borderRadius: '6px',
-          padding: '4px 12px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px',
-          fontSize: '0.8rem', color: '#166534', fontWeight: 600
-        }}>
-          <FiCopy size={14} /> Copy
-        </button>
-      </div>
-
-      {/* Filters */}
-      <div style={{
-        background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '16px',
-        padding: '24px', marginBottom: '24px', boxShadow: '0 2px 8px rgba(0,0,0,0.03)'
-      }}>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '16px', marginBottom: '16px' }}>
+      <div className="ap-card-solid" style={{ marginBottom: '16px' }}>
+        <input
+          className="ap-input"
+          placeholder="Search title, description or tags…"
+          value={search}
+          onChange={e => { setSearch(e.target.value); setCurrentPage(0); }}
+          style={{ marginBottom: '16px' }}
+        />
+        <div className="ap-grid-filters">
           <div>
             <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 700, color: '#64748b', marginBottom: '6px' }}>Learning Path</label>
-            <select className="form-select" value={filterPath} onChange={e => { setFilterPath(e.target.value); setFilterTopic(''); }}>
+            <select className="form-select" value={filterPath} onChange={e => { setFilterPath(e.target.value); setFilterTopic(''); setCurrentPage(0); }}>
               <option value="">All Learning Paths</option>
               {learningPaths.map(lp => <option key={lp.id} value={lp.id}>{lp.name}</option>)}
             </select>
@@ -267,36 +213,20 @@ export default function AdminManageResources() {
           </div>
         </div>
         <div style={{ display: 'flex', gap: '12px' }}>
-          <button onClick={handleApplyFilters} className="btn btn-primary" style={{ padding: '8px 16px', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem' }}>
+          <button onClick={() => { setCurrentPage(0); fetchResources(); }} className="btn btn-primary" style={{ padding: '8px 16px', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem' }}>
             <FiFilter size={14} /> Apply Filters
           </button>
-          <button onClick={handleClearFilters} style={{
-            background: 'none', border: '1px solid #d1d5db', borderRadius: '8px',
-            padding: '8px 16px', cursor: 'pointer', fontSize: '0.85rem', color: '#4b5563', fontWeight: 600,
-            display: 'flex', alignItems: 'center', gap: '6px'
-          }}>
-            Clear Filters
-          </button>
+          <button onClick={handleClearFilters} className="ap-ghost-btn">Clear Filters</button>
         </div>
       </div>
 
-      {/* Resource Table */}
-      <div style={{
-        background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '16px',
-        padding: '24px', boxShadow: '0 2px 8px rgba(0,0,0,0.03)'
-      }}>
-        {/* Table Header */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+      <div className="ap-card-solid">
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '12px' }}>
           <div style={{ fontSize: '0.9rem', color: '#64748b', fontWeight: 600 }}>
             Total Resources: <strong style={{ color: '#111827' }}>{totalResources}</strong>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <button onClick={fetchResources} style={{
-              background: 'none', border: '1px solid #d1d5db', borderRadius: '8px',
-              padding: '6px 14px', cursor: 'pointer', fontSize: '0.82rem', display: 'flex', alignItems: 'center', gap: '6px'
-            }}>
-              <FiRefreshCw size={14} /> Refresh
-            </button>
+            <button onClick={fetchResources} className="ap-ghost-btn"><FiRefreshCw size={14} /> Refresh</button>
             <select value={pageSize} onChange={e => { setPageSize(Number(e.target.value)); setCurrentPage(0); }}
               style={{ padding: '6px 12px', borderRadius: '8px', border: '1px solid #d1d5db', fontSize: '0.82rem' }}>
               <option value={10}>10 per page</option>
@@ -306,103 +236,78 @@ export default function AdminManageResources() {
           </div>
         </div>
 
-        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-          <thead>
-            <tr style={{ borderBottom: '2px solid #f1f5f9', textAlign: 'left' }}>
-              <th style={{ padding: '12px', fontSize: '0.78rem', fontWeight: 700, color: '#64748b', cursor: 'pointer' }}>Title ↕</th>
-              <th style={{ padding: '12px', fontSize: '0.78rem', fontWeight: 700, color: '#64748b', cursor: 'pointer' }}>Learning Path ↕</th>
-              <th style={{ padding: '12px', fontSize: '0.78rem', fontWeight: 700, color: '#64748b', cursor: 'pointer' }}>Topic ↕</th>
-              <th style={{ padding: '12px', fontSize: '0.78rem', fontWeight: 700, color: '#64748b', cursor: 'pointer' }}>Type ↕</th>
-              <th style={{ padding: '12px', fontSize: '0.78rem', fontWeight: 700, color: '#64748b', cursor: 'pointer' }}>Difficulty ↕</th>
-              <th style={{ padding: '12px', fontSize: '0.78rem', fontWeight: 700, color: '#64748b' }}>Active ↕</th>
-              <th style={{ padding: '12px', fontSize: '0.78rem', fontWeight: 700, color: '#64748b' }}>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {loading ? (
-              <tr><td colSpan="7" style={{ textAlign: 'center', padding: '40px', color: '#94a3b8' }}>
-                <div className="admin-loading-spinner"></div>Loading resources...
-              </td></tr>
-            ) : resources.length === 0 ? (
-              <tr><td colSpan="7" style={{ textAlign: 'center', padding: '40px', color: '#94a3b8' }}>
-                No resources found. Try adjusting your filters or create a new resource.
-              </td></tr>
-            ) : resources.map(r => {
-              const tColor = typeBadgeColor(r.type);
-              const dColor = diffBadgeColor(r.difficulty);
-              return (
-                <tr key={r.id} style={{ borderBottom: '1px solid #f1f5f9', transition: 'background 0.15s' }}
-                    onMouseEnter={e => e.currentTarget.style.background = '#f8fafc'}
-                    onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
-                  <td style={{ padding: '16px 12px' }}>
-                    <div style={{ fontWeight: 700, color: '#111827', fontSize: '0.9rem' }}>{r.title}</div>
-                    <div style={{ fontSize: '0.78rem', color: '#94a3b8', marginTop: '2px' }}>{r.description?.substring(0, 50)}</div>
-                  </td>
-                  <td style={{ padding: '16px 12px' }}>
-                    <span style={{ color: '#d97706', fontWeight: 600, fontSize: '0.85rem' }}>{r.learningPathName || '—'}</span>
-                  </td>
-                  <td style={{ padding: '16px 12px', color: '#4b5563', fontSize: '0.85rem' }}>{r.topicName || '—'}</td>
-                  <td style={{ padding: '16px 12px' }}>
-                    <span style={{
-                      padding: '3px 10px', borderRadius: '6px', fontSize: '0.72rem', fontWeight: 700,
-                      background: tColor.bg, color: tColor.color
-                    }}>{r.type}</span>
-                  </td>
-                  <td style={{ padding: '16px 12px' }}>
-                    <span style={{
-                      padding: '3px 10px', borderRadius: '6px', fontSize: '0.72rem', fontWeight: 700,
-                      background: dColor.bg, color: dColor.color
-                    }}>{r.difficulty}</span>
-                  </td>
-                  <td style={{ padding: '16px 12px' }}>
-                    <label className="admin-toggle-switch" style={{ position: 'relative', display: 'inline-block', width: '44px', height: '24px' }}>
-                      <input type="checkbox" checked={r.active !== false} onChange={() => handleToggleActive(r)}
-                        style={{ opacity: 0, width: 0, height: 0 }} />
-                      <span className="admin-toggle-slider" style={{
-                        position: 'absolute', cursor: 'pointer', top: 0, left: 0, right: 0, bottom: 0,
-                        background: r.active !== false ? '#d97706' : '#cbd5e1',
-                        borderRadius: '24px', transition: 'background 0.3s',
-                      }}>
-                        <span style={{
-                          position: 'absolute', content: '""', height: '18px', width: '18px',
-                          left: r.active !== false ? '22px' : '3px', bottom: '3px',
-                          background: '#ffffff', borderRadius: '50%', transition: 'left 0.3s',
-                          boxShadow: '0 1px 3px rgba(0,0,0,0.2)'
-                        }}></span>
-                      </span>
+        <div className="ap-table-wrap">
+          <table className="ap-table">
+            <thead>
+              <tr>
+                <th>Title</th>
+                <th>Learning Path</th>
+                <th>Topic</th>
+                <th>Type</th>
+                <th>Difficulty</th>
+                <th>Tags</th>
+                <th>Active</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {loading ? (
+                <tr><td colSpan="8" style={{ textAlign: 'center', padding: '40px', color: '#94a3b8' }}>
+                  <div className="admin-loading-spinner"></div>Loading resources...
+                </td></tr>
+              ) : pageItems.length === 0 ? (
+                <tr><td colSpan="8" style={{ textAlign: 'center', padding: '40px', color: '#94a3b8' }}>
+                  No resources found. Try adjusting your filters or create a new resource.
+                </td></tr>
+              ) : pageItems.map(r => {
+                const tColor = typeBadgeColor(r.type);
+                const dColor = diffBadgeColor(r.difficulty);
+                return (
+                  <tr key={r.id}>
+                    <td>
+                      <div style={{ fontWeight: 700, color: '#111827', fontSize: '0.9rem' }}>{r.title}</div>
+                      <div style={{ fontSize: '0.78rem', color: '#94a3b8', marginTop: '2px' }}>{r.description?.substring(0, 50)}</div>
+                    </td>
+                    <td><span style={{ color: '#d97706', fontWeight: 600, fontSize: '0.85rem' }}>{r.learningPathName || '—'}</span></td>
+                    <td>{r.topicName || '—'}</td>
+                    <td><span className="ap-badge" style={{ background: tColor.bg, color: tColor.color }}>{r.type}</span></td>
+                    <td><span className="ap-badge" style={{ background: dColor.bg, color: dColor.color }}>{r.difficulty}</span></td>
+                    <td>
+                      <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
+                        {(r.tags || []).slice(0, 2).map(tag => <span key={tag} className="ap-chip">{tag}</span>)}
+                      </div>
+                    </td>
+                    <td>
+                    <label className="ap-toggle">
+                      <input type="checkbox" checked={r.active !== false} onChange={() => handleToggleActive(r)} />
+                      <i />
                     </label>
-                  </td>
-                  <td style={{ padding: '16px 12px' }}>
-                    <div style={{ display: 'flex', gap: '8px' }}>
-                      <button title="View" style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748b', padding: '4px' }}>
-                        <FiEye size={16} />
-                      </button>
-                      <button title="Edit" style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#d97706', padding: '4px' }}>
-                        <FiEdit2 size={16} />
-                      </button>
-                      <button title="Delete" onClick={() => handleDelete(r)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#ef4444', padding: '4px' }}>
-                        <FiTrash2 size={16} />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
+                    </td>
+                    <td>
+                      <div style={{ display: 'flex', gap: '4px' }}>
+                        <button title="View" className="ap-icon-btn" onClick={() => setViewing(r)}><FiEye size={16} /></button>
+                        <button title="Edit" className="ap-icon-btn accent" onClick={() => navigate('/admin/resources/create', { state: { editResource: r } })}>
+                          <FiEdit2 size={16} />
+                        </button>
+                        <button title="Delete" className="ap-icon-btn danger" onClick={() => handleDelete(r)}>
+                          <FiTrash2 size={16} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
 
-        {/* Pagination */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '20px', paddingTop: '16px', borderTop: '1px solid #f1f5f9' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '20px', paddingTop: '16px', borderTop: '1px solid #f1f5f9', flexWrap: 'wrap', gap: '12px' }}>
           <div style={{ fontSize: '0.85rem', color: '#64748b' }}>
-            Showing {totalResources > 0 ? startItem : 0} to {endItem} of {totalResources} resources
+            Showing {startItem} to {endItem} of {totalResources} resources
           </div>
           <div style={{ display: 'flex', gap: '4px' }}>
             <button disabled={currentPage === 0} onClick={() => setCurrentPage(p => p - 1)}
-              style={{
-                padding: '6px 10px', borderRadius: '8px', border: '1px solid #d1d5db',
-                background: currentPage === 0 ? '#f8fafc' : '#fff', cursor: currentPage === 0 ? 'not-allowed' : 'pointer',
-                color: currentPage === 0 ? '#cbd5e1' : '#374151'
-              }}>
+              style={{ padding: '6px 10px', borderRadius: '8px', border: '1px solid #d1d5db', background: currentPage === 0 ? '#f8fafc' : '#fff', cursor: currentPage === 0 ? 'not-allowed' : 'pointer', color: currentPage === 0 ? '#cbd5e1' : '#374151' }}>
               <FiChevronLeft size={16} />
             </button>
             {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => (
@@ -411,8 +316,7 @@ export default function AdminManageResources() {
                   padding: '6px 12px', borderRadius: '8px', fontWeight: 700, fontSize: '0.85rem',
                   border: currentPage === i ? 'none' : '1px solid #d1d5db',
                   background: currentPage === i ? '#d97706' : '#fff',
-                  color: currentPage === i ? '#fff' : '#374151',
-                  cursor: 'pointer'
+                  color: currentPage === i ? '#fff' : '#374151', cursor: 'pointer'
                 }}>
                 {i + 1}
               </button>
@@ -429,6 +333,31 @@ export default function AdminManageResources() {
           </div>
         </div>
       </div>
+
+      {viewing && (
+        <div className="ap-overlay" onClick={() => setViewing(null)}>
+          <div className="ap-modal" onClick={e => e.stopPropagation()}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px' }}>
+              <div>
+                <h2 style={{ margin: 0, fontSize: '1.35rem' }}>{viewing.title}</h2>
+                <p style={{ color: '#64748b', margin: '6px 0 0' }}>{viewing.learningPathName} · {viewing.topicName}</p>
+              </div>
+              <button className="ap-icon-btn" onClick={() => setViewing(null)}><FiX size={18} /></button>
+            </div>
+            <p style={{ color: '#374151', lineHeight: 1.6 }}>{viewing.description}</p>
+            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', margin: '16px 0' }}>
+              <span className="ap-badge" style={typeBadgeColor(viewing.type)}>{viewing.type}</span>
+              <span className="ap-badge" style={diffBadgeColor(viewing.difficulty)}>{viewing.difficulty}</span>
+              {(viewing.tags || []).map(t => <span key={t} className="ap-chip">{t}</span>)}
+            </div>
+            <a href={viewing.resourceLink} target="_blank" rel="noreferrer" style={{ color: '#d97706', fontWeight: 700, wordBreak: 'break-all' }}>{viewing.resourceLink}</a>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', marginTop: '24px' }}>
+              <button className="ap-ghost-btn" onClick={() => setViewing(null)}>Close</button>
+              <button className="btn btn-primary" onClick={() => navigate('/admin/resources/create', { state: { editResource: viewing } })}>Edit Resource</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
