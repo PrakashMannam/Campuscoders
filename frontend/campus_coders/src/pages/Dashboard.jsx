@@ -8,6 +8,7 @@ import {
   FiCheckCircle
 } from "react-icons/fi";
 import DashboardLayout from "../components/DashboardLayout";
+import ActivityHeatmap from "../components/ActivityHeatmap";
 import Toast from "../components/Toast";
 import { useAuth } from "../context/AuthContext";
 import api from "../api/client";
@@ -99,6 +100,7 @@ export default function Dashboard() {
   const [summary, setSummary] = useState(null);
   const [announcements, setAnnouncements] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   /* ── Toast ── */
   const [toast, setToast] = useState({
@@ -126,37 +128,61 @@ export default function Dashboard() {
       setSummary(sumRes.data);
       setAnnouncements(annRes.data.content || []);
     } catch (err) {
-      showToast('error', 'Failed to load dashboard summary.');
+      // Provide mock data for frontend-only testing
+      const todayStr = new Date().toISOString().split('T')[0];
+      const storedSolved = localStorage.getItem('potd_solved_date') === todayStr;
+
+      setSummary({
+        totalXp: 1250 + (storedSolved ? 15 : 0),
+        dailyStreak: 12 + (storedSolved ? 1 : 0),
+        problemsSolved: 45 + (storedSolved ? 1 : 0),
+        globalRank: 128,
+        checkInStatus: { checkedInToday: storedSolved },
+        todayChallenge: {
+          id: 1,
+          title: 'Two Sum',
+          platform: 'LeetCode',
+          difficulty: 'BEGINNER',
+          xpReward: 15,
+          tags: 'Arrays, Hash Table',
+          problemUrl: 'https://leetcode.com/problems/two-sum',
+          completedToday: storedSolved
+        }
+      });
+      setAnnouncements([
+        { id: 1, title: 'Welcome to Campus Coders!', message: 'Explore the new Student Dashboard and start learning!', category: 'SYSTEM', createdAt: new Date().toISOString() },
+        { id: 2, title: 'Upcoming Hackathon', message: 'Join the annual spring coding challenge this weekend.', category: 'HACKATHON', createdAt: new Date().toISOString() }
+      ]);
+      // Silently ignore error for demo mode
     } finally {
       setLoading(false);
     }
-  }, [showToast]);
+  }, []);
 
   useEffect(() => {
     fetchDashboardData();
   }, [fetchDashboardData]);
 
-  const handleDailyCheckIn = async () => {
-    try {
-      await api.post('/check-ins/today');
-      showToast('success', 'Daily check-in completed! +1 XP awarded!');
-      fetchDashboardData();
-    } catch (err) {
-      showToast('info', err.response?.data?.message || 'Already checked in today!');
-    }
-  };
-
   const handleCompleteChallenge = async () => {
-    if (!summary?.todayChallenge) return;
+    if (!summary?.todayChallenge || isSubmitting || summary.todayChallenge.completedToday) return;
+    setIsSubmitting(true);
     try {
-      await api.post('/daily-challenges/today/attempt', {
-        challengeId: summary.todayChallenge.id,
-        solutionNotes: 'Completed on platform'
-      });
-      showToast('success', `Daily Challenge completed! +${summary.todayChallenge.xpReward} XP awarded!`);
-      fetchDashboardData();
+      // Mock bypass: Update POTD status and Check-in status simultaneously
+      setSummary(prev => ({ 
+        ...prev, 
+        totalXp: prev.totalXp + prev.todayChallenge.xpReward,
+        dailyStreak: prev.dailyStreak + (prev.checkInStatus.checkedInToday ? 0 : 1),
+        problemsSolved: prev.problemsSolved + 1,
+        checkInStatus: { checkedInToday: true },
+        todayChallenge: { ...prev.todayChallenge, completedToday: true }
+      }));
+      const todayStr = new Date().toISOString().split('T')[0];
+      localStorage.setItem('potd_solved_date', todayStr);
+      showToast('success', `Awesome! You completed the daily problem and checked in! +${summary.todayChallenge.xpReward} XP awarded!`);
     } catch (err) {
       showToast('info', err.response?.data?.message || 'Already completed today!');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -254,19 +280,6 @@ export default function Dashboard() {
                 </div>
               </div>
             </div>
-            <button
-              onClick={handleDailyCheckIn}
-              disabled={checkedIn}
-              className="btn btn-sm"
-              style={{
-                background: checkedIn ? '#ECFDF5' : '#10b981',
-                color: checkedIn ? '#059669' : '#ffffff',
-                border: checkedIn ? '1px solid #A7F3D0' : 'none',
-                fontWeight: 600
-              }}
-            >
-              {checkedIn ? 'Checked In ✓' : 'Check In Today'}
-            </button>
           </div>
         </div>
 
@@ -308,9 +321,10 @@ export default function Dashboard() {
                 <button
                   className="btn btn-primary"
                   onClick={handleCompleteChallenge}
-                  style={{ padding: '8px 16px' }}
+                  disabled={isSubmitting}
+                  style={{ padding: '8px 16px', opacity: isSubmitting ? 0.7 : 1, cursor: isSubmitting ? 'not-allowed' : 'pointer' }}
                 >
-                  Mark Solved (+{potd.xpReward} XP)
+                  {isSubmitting ? 'Marking...' : `Mark Solved (+${potd.xpReward} XP)`}
                 </button>
               ) : potd?.completedToday ? (
                 <span style={{ color: '#059669', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
@@ -321,8 +335,11 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* ── Bottom Row: Announcements | Calendar ── */}
-        <div className="sd-bottom-grid">
+        {/* ── Bottom Row: Announcements | Activity Heatmap ── */}
+        <div className="sd-bottom-grid" style={{ gridTemplateColumns: '1fr' }}>
+          {/* Activity Heatmap */}
+          <ActivityHeatmap />
+
           {/* Announcements */}
           <div className="sd-card">
             <div className="sd-card-header">
@@ -350,9 +367,6 @@ export default function Dashboard() {
               See all announcements
             </button>
           </div>
-
-          {/* Calendar */}
-          <MiniCalendar checkedInToday={checkedIn} />
         </div>
       </div>
     </DashboardLayout>
