@@ -1300,52 +1300,8 @@ a {
 }
 
 /* ============================================
-   ADMIN DASHBOARD EXTRAS
+   DASHBOARD CARD INPUTS
    ============================================ */
-.admin-action-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
-}
-
-.admin-action-btn {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 10px;
-  padding: 18px 12px;
-  border-radius: 12px;
-  border: 1px solid var(--card-border);
-  background: #fafbfc;
-  cursor: pointer;
-  font-size: 0.82rem;
-  font-weight: 600;
-  color: var(--text-secondary);
-  font-family: var(--font-body);
-  transition:
-    background 0.2s ease,
-    border-color 0.2s ease,
-    transform 0.2s ease;
-}
-
-.admin-action-btn:hover {
-  background: var(--card-bg);
-  border-color: var(--action-color, #d4af37);
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
-}
-
-.admin-action-icon {
-  width: 40px;
-  height: 40px;
-  border-radius: 10px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1.2rem;
-}
-
-/* Admin input/textarea inside card */
 .dash-card input[type="text"],
 .dash-card textarea {
   width: 100%;
@@ -1364,90 +1320,6 @@ a {
 .dash-card textarea:focus {
   outline: none;
   border-color: #d4af37;
-}
-
-/* Admin student table */
-.admin-student-table {
-  display: flex;
-  flex-direction: column;
-  gap: 0;
-}
-
-.admin-table-head {
-  display: grid;
-  grid-template-columns: 2fr 0.7fr 0.7fr 1fr;
-  padding: 8px 12px;
-  font-size: 0.72rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--text-muted);
-  border-bottom: 1px solid #f3f4f6;
-  margin-bottom: 4px;
-}
-
-.admin-table-row {
-  display: grid;
-  grid-template-columns: 2fr 0.7fr 0.7fr 1fr;
-  align-items: center;
-  padding: 10px 12px;
-  border-radius: 8px;
-  transition: background 0.15s ease;
-}
-
-.admin-table-row:hover {
-  background: #fafafa;
-}
-
-.admin-student-info {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.admin-student-avatar {
-  width: 34px;
-  height: 34px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, #d4af37, #ffc107);
-  color: #4a3b00;
-  font-size: 0.75rem;
-  font-weight: 800;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-
-.admin-student-name {
-  font-size: 0.87rem;
-  font-weight: 600;
-  color: var(--text-primary);
-}
-
-.admin-student-email {
-  font-size: 0.75rem;
-  color: var(--text-muted);
-  margin-top: 1px;
-}
-
-.admin-status-badge {
-  font-size: 0.75rem;
-  font-weight: 700;
-  padding: 3px 10px;
-  border-radius: 20px;
-  display: inline-flex;
-  align-items: center;
-}
-
-.admin-status-badge.active {
-  background: #d1fae5;
-  color: #065f46;
-}
-
-.admin-status-badge.inactive {
-  background: #f3f4f6;
-  color: #6b7280;
 }
 
 /* OTP Verify Badge */
@@ -1487,14 +1359,6 @@ a {
   .dash-main-grid {
     padding: 0 20px;
   }
-  .admin-table-head,
-  .admin-table-row {
-    grid-template-columns: 2fr 1fr 1fr;
-  }
-  .admin-table-head span:nth-child(3),
-  .admin-table-row span:nth-child(3) {
-    display: none;
-  }
 }
 
 /* ============================================================
@@ -1510,6 +1374,7 @@ a {
 .dl-sidebar {
   width: 215px;
   min-height: 100vh;
+  height: 100vh;
   background: #ffffff;
   border-right: 1px solid #f0f4f8;
   display: flex;
@@ -1519,6 +1384,7 @@ a {
   top: 0;
   left: 0;
   z-index: 200;
+  overflow: hidden;
 }
 
 .dl-sidebar-brand {
@@ -7186,97 +7052,6 @@ a {
   cursor: pointer;
 }
 
-/* Admin Resource Upload Form Styling */
-.admin-resource-form {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-  padding-top: 10px;
-}
-
-.admin-source-mode-toggle {
-  display: flex;
-  gap: 10px;
-  margin-bottom: 6px;
-}
-
-.admin-mode-btn {
-  flex: 1;
-  padding: 10px;
-  border-radius: 8px;
-  border: 1px solid #e2e8f0;
-  background: #f8fafc;
-  color: #64748b;
-  font-size: 0.85rem;
-  font-weight: 600;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-}
-
-.admin-mode-btn.active {
-  background: #856404;
-  color: #ffffff;
-  border-color: #856404;
-}
-
-.form-group-custom {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.form-group-custom label {
-  font-size: 0.82rem;
-  font-weight: 700;
-  color: #334155;
-}
-
-.form-group-custom input,
-.form-group-custom select,
-.form-group-custom textarea {
-  width: 100%;
-  padding: 10px 12px;
-  border-radius: 8px;
-  border: 1px solid #cbd5e1;
-  font-size: 0.88rem;
-  color: #0f172a;
-  background: #ffffff;
-  outline: none;
-  font-family: var(--font-body);
-}
-
-.form-group-custom input:focus,
-.form-group-custom select:focus,
-.form-group-custom textarea:focus {
-  border-color: #856404;
-  box-shadow: 0 0 0 3px rgba(133, 100, 4, 0.15);
-}
-
-.form-row-2col {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
-}
-
-.form-checkbox-custom {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: #334155;
-  cursor: pointer;
-}
-
-.form-checkbox-custom input {
-  width: 16px;
-  height: 16px;
-  cursor: pointer;
-}
-
 /* ============================================================
    RESPONSIVE MEDIA QUERIES FOR RESOURCES & LEARNING HUB
    ============================================================ */
@@ -7526,4 +7301,129 @@ a {
   .prof-hero-left { flex-direction: column; align-items: center; text-align: center; }
   .prof-bio { max-width: 100%; }
   .prof-form-row { grid-template-columns: 1fr; }
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   FORM CONTROLS (shared across admin & student)
+   ══════════════════════════════════════════════════════════════════ */
+.form-input,
+.form-select {
+  width: 100%;
+  padding: 10px 14px;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 10px;
+  font-size: 0.9rem;
+  font-family: var(--font-body);
+  color: #1e293b;
+  background: #ffffff;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  box-sizing: border-box;
+}
+.form-input:focus,
+.form-select:focus {
+  outline: none;
+  border-color: #d97706;
+  box-shadow: 0 0 0 3px rgba(217, 119, 6, 0.1);
+}
+.form-input::placeholder { color: #94a3b8; }
+.form-select { appearance: auto; cursor: pointer; }
+.form-select:disabled {
+  background: #f3f4f6;
+  color: #94a3b8;
+  cursor: not-allowed;
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   PAGE TRANSITIONS & MICRO-ANIMATIONS
+   ══════════════════════════════════════════════════════════════════ */
+
+/* Smooth fade-in for all cards & elements on page load */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.sd-welcome-banner,
+.sd-potd-card,
+.sd-stat-pill,
+.sd-card,
+.res-path-card,
+.res-section,
+.ann-item {
+  animation: fadeInUp 0.5s ease forwards;
+}
+
+.sd-stat-pill:nth-child(1) { animation-delay: 0.05s; }
+.sd-stat-pill:nth-child(2) { animation-delay: 0.1s; }
+.sd-stat-pill:nth-child(3) { animation-delay: 0.15s; }
+
+.res-path-card:nth-child(1) { animation-delay: 0.05s; }
+.res-path-card:nth-child(2) { animation-delay: 0.1s; }
+.res-path-card:nth-child(3) { animation-delay: 0.15s; }
+.res-path-card:nth-child(4) { animation-delay: 0.2s; }
+
+/* Hover lift effect for interactive cards */
+.res-path-card,
+.sd-stat-pill.clickable-stat {
+  transition: transform 0.25s ease, box-shadow 0.25s ease !important;
+}
+.res-path-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 32px rgba(0,0,0,0.08);
+}
+.sd-stat-pill.clickable-stat:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.06);
+}
+
+/* Smooth button hover effects */
+.btn {
+  transition: all 0.25s ease !important;
+}
+.btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+}
+.btn:active {
+  transform: translateY(0);
+}
+
+/* Nav link hover animation */
+.dl-nav-item {
+  transition: all 0.2s ease !important;
+}
+.dl-nav-item:hover {
+  transform: translateX(4px);
+}
+
+/* Announcement card animations */
+.ann-item {
+  transition: box-shadow 0.3s ease, transform 0.3s ease !important;
+}
+
+/* Community banner pulse */
+.res-community-banner {
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.res-community-banner:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+}
+
+/* Bookmark table row hover */
+.res-bookmark-table tbody tr {
+  transition: background 0.15s ease;
+}
+
+/* Activity heatmap container */
+.activity-heatmap-container {
+  animation: fadeInUp 0.5s ease forwards;
+  animation-delay: 0.2s;
+  opacity: 0;
 }
