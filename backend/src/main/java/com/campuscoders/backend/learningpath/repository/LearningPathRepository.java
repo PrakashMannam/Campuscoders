@@ -16,6 +16,9 @@ public interface LearningPathRepository extends JpaRepository<LearningPath, Long
 
   Page<LearningPath> findByActiveTrue(Pageable pageable);
 
+  // Placement Hub filters by exact category (e.g. "Placement").
+  Page<LearningPath> findByActiveTrueAndCategoryIgnoreCase(String category, Pageable pageable);
+
   long countByActiveTrue();
 
   // Slug lookup supports readable URLs like /api/learning-paths/java-full-stack.

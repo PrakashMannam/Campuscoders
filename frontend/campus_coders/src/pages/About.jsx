@@ -7,7 +7,7 @@ function About() {
           <h2>About Campus Coders</h2>
           <p className="section-text">
             A college-focused platform built for students to study, collaborate, and
-            prepare for interviews and placements — all in one place.
+            prepare for interviews and placements - all in one place.
           </p>
         </div>
 
@@ -15,7 +15,7 @@ function About() {
           <h3>🎯 What the platform offers</h3>
           <ul>
             <li>Announcements for events, webinars, and college notices</li>
-            <li>Curated resources — notes, PDFs, cheat sheets, and video links</li>
+            <li>Curated resources - notes, PDFs, cheat sheets, and video links</li>
             <li>Student dashboard with progress tracking and daily streaks</li>
             <li>Admin tools for managing content, students, and resources</li>
           </ul>

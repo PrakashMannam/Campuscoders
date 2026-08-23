@@ -7,10 +7,12 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.campuscoders.backend.profile.dto.ChangePasswordRequest;
+import com.campuscoders.backend.profile.dto.LeetCodeCalendarResponse;
 import com.campuscoders.backend.profile.dto.ProfileResponse;
 import com.campuscoders.backend.profile.dto.ProfileSettingsResponse;
 import com.campuscoders.backend.profile.dto.PublicProfileResponse;
@@ -39,6 +41,20 @@ public class ProfileController {
   @GetMapping("/me")
   public ProfileResponse getCurrentProfile(Authentication authentication) {
     return profileService.getCurrentProfile(authentication.getName());
+  }
+
+  @GetMapping("/me/leetcode-calendar")
+  public LeetCodeCalendarResponse getLeetCodeCalendar(
+      Authentication authentication,
+      @RequestParam(required = false) Integer year) {
+    return profileService.getLeetCodeCalendar(authentication.getName(), year);
+  }
+
+  @GetMapping("/me/github-calendar")
+  public LeetCodeCalendarResponse getGitHubCalendar(
+      Authentication authentication,
+      @RequestParam(required = false) Integer year) {
+    return profileService.getGitHubCalendar(authentication.getName(), year);
   }
 
   // Updates only profile-safe fields for the currently authenticated user.

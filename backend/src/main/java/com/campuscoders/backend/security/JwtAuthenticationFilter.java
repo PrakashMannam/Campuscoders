@@ -60,7 +60,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         User user = userRepository.findByEmail(email).orElse(null);
 
         // 4️⃣ Verify signature and expiration; if valid, populate Spring Security's SecurityContext.
-        if (user != null && jwtService.validateToken(token, user)) {
+        // Also verify the user is enabled (not deactivated)
+        if (user != null && user.getEnabled() && jwtService.validateToken(token, user)) {
           UserDetails userDetails = userDetailsService.loadUserByUsername(email);
 
           UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(

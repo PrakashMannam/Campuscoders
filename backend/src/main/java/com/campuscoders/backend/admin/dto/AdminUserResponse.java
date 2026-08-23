@@ -4,8 +4,7 @@ import java.time.Instant;
 
 import com.campuscoders.backend.user.Role;
 
-// DTO representing user identity and status for admin management views.
-// Password hash is explicitly omitted to prevent sensitive credential exposure in administrative APIs.
+// Admin user view — password omitted. XP/rank fields intentionally excluded.
 public record AdminUserResponse(
     Long id,
     String fullName,
@@ -14,9 +13,6 @@ public record AdminUserResponse(
     Boolean enabled,
     String university,
     String bio,
-    Integer totalXp,
-    Integer dailyStreak,
-    Integer problemsSolved,
     Instant createdAt,
     Instant updatedAt) {
 }

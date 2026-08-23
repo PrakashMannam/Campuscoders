@@ -1,10 +1,11 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import {
-  FiGrid, FiList, FiBook, FiHash, FiVolume2, FiTarget,
-  FiUsers, FiMessageCircle, FiAward, FiPieChart, FiSettings, FiLogOut
+  FiGrid, FiList, FiBook, FiHash, FiVolume2, FiTarget, FiCalendar,
+  FiUsers, FiMessageCircle, FiLogOut, FiMoon, FiSun
 } from 'react-icons/fi';
 import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
 import Logo from './Logo';
 import '../pages/admin/admin.css';
 
@@ -15,15 +16,14 @@ const adminNavItems = [
   { to: '/admin/topics', icon: <FiHash size={18} />, label: 'Topics' },
   { to: '/admin/announcements', icon: <FiVolume2 size={18} />, label: 'Announcements' },
   { to: '/admin/challenges', icon: <FiTarget size={18} />, label: 'Daily Challenges' },
+  { to: '/admin/events', icon: <FiCalendar size={18} />, label: 'Contests & events' },
   { to: '/admin/users', icon: <FiUsers size={18} />, label: 'Users' },
   { to: '/admin/community', icon: <FiMessageCircle size={18} />, label: 'Community' },
-  { to: '/admin/leaderboard', icon: <FiAward size={18} />, label: 'Leaderboard' },
-  { to: '/admin/reports', icon: <FiPieChart size={18} />, label: 'Reports' },
-  { to: '/admin/settings', icon: <FiSettings size={18} />, label: 'Settings' },
 ];
 
 export default function AdminLayout({ children }) {
   const { user, logout } = useAuth();
+  const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef(null);
@@ -52,7 +52,7 @@ export default function AdminLayout({ children }) {
     <div className="dl-wrapper admin-shell">
       <aside className="dl-sidebar">
         <div className="admin-brand">
-          <Logo size={28} showText={true} layout="inline" theme="light" />
+          <Logo size={28} showText={true} layout="inline" />
           <div className="admin-brand-label">ADMIN</div>
         </div>
 
@@ -91,7 +91,15 @@ export default function AdminLayout({ children }) {
 
       <div className="dl-main">
         <header className="dl-topbar">
-          <div className="dl-topbar-right">
+          <div className="dl-topbar-right" style={{ width: '100%', justifyContent: 'flex-end', gap: 14 }}>
+            <button
+              type="button"
+              className="theme-toggle-btn"
+              aria-label="Toggle theme"
+              onClick={toggleTheme}
+            >
+              {theme === 'dark' ? <FiSun size={18} /> : <FiMoon size={18} />}
+            </button>
             <div className="admin-top-role">
               <strong>{user?.name || 'Admin'}</strong>
               <span>Administrator</span>

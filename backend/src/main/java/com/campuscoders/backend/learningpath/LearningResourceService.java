@@ -1,6 +1,7 @@
 package com.campuscoders.backend.learningpath;
 
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -9,24 +10,55 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
+import com.campuscoders.backend.bookmark.UserBookmarkedResource;
+import com.campuscoders.backend.bookmark.repository.UserBookmarkedResourceRepository;
+import com.campuscoders.backend.common.dto.BookmarkToggleResponse;
 import com.campuscoders.backend.common.dto.PageResponse;
 import com.campuscoders.backend.learningpath.dto.CreateLearningResourceRequest;
 import com.campuscoders.backend.learningpath.dto.LearningResourceResponse;
 import com.campuscoders.backend.learningpath.dto.UpdateLearningResourceRequest;
 import com.campuscoders.backend.learningpath.repository.LearningResourceRepository;
 import com.campuscoders.backend.learningpath.repository.TopicRepository;
+import com.campuscoders.backend.user.User;
+import com.campuscoders.backend.user.repository.UserRepository;
 
 @Service
 public class LearningResourceService {
 
   private final LearningResourceRepository learningResourceRepository;
   private final TopicRepository topicRepository;
+  private final UserBookmarkedResourceRepository userBookmarkedResourceRepository;
+  private final UserRepository userRepository;
 
   public LearningResourceService(
       LearningResourceRepository learningResourceRepository,
-      TopicRepository topicRepository) {
+      TopicRepository topicRepository,
+      UserBookmarkedResourceRepository userBookmarkedResourceRepository,
+      UserRepository userRepository) {
     this.learningResourceRepository = learningResourceRepository;
     this.topicRepository = topicRepository;
+    this.userBookmarkedResourceRepository = userBookmarkedResourceRepository;
+    this.userRepository = userRepository;
+  }
+
+  @Transactional
+  public BookmarkToggleResponse toggleBookmark(String userEmail, Long resourceId) {
+    User user = userRepository.findByEmail(userEmail)
+        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+    LearningResource resource = findResourceById(resourceId);
+
+    Optional<UserBookmarkedResource> existingBookmark = userBookmarkedResourceRepository.findByUserIdAndResourceId(user.getId(), resource.getId());
+
+    if (existingBookmark.isPresent()) {
+      userBookmarkedResourceRepository.delete(existingBookmark.get());
+      return new BookmarkToggleResponse(false);
+    } else {
+      UserBookmarkedResource newBookmark = new UserBookmarkedResource();
+      newBookmark.setUser(user);
+      newBookmark.setResource(resource);
+      userBookmarkedResourceRepository.save(newBookmark);
+      return new BookmarkToggleResponse(true);
+    }
   }
 
   @Transactional

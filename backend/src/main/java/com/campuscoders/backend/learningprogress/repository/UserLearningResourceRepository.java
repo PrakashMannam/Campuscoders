@@ -4,6 +4,8 @@ import java.util.List;
 import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import com.campuscoders.backend.learningprogress.UserLearningResource;
 
@@ -22,4 +24,13 @@ public interface UserLearningResourceRepository extends JpaRepository<UserLearni
 
   // Derived JPA count query: Counts user completions for resources belonging to a specific Topic.
   long countByUserIdAndResourceTopicId(Long userId, Long topicId);
+
+  @Query("""
+      select distinct t.learningPath.id
+      from UserLearningResource ulr
+      join ulr.resource r
+      join r.topic t
+      where ulr.user.id = :userId
+      """)
+  List<Long> findDistinctLearningPathIdsByUserId(@Param("userId") Long userId);
 }

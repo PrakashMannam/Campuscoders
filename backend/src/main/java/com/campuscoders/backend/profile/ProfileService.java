@@ -7,6 +7,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import com.campuscoders.backend.profile.dto.ChangePasswordRequest;
+import com.campuscoders.backend.profile.dto.LeetCodeCalendarResponse;
 import com.campuscoders.backend.profile.dto.ProfileResponse;
 import com.campuscoders.backend.profile.dto.ProfileSettingsResponse;
 import com.campuscoders.backend.profile.dto.PublicProfileResponse;
@@ -20,12 +21,18 @@ public class ProfileService {
 
   private final UserRepository userRepository;
   private final PasswordEncoder passwordEncoder;
+  private final LeetCodeCalendarService leetCodeCalendarService;
+  private final GitHubCalendarService gitHubCalendarService;
 
   public ProfileService(
       UserRepository userRepository,
-      PasswordEncoder passwordEncoder) {
+      PasswordEncoder passwordEncoder,
+      LeetCodeCalendarService leetCodeCalendarService,
+      GitHubCalendarService gitHubCalendarService) {
     this.userRepository = userRepository;
     this.passwordEncoder = passwordEncoder;
+    this.leetCodeCalendarService = leetCodeCalendarService;
+    this.gitHubCalendarService = gitHubCalendarService;
   }
 
   @Transactional(readOnly = true)
@@ -33,6 +40,18 @@ public class ProfileService {
     User user = findUserByEmail(email);
 
     return toResponse(user);
+  }
+
+  @Transactional(readOnly = true)
+  public LeetCodeCalendarResponse getLeetCodeCalendar(String email, Integer year) {
+    User user = findUserByEmail(email);
+    return leetCodeCalendarService.forProfileUrl(user.getLeetcodeUrl(), year);
+  }
+
+  @Transactional(readOnly = true)
+  public LeetCodeCalendarResponse getGitHubCalendar(String email, Integer year) {
+    User user = findUserByEmail(email);
+    return gitHubCalendarService.forProfileUrl(user.getGithubUrl(), year);
   }
 
   // Privacy Rule: If a user has disabled public profile visibility, return NOT_FOUND to hide their information.
@@ -62,6 +81,7 @@ public class ProfileService {
     user.setGeeksforgeeksUrl(request.geeksforgeeksUrl());
     user.setGithubUrl(request.githubUrl());
     user.setLinkedinUrl(request.linkedinUrl());
+    user.setPortfolioUrl(request.portfolioUrl());
     user.setAvatarUrl(request.avatarUrl());
 
     User savedUser = userRepository.save(user);
@@ -124,10 +144,8 @@ public class ProfileService {
         user.getGeeksforgeeksUrl(),
         user.getGithubUrl(),
         user.getLinkedinUrl(),
-        user.getAvatarUrl(),
-        user.getTotalXp(),
-        user.getDailyStreak(),
-        user.getProblemsSolved());
+        user.getPortfolioUrl(),
+        user.getAvatarUrl());
   }
 
   private ProfileSettingsResponse toSettingsResponse(User user) {
@@ -150,6 +168,9 @@ public class ProfileService {
         user.getGeeksforgeeksUrl(),
         user.getGithubUrl(),
         user.getLinkedinUrl(),
-        user.getAvatarUrl());
+        user.getPortfolioUrl(),
+        user.getAvatarUrl(),
+        user.getPublicProfileVisible(),
+        user.getCreatedAt());
   }
 }

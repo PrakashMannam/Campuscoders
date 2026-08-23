@@ -8,11 +8,9 @@ import AdminManageLearningPaths from './AdminManageLearningPaths';
 import AdminManageTopics from './AdminManageTopics';
 import AdminManageAnnouncements from './AdminManageAnnouncements';
 import AdminManageChallenges from './AdminManageChallenges';
+import AdminManageEvents from './AdminManageEvents';
 import AdminManageUsers from './AdminManageUsers';
 import AdminManageCommunity from './AdminManageCommunity';
-import AdminManageLeaderboard from './AdminManageLeaderboard';
-import AdminReports from './AdminReports';
-import AdminSettings from './AdminSettings';
 
 export default function AdminRoutes() {
   return (
@@ -25,11 +23,10 @@ export default function AdminRoutes() {
         <Route path="/topics" element={<AdminManageTopics />} />
         <Route path="/announcements" element={<AdminManageAnnouncements />} />
         <Route path="/challenges" element={<AdminManageChallenges />} />
+        <Route path="/events" element={<AdminManageEvents />} />
         <Route path="/users" element={<AdminManageUsers />} />
         <Route path="/community" element={<AdminManageCommunity />} />
-        <Route path="/leaderboard" element={<AdminManageLeaderboard />} />
-        <Route path="/reports" element={<AdminReports />} />
-        <Route path="/settings" element={<AdminSettings />} />
+
         <Route path="*" element={<Navigate to="/admin" replace />} />
       </Routes>
     </AdminLayout>

@@ -3,6 +3,14 @@ import api from '../api/client';
 
 const AuthContext = createContext(null);
 
+function isRealToken(token) {
+  return Boolean(token) && !token.startsWith('demo-');
+}
+
+function normalizeRole(role) {
+  return String(role || '').toLowerCase();
+}
+
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(() => {
     try {
@@ -15,90 +23,99 @@ export function AuthProvider({ children }) {
 
   const [loading, setLoading] = useState(true);
 
-  // Sync user state with backend /api/auth/me on app boot if token exists
+  const logout = () => {
+    setUser(null);
+    localStorage.removeItem('cc-token');
+    localStorage.removeItem('cc-user');
+  };
+
+  const applyAuthSession = ({ token, fullName, email, role, id }) => {
+    const userData = {
+      id,
+      name: fullName,
+      email,
+      role: normalizeRole(role),
+    };
+    if (token) {
+      localStorage.setItem('cc-token', token);
+    }
+    localStorage.setItem('cc-user', JSON.stringify(userData));
+    setUser(userData);
+    return userData;
+  };
+
   useEffect(() => {
     const token = localStorage.getItem('cc-token');
-    if (token) {
-      api.get('/auth/me')
-        .then((res) => {
-          const fetchedUser = {
-            id: res.data.id,
-            name: res.data.fullName,
-            email: res.data.email,
-            role: res.data.role.toLowerCase(),
-          };
-          setUser((prev) => ({ ...prev, ...fetchedUser }));
-          localStorage.setItem('cc-user', JSON.stringify(fetchedUser));
-        })
-        .catch(() => {
-          logout();
-        })
-        .finally(() => setLoading(false));
-    } else {
+    if (!isRealToken(token)) {
+      if (token) logout();
       setLoading(false);
+      return;
     }
+
+    api.get('/auth/me')
+      .then((res) => {
+        const fetchedUser = {
+          id: res.data.id,
+          name: res.data.fullName,
+          email: res.data.email,
+          role: normalizeRole(res.data.role),
+        };
+        setUser(fetchedUser);
+        localStorage.setItem('cc-user', JSON.stringify(fetchedUser));
+      })
+      .catch(() => {
+        logout();
+      })
+      .finally(() => setLoading(false));
   }, []);
 
   const login = async (email, password) => {
     try {
-      // Demo Credentials Bypass
-      if (email === 'admin@campuscoders.com' && password === 'admin123') {
-        const userData = { name: 'Admin User', email, role: 'admin' };
-        localStorage.setItem('cc-token', 'demo-admin-token');
-        localStorage.setItem('cc-user', JSON.stringify(userData));
-        setUser(userData);
-        return { success: true, role: 'admin' };
-      }
-      if (email === 'student@campuscoders.com' && password === 'student123') {
-        const userData = { name: 'Student User', email, role: 'student' };
-        localStorage.setItem('cc-token', 'demo-student-token');
-        localStorage.setItem('cc-user', JSON.stringify(userData));
-        setUser(userData);
-        return { success: true, role: 'student' };
-      }
-
-      // Real API call
       const res = await api.post('/auth/login', { email, password });
-      const { token, fullName, role: backendRole } = res.data;
-      const normalizedRole = backendRole.toLowerCase();
-
-      const userData = {
-        name: fullName,
-        email,
-        role: normalizedRole,
-      };
-
-      localStorage.setItem('cc-token', token);
-      localStorage.setItem('cc-user', JSON.stringify(userData));
-      setUser(userData);
-
-      return { success: true, role: normalizedRole };
+      const data = res.data;
+      applyAuthSession({
+        token: data.token,
+        fullName: data.fullName,
+        email: data.email || email,
+        role: data.role,
+        id: data.id,
+      });
+      return { success: true, role: normalizeRole(data.role) };
     } catch (err) {
       const msg = err.response?.data?.message || err.response?.data || 'Invalid credentials';
-      return { success: false, error: msg };
+      const status = err.response?.status;
+      return {
+        success: false,
+        error: typeof msg === 'string' ? msg : 'Invalid credentials',
+        needsVerification: status === 403 && String(msg).toLowerCase().includes('verify'),
+      };
     }
   };
 
   const register = async (fullName, email, password) => {
     try {
       const res = await api.post('/auth/register', { fullName, email, password });
-      const { token, role: backendRole } = res.data;
-      const normalizedRole = backendRole.toLowerCase();
+      const data = res.data;
 
-      const userData = {
-        name: fullName,
-        email,
-        role: normalizedRole,
-      };
+      if (data.requiresEmailVerification || !data.token) {
+        return {
+          success: true,
+          requiresEmailVerification: true,
+          email: data.email || email,
+        };
+      }
 
-      localStorage.setItem('cc-token', token);
-      localStorage.setItem('cc-user', JSON.stringify(userData));
-      setUser(userData);
-
-      return { success: true, role: normalizedRole };
+      applyAuthSession({
+        token: data.token,
+        fullName: data.fullName || fullName,
+        email: data.email || email,
+        role: data.role,
+        id: data.id,
+      });
+      return { success: true, role: normalizeRole(data.role) };
     } catch (err) {
       const msg = err.response?.data?.message || err.response?.data || 'Registration failed';
-      return { success: false, error: msg };
+      return { success: false, error: typeof msg === 'string' ? msg : 'Registration failed' };
     }
   };
 
@@ -111,14 +128,8 @@ export function AuthProvider({ children }) {
     });
   };
 
-  const logout = () => {
-    setUser(null);
-    localStorage.removeItem('cc-token');
-    localStorage.removeItem('cc-user');
-  };
-
   return (
-    <AuthContext.Provider value={{ user, loading, login, register, logout, updateUser }}>
+    <AuthContext.Provider value={{ user, loading, login, register, logout, updateUser, applyAuthSession }}>
       {children}
     </AuthContext.Provider>
   );

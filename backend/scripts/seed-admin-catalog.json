@@ -1,0 +1,902 @@
+[
+  {
+    "path": {
+      "title": "Java First Tech",
+      "slug": "java-first-tech",
+      "shortDescription": "Start programming with Java: syntax, OOP, and the JDK.",
+      "description": "Beginner Java path for students new to typed languages. Official docs plus well-known video courses covering syntax, OOP, collections, and exceptions.",
+      "iconName": "code",
+      "category": "Backend",
+      "difficulty": "BEGINNER",
+      "estimatedHours": 35
+    },
+    "topics": [
+      {
+        "title": "Java setup and syntax",
+        "slug": "java-setup-syntax",
+        "description": "Install the JDK, write your first programs, and learn types, loops, and methods.",
+        "estimatedMinutes": 180,
+        "sortOrder": 1,
+        "resources": [
+          {
+            "title": "Learn Java (dev.java)",
+            "description": "Official getting-started trail from the Java team.",
+            "type": "DOCUMENTATION",
+            "difficulty": "BEGINNER",
+            "url": "https://dev.java/learn/",
+            "provider": "dev.java",
+            "estimatedMinutes": 90,
+            "sortOrder": 1
+          },
+          {
+            "title": "Java Programming for Beginners (freeCodeCamp)",
+            "description": "Full beginner Java course covering syntax through OOP.",
+            "type": "VIDEO",
+            "difficulty": "BEGINNER",
+            "url": "https://www.youtube.com/watch?v=A74TOX803D0",
+            "provider": "freeCodeCamp",
+            "estimatedMinutes": 540,
+            "sortOrder": 2
+          },
+          {
+            "title": "Oracle Java Tutorials - Language Basics",
+            "description": "Variables, operators, expressions, and control flow.",
+            "type": "DOCUMENTATION",
+            "difficulty": "BEGINNER",
+            "url": "https://docs.oracle.com/javase/tutorial/java/nutsandbolts/index.html",
+            "provider": "Oracle",
+            "estimatedMinutes": 75,
+            "sortOrder": 3
+          }
+        ]
+      },
+      {
+        "title": "Object-oriented Java",
+        "slug": "java-oop",
+        "description": "Classes, objects, inheritance, interfaces, and encapsulation.",
+        "estimatedMinutes": 210,
+        "sortOrder": 2,
+        "resources": [
+          {
+            "title": "Oracle Java Tutorials - OOP Concepts",
+            "description": "Official explanation of objects, classes, inheritance, and interfaces.",
+            "type": "DOCUMENTATION",
+            "difficulty": "BEGINNER",
+            "url": "https://docs.oracle.com/javase/tutorial/java/concepts/index.html",
+            "provider": "Oracle",
+            "estimatedMinutes": 60,
+            "sortOrder": 1
+          },
+          {
+            "title": "Bro Code - Java Full Course",
+            "description": "Beginner-friendly Java walkthrough with lots of examples.",
+            "type": "VIDEO",
+            "difficulty": "BEGINNER",
+            "url": "https://www.youtube.com/watch?v=xk4_1vDrzzo",
+            "provider": "Bro Code",
+            "estimatedMinutes": 720,
+            "sortOrder": 2
+          }
+        ]
+      },
+      {
+        "title": "Collections and exceptions",
+        "slug": "java-collections",
+        "description": "Lists, maps, sets, and how Java handles errors.",
+        "estimatedMinutes": 150,
+        "sortOrder": 3,
+        "resources": [
+          {
+            "title": "The Collections Framework",
+            "description": "Oracle overview of List, Set, Map, and when to use each.",
+            "type": "DOCUMENTATION",
+            "difficulty": "BEGINNER",
+            "url": "https://docs.oracle.com/javase/tutorial/collections/index.html",
+            "provider": "Oracle",
+            "estimatedMinutes": 80,
+            "sortOrder": 1
+          },
+          {
+            "title": "Exceptions (Oracle tutorial)",
+            "description": "Checked vs unchecked exceptions and try/catch/finally.",
+            "type": "DOCUMENTATION",
+            "difficulty": "BEGINNER",
+            "url": "https://docs.oracle.com/javase/tutorial/essential/exceptions/index.html",
+            "provider": "Oracle",
+            "estimatedMinutes": 45,
+            "sortOrder": 2
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "path": {
+      "title": "Python for Beginners",
+      "slug": "python-for-beginners",
+      "shortDescription": "Python syntax, data types, and first scripts.",
+      "description": "A first-language Python path using the official tutorial plus widely recommended video courses.",
+      "iconName": "terminal",
+      "category": "Programming",
+      "difficulty": "BEGINNER",
+      "estimatedHours": 30
+    },
+    "topics": [
+      {
+        "title": "Python tutorial",
+        "slug": "python-official-tutorial",
+        "description": "The official Python.org tutorial from installation through modules.",
+        "estimatedMinutes": 240,
+        "sortOrder": 1,
+        "resources": [
+          {
+            "title": "The Python Tutorial",
+            "description": "Canonical beginner tutorial maintained by the Python Software Foundation.",
+            "type": "DOCUMENTATION",
+            "difficulty": "BEGINNER",
+            "url": "https://docs.python.org/3/tutorial/",
+            "provider": "python.org",
+            "estimatedMinutes": 180,
+            "sortOrder": 1
+          },
+          {
+            "title": "Python for Beginners (Microsoft)",
+            "description": "Short official video series for absolute beginners.",
+            "type": "VIDEO",
+            "difficulty": "BEGINNER",
+            "url": "https://learn.microsoft.com/en-us/shows/intro-to-python-development/",
+            "provider": "Microsoft Learn",
+            "estimatedMinutes": 120,
+            "sortOrder": 2
+          }
+        ]
+      },
+      {
+        "title": "Hands-on Python course",
+        "slug": "python-video-course",
+        "description": "Long-form video practice: functions, files, and small projects.",
+        "estimatedMinutes": 300,
+        "sortOrder": 2,
+        "resources": [
+          {
+            "title": "Python for Everybody (freeCodeCamp)",
+            "description": "Charles Severance course - widely used intro to Python.",
+            "type": "VIDEO",
+            "difficulty": "BEGINNER",
+            "url": "https://www.youtube.com/watch?v=8DvywoWv6fI",
+            "provider": "freeCodeCamp",
+            "estimatedMinutes": 840,
+            "sortOrder": 1
+          },
+          {
+            "title": "Real Python - Start Here",
+            "description": "Curated beginner articles and exercises from Real Python.",
+            "type": "ARTICLE",
+            "difficulty": "BEGINNER",
+            "url": "https://realpython.com/start-here/",
+            "provider": "Real Python",
+            "estimatedMinutes": 90,
+            "sortOrder": 2
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "path": {
+      "title": "Python Full Stack",
+      "slug": "python-full-stack",
+      "shortDescription": "HTML/CSS, Django or FastAPI, and a database-backed web app.",
+      "description": "Build full-stack apps with Python: web fundamentals, Django's official tutorial, and FastAPI for APIs.",
+      "iconName": "layers",
+      "category": "Full Stack",
+      "difficulty": "INTERMEDIATE",
+      "estimatedHours": 50
+    },
+    "topics": [
+      {
+        "title": "Web fundamentals",
+        "slug": "web-fundamentals-python",
+        "description": "Enough HTML, CSS, and HTTP to connect a Python backend to a UI.",
+        "estimatedMinutes": 180,
+        "sortOrder": 1,
+        "resources": [
+          {
+            "title": "MDN - Learn web development",
+            "description": "HTML, CSS, and HTTP basics from MDN.",
+            "type": "DOCUMENTATION",
+            "difficulty": "BEGINNER",
+            "url": "https://developer.mozilla.org/en-US/docs/Learn_web_development",
+            "provider": "MDN",
+            "estimatedMinutes": 240,
+            "sortOrder": 1
+          },
+          {
+            "title": "HTTP overview (MDN)",
+            "description": "Requests, responses, methods, and status codes.",
+            "type": "DOCUMENTATION",
+            "difficulty": "BEGINNER",
+            "url": "https://developer.mozilla.org/en-US/docs/Web/HTTP/Overview",
+            "provider": "MDN",
+            "estimatedMinutes": 40,
+            "sortOrder": 2
+          }
+        ]
+      },
+      {
+        "title": "Django official tutorial",
+        "slug": "django-tutorial",
+        "description": "Polls app covering models, views, templates, and the admin.",
+        "estimatedMinutes": 300,
+        "sortOrder": 2,
+        "resources": [
+          {
+            "title": "Writing your first Django app",
+            "description": "Official Django tutorial parts 1-7.",
+            "type": "DOCUMENTATION",
+            "difficulty": "INTERMEDIATE",
+            "url": "https://docs.djangoproject.com/en/5.2/intro/tutorial01/",
+            "provider": "Django",
+            "estimatedMinutes": 240,
+            "sortOrder": 1
+          },
+          {
+            "title": "Django for Beginners (freeCodeCamp)",
+            "description": "Project-based Django course.",
+            "type": "VIDEO",
+            "difficulty": "INTERMEDIATE",
+            "url": "https://www.youtube.com/watch?v=F5mRW0jo-U4",
+            "provider": "freeCodeCamp",
+            "estimatedMinutes": 240,
+            "sortOrder": 2
+          }
+        ]
+      },
+      {
+        "title": "FastAPI for APIs",
+        "slug": "fastapi-apis",
+        "description": "Modern Python APIs with automatic OpenAPI docs.",
+        "estimatedMinutes": 180,
+        "sortOrder": 3,
+        "resources": [
+          {
+            "title": "FastAPI tutorial",
+            "description": "Official user guide from first path operation to dependency injection.",
+            "type": "DOCUMENTATION",
+            "difficulty": "INTERMEDIATE",
+            "url": "https://fastapi.tiangolo.com/tutorial/",
+            "provider": "FastAPI",
+            "estimatedMinutes": 150,
+            "sortOrder": 1
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "path": {
+      "title": "Data Structures and Algorithms",
+      "slug": "dsa-foundations",
+      "shortDescription": "Arrays, hashing, linked lists, trees, and Big-O.",
+      "description": "Beginner DSA using Princeton Algorithms, VisuAlgo, GeeksforGeeks, and NeetCode's roadmap.",
+      "iconName": "git-branch",
+      "category": "DSA",
+      "difficulty": "BEGINNER",
+      "estimatedHours": 45
+    },
+    "topics": [
+      {
+        "title": "Complexity and arrays",
+        "slug": "dsa-arrays-big-o",
+        "description": "Time/space complexity, arrays, and two pointers.",
+        "estimatedMinutes": 180,
+        "sortOrder": 1,
+        "resources": [
+          {
+            "title": "Princeton Algorithms, 4th Edition",
+            "description": "Robert Sedgewick course site - gold-standard intro to algorithms.",
+            "type": "DOCUMENTATION",
+            "difficulty": "BEGINNER",
+            "url": "https://algs4.cs.princeton.edu/home/",
+            "provider": "Princeton",
+            "estimatedMinutes": 180,
+            "sortOrder": 1
+          },
+          {
+            "title": "LeetCode Explore - Arrays 101",
+            "description": "Guided array problems with explanations.",
+            "type": "PRACTICE",
+            "difficulty": "BEGINNER",
+            "url": "https://leetcode.com/explore/learn/card/fun-with-arrays/",
+            "provider": "LeetCode",
+            "estimatedMinutes": 120,
+            "sortOrder": 2
+          },
+          {
+            "title": "VisuAlgo",
+            "description": "Animated visualizations for common data structures.",
+            "type": "INTERACTIVE",
+            "difficulty": "BEGINNER",
+            "url": "https://visualgo.net/en",
+            "provider": "VisuAlgo",
+            "estimatedMinutes": 60,
+            "sortOrder": 3
+          }
+        ]
+      },
+      {
+        "title": "Hashing, lists, and stacks",
+        "slug": "dsa-hashing-lists",
+        "description": "Hash maps, linked lists, stacks, and queues.",
+        "estimatedMinutes": 200,
+        "sortOrder": 2,
+        "resources": [
+          {
+            "title": "GeeksforGeeks - Data Structures",
+            "description": "Written primers with diagrams for core structures.",
+            "type": "ARTICLE",
+            "difficulty": "BEGINNER",
+            "url": "https://www.geeksforgeeks.org/data-structures/",
+            "provider": "GeeksforGeeks",
+            "estimatedMinutes": 120,
+            "sortOrder": 1
+          },
+          {
+            "title": "NeetCode roadmap",
+            "description": "Ordered problem list by pattern (arrays, hashing, two pointers, trees).",
+            "type": "PRACTICE",
+            "difficulty": "BEGINNER",
+            "url": "https://neetcode.io/roadmap",
+            "provider": "NeetCode",
+            "estimatedMinutes": 240,
+            "sortOrder": 2
+          }
+        ]
+      },
+      {
+        "title": "Trees and recursion",
+        "slug": "dsa-trees",
+        "description": "Binary trees, BST, and recursive thinking.",
+        "estimatedMinutes": 180,
+        "sortOrder": 3,
+        "resources": [
+          {
+            "title": "LeetCode Explore - Binary Tree",
+            "description": "Tree traversals and classic tree problems.",
+            "type": "PRACTICE",
+            "difficulty": "INTERMEDIATE",
+            "url": "https://leetcode.com/explore/learn/card/data-structure-tree/",
+            "provider": "LeetCode",
+            "estimatedMinutes": 150,
+            "sortOrder": 1
+          },
+          {
+            "title": "freeCodeCamp - Algorithms and Data Structures",
+            "description": "Long-form video course covering core DSA.",
+            "type": "VIDEO",
+            "difficulty": "BEGINNER",
+            "url": "https://www.youtube.com/watch?v=8hly31xKli0",
+            "provider": "freeCodeCamp",
+            "estimatedMinutes": 300,
+            "sortOrder": 2
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "path": {
+      "title": "Web Fundamentals",
+      "slug": "web-fundamentals",
+      "shortDescription": "HTML, CSS, and JavaScript from MDN and javascript.info.",
+      "description": "Beginner front-end path using MDN Learn and the javascript.info book.",
+      "iconName": "globe",
+      "category": "Frontend",
+      "difficulty": "BEGINNER",
+      "estimatedHours": 40
+    },
+    "topics": [
+      {
+        "title": "HTML and CSS",
+        "slug": "html-css",
+        "description": "Structure pages and style them with modern CSS.",
+        "estimatedMinutes": 240,
+        "sortOrder": 1,
+        "resources": [
+          {
+            "title": "MDN - HTML",
+            "description": "Official HTML learning area.",
+            "type": "DOCUMENTATION",
+            "difficulty": "BEGINNER",
+            "url": "https://developer.mozilla.org/en-US/docs/Learn_web_development/Core/Structuring_content",
+            "provider": "MDN",
+            "estimatedMinutes": 150,
+            "sortOrder": 1
+          },
+          {
+            "title": "MDN - CSS",
+            "description": "Selectors, box model, flexbox, and grid.",
+            "type": "DOCUMENTATION",
+            "difficulty": "BEGINNER",
+            "url": "https://developer.mozilla.org/en-US/docs/Learn_web_development/Core/Styling_basics",
+            "provider": "MDN",
+            "estimatedMinutes": 180,
+            "sortOrder": 2
+          }
+        ]
+      },
+      {
+        "title": "JavaScript language",
+        "slug": "javascript-language",
+        "description": "The language of the browser, taught in depth.",
+        "estimatedMinutes": 300,
+        "sortOrder": 2,
+        "resources": [
+          {
+            "title": "The Modern JavaScript Tutorial",
+            "description": "javascript.info - the best free JS book for beginners.",
+            "type": "DOCUMENTATION",
+            "difficulty": "BEGINNER",
+            "url": "https://javascript.info/",
+            "provider": "javascript.info",
+            "estimatedMinutes": 360,
+            "sortOrder": 1
+          },
+          {
+            "title": "MDN - JavaScript first steps",
+            "description": "MDN intro to JS in the browser.",
+            "type": "DOCUMENTATION",
+            "difficulty": "BEGINNER",
+            "url": "https://developer.mozilla.org/en-US/docs/Learn_web_development/Core/Scripting",
+            "provider": "MDN",
+            "estimatedMinutes": 120,
+            "sortOrder": 2
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "path": {
+      "title": "Git and GitHub",
+      "slug": "git-and-github",
+      "shortDescription": "Version control with the Pro Git book and GitHub docs.",
+      "description": "Beginner Git: commits, branches, pull requests, and collaboration.",
+      "iconName": "git-commit",
+      "category": "Tools",
+      "difficulty": "BEGINNER",
+      "estimatedHours": 12
+    },
+    "topics": [
+      {
+        "title": "Git basics",
+        "slug": "git-basics",
+        "description": "Snapshots, branching, and remotes.",
+        "estimatedMinutes": 150,
+        "sortOrder": 1,
+        "resources": [
+          {
+            "title": "Pro Git book",
+            "description": "Official free book from git-scm.com.",
+            "type": "DOCUMENTATION",
+            "difficulty": "BEGINNER",
+            "url": "https://git-scm.com/book/en/v2",
+            "provider": "git-scm",
+            "estimatedMinutes": 180,
+            "sortOrder": 1
+          },
+          {
+            "title": "GitHub - Hello World",
+            "description": "Create a repo and open your first pull request.",
+            "type": "DOCUMENTATION",
+            "difficulty": "BEGINNER",
+            "url": "https://docs.github.com/en/get-started/start-your-journey/hello-world",
+            "provider": "GitHub",
+            "estimatedMinutes": 40,
+            "sortOrder": 2
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "path": {
+      "title": "SQL and Databases",
+      "slug": "sql-and-databases",
+      "shortDescription": "Relational modeling and SQL queries.",
+      "description": "Intermediate SQL: SELECT, joins, grouping, and indexes, using interactive lessons.",
+      "iconName": "database",
+      "category": "Data",
+      "difficulty": "INTERMEDIATE",
+      "estimatedHours": 20
+    },
+    "topics": [
+      {
+        "title": "SQL queries",
+        "slug": "sql-queries",
+        "description": "Filter, join, and aggregate data.",
+        "estimatedMinutes": 180,
+        "sortOrder": 1,
+        "resources": [
+          {
+            "title": "SQLBolt",
+            "description": "Interactive SQL lessons in the browser.",
+            "type": "INTERACTIVE",
+            "difficulty": "BEGINNER",
+            "url": "https://sqlbolt.com/",
+            "provider": "SQLBolt",
+            "estimatedMinutes": 90,
+            "sortOrder": 1
+          },
+          {
+            "title": "Use The Index, Luke",
+            "description": "Practical SQL indexing guide.",
+            "type": "ARTICLE",
+            "difficulty": "INTERMEDIATE",
+            "url": "https://use-the-index-luke.com/",
+            "provider": "Use The Index, Luke",
+            "estimatedMinutes": 120,
+            "sortOrder": 2
+          },
+          {
+            "title": "PostgreSQL tutorial",
+            "description": "Official PostgreSQL tutorial covering SQL and schema.",
+            "type": "DOCUMENTATION",
+            "difficulty": "INTERMEDIATE",
+            "url": "https://www.postgresql.org/docs/current/tutorial.html",
+            "provider": "PostgreSQL",
+            "estimatedMinutes": 120,
+            "sortOrder": 3
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "path": {
+      "title": "React Frontend",
+      "slug": "react-frontend",
+      "shortDescription": "Components, hooks, and thinking in React.",
+      "description": "Intermediate React using the official react.dev Learn path.",
+      "iconName": "layout",
+      "category": "Frontend",
+      "difficulty": "INTERMEDIATE",
+      "estimatedHours": 35
+    },
+    "topics": [
+      {
+        "title": "React Learn",
+        "slug": "react-learn",
+        "description": "Official interactive tutorial and thinking-in-React.",
+        "estimatedMinutes": 300,
+        "sortOrder": 1,
+        "resources": [
+          {
+            "title": "React.dev - Learn React",
+            "description": "Official docs: components, props, state, and hooks.",
+            "type": "DOCUMENTATION",
+            "difficulty": "INTERMEDIATE",
+            "url": "https://react.dev/learn",
+            "provider": "react.dev",
+            "estimatedMinutes": 240,
+            "sortOrder": 1
+          },
+          {
+            "title": "React.dev - Tic-Tac-Toe tutorial",
+            "description": "Build a small game to learn React mental models.",
+            "type": "INTERACTIVE",
+            "difficulty": "BEGINNER",
+            "url": "https://react.dev/learn/tutorial-tic-tac-toe",
+            "provider": "react.dev",
+            "estimatedMinutes": 60,
+            "sortOrder": 2
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "path": {
+      "title": "Java Backend with Spring",
+      "slug": "java-backend-spring",
+      "shortDescription": "Spring Boot, REST, JPA, and security.",
+      "description": "Intermediate Java backend using Spring Getting Started guides and the Spring Boot reference.",
+      "iconName": "server",
+      "category": "Backend",
+      "difficulty": "INTERMEDIATE",
+      "estimatedHours": 50
+    },
+    "topics": [
+      {
+        "title": "Spring Boot REST",
+        "slug": "spring-boot-rest",
+        "description": "Build and document REST APIs with Spring Boot.",
+        "estimatedMinutes": 240,
+        "sortOrder": 1,
+        "resources": [
+          {
+            "title": "Building an Application with Spring Boot",
+            "description": "Official Getting Started guide.",
+            "type": "DOCUMENTATION",
+            "difficulty": "INTERMEDIATE",
+            "url": "https://spring.io/guides/gs/spring-boot",
+            "provider": "Spring",
+            "estimatedMinutes": 45,
+            "sortOrder": 1
+          },
+          {
+            "title": "Building a RESTful Web Service",
+            "description": "Controllers, resources, and JSON with Spring MVC.",
+            "type": "DOCUMENTATION",
+            "difficulty": "INTERMEDIATE",
+            "url": "https://spring.io/guides/gs/rest-service",
+            "provider": "Spring",
+            "estimatedMinutes": 40,
+            "sortOrder": 2
+          },
+          {
+            "title": "Accessing Data with JPA",
+            "description": "Entities, repositories, and H2/MySQL persistence.",
+            "type": "DOCUMENTATION",
+            "difficulty": "INTERMEDIATE",
+            "url": "https://spring.io/guides/gs/accessing-data-jpa",
+            "provider": "Spring",
+            "estimatedMinutes": 45,
+            "sortOrder": 3
+          },
+          {
+            "title": "Baeldung Spring Boot",
+            "description": "Practical Spring Boot articles used across the industry.",
+            "type": "ARTICLE",
+            "difficulty": "INTERMEDIATE",
+            "url": "https://www.baeldung.com/spring-boot",
+            "provider": "Baeldung",
+            "estimatedMinutes": 180,
+            "sortOrder": 4
+          }
+        ]
+      },
+      {
+        "title": "Spring Security",
+        "slug": "spring-security",
+        "description": "Authentication and authorization for APIs.",
+        "estimatedMinutes": 180,
+        "sortOrder": 2,
+        "resources": [
+          {
+            "title": "Spring Security architecture",
+            "description": "Official overview of filters, Authentication, and Authorization.",
+            "type": "DOCUMENTATION",
+            "difficulty": "ADVANCED",
+            "url": "https://docs.spring.io/spring-security/reference/servlet/architecture.html",
+            "provider": "Spring",
+            "estimatedMinutes": 60,
+            "sortOrder": 1
+          },
+          {
+            "title": "Securing a Web Application",
+            "description": "Getting Started guide for form login.",
+            "type": "DOCUMENTATION",
+            "difficulty": "INTERMEDIATE",
+            "url": "https://spring.io/guides/gs/securing-web",
+            "provider": "Spring",
+            "estimatedMinutes": 40,
+            "sortOrder": 2
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "path": {
+      "title": "Intermediate DSA",
+      "slug": "intermediate-dsa",
+      "shortDescription": "Graphs, heaps, binary search, and sliding window.",
+      "description": "Pattern-based interview DSA beyond beginner arrays and trees.",
+      "iconName": "cpu",
+      "category": "DSA",
+      "difficulty": "INTERMEDIATE",
+      "estimatedHours": 40
+    },
+    "topics": [
+      {
+        "title": "Search, heaps, and graphs",
+        "slug": "search-heaps-graphs",
+        "description": "Binary search, priority queues, BFS/DFS.",
+        "estimatedMinutes": 240,
+        "sortOrder": 1,
+        "resources": [
+          {
+            "title": "LeetCode Explore - Binary Search",
+            "description": "Template-based binary search problems.",
+            "type": "PRACTICE",
+            "difficulty": "INTERMEDIATE",
+            "url": "https://leetcode.com/explore/learn/card/binary-search/",
+            "provider": "LeetCode",
+            "estimatedMinutes": 120,
+            "sortOrder": 1
+          },
+          {
+            "title": "LeetCode Explore - Graph",
+            "description": "Graph representations, BFS, DFS, and connectivity.",
+            "type": "PRACTICE",
+            "difficulty": "INTERMEDIATE",
+            "url": "https://leetcode.com/explore/learn/card/graph/",
+            "provider": "LeetCode",
+            "estimatedMinutes": 180,
+            "sortOrder": 2
+          },
+          {
+            "title": "NeetCode - Graph playlist",
+            "description": "Video explanations for the graph pattern list.",
+            "type": "VIDEO",
+            "difficulty": "INTERMEDIATE",
+            "url": "https://www.youtube.com/watch?v=tWVWeAqF0BE",
+            "provider": "NeetCode",
+            "estimatedMinutes": 110,
+            "sortOrder": 3
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "path": {
+      "title": "Advanced DSA",
+      "slug": "advanced-dsa",
+      "shortDescription": "Dynamic programming, advanced graphs, and contest patterns.",
+      "description": "Advanced algorithms: DP, shortest paths, and union-find.",
+      "iconName": "zap",
+      "category": "DSA",
+      "difficulty": "ADVANCED",
+      "estimatedHours": 50
+    },
+    "topics": [
+      {
+        "title": "Dynamic programming",
+        "slug": "dynamic-programming",
+        "description": "1D/2D DP, knapsack-style recurrences, and memoization.",
+        "estimatedMinutes": 300,
+        "sortOrder": 1,
+        "resources": [
+          {
+            "title": "AtCoder DP contest",
+            "description": "Classic educational DP set used worldwide.",
+            "type": "PRACTICE",
+            "difficulty": "ADVANCED",
+            "url": "https://atcoder.jp/contests/dp/tasks",
+            "provider": "AtCoder",
+            "estimatedMinutes": 360,
+            "sortOrder": 1
+          },
+          {
+            "title": "Errichto - DP lecture",
+            "description": "Clear introduction to DP thinking.",
+            "type": "VIDEO",
+            "difficulty": "ADVANCED",
+            "url": "https://www.youtube.com/watch?v=YBSt1jYbsG4",
+            "provider": "Errichto",
+            "estimatedMinutes": 90,
+            "sortOrder": 2
+          },
+          {
+            "title": "cp-algorithms",
+            "description": "Reference implementations for competitive programming algorithms.",
+            "type": "DOCUMENTATION",
+            "difficulty": "ADVANCED",
+            "url": "https://cp-algorithms.com/",
+            "provider": "CP-Algorithms",
+            "estimatedMinutes": 240,
+            "sortOrder": 3
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "path": {
+      "title": "System Design Primer",
+      "slug": "system-design-primer",
+      "shortDescription": "Scalability, databases, caches, and trade-offs.",
+      "description": "Advanced systems thinking using the well-known System Design Primer and ByteByteGo.",
+      "iconName": "network",
+      "category": "System Design",
+      "difficulty": "ADVANCED",
+      "estimatedHours": 40
+    },
+    "topics": [
+      {
+        "title": "Foundations of scale",
+        "slug": "foundations-of-scale",
+        "description": "Load balancing, caching, replication, and CAP.",
+        "estimatedMinutes": 240,
+        "sortOrder": 1,
+        "resources": [
+          {
+            "title": "System Design Primer",
+            "description": "donnemartin's open-source interview primer.",
+            "type": "ARTICLE",
+            "difficulty": "ADVANCED",
+            "url": "https://github.com/donnemartin/system-design-primer",
+            "provider": "GitHub",
+            "estimatedMinutes": 240,
+            "sortOrder": 1
+          },
+          {
+            "title": "ByteByteGo - System Design in 1 hour",
+            "description": "Visual overview of common interview building blocks.",
+            "type": "VIDEO",
+            "difficulty": "ADVANCED",
+            "url": "https://www.youtube.com/watch?v=m8Icp_S7wvs",
+            "provider": "ByteByteGo",
+            "estimatedMinutes": 70,
+            "sortOrder": 2
+          },
+          {
+            "title": "AWS Well-Architected",
+            "description": "Production architecture principles from AWS.",
+            "type": "DOCUMENTATION",
+            "difficulty": "ADVANCED",
+            "url": "https://aws.amazon.com/architecture/well-architected/",
+            "provider": "AWS",
+            "estimatedMinutes": 90,
+            "sortOrder": 3
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "path": {
+      "title": "Java Concurrency",
+      "slug": "java-concurrency",
+      "shortDescription": "Threads, locks, executors, and virtual threads.",
+      "description": "Advanced Java concurrency from Oracle's tutorial and modern Java 21 virtual threads.",
+      "iconName": "activity",
+      "category": "Backend",
+      "difficulty": "ADVANCED",
+      "estimatedHours": 25
+    },
+    "topics": [
+      {
+        "title": "Threads and executors",
+        "slug": "threads-executors",
+        "description": "Shared memory, synchronization, and thread pools.",
+        "estimatedMinutes": 210,
+        "sortOrder": 1,
+        "resources": [
+          {
+            "title": "Oracle Concurrency tutorial",
+            "description": "Official Java concurrency trail.",
+            "type": "DOCUMENTATION",
+            "difficulty": "ADVANCED",
+            "url": "https://docs.oracle.com/javase/tutorial/essential/concurrency/",
+            "provider": "Oracle",
+            "estimatedMinutes": 120,
+            "sortOrder": 1
+          },
+          {
+            "title": "JEP 444 - Virtual Threads",
+            "description": "Project Loom virtual threads in Java 21.",
+            "type": "DOCUMENTATION",
+            "difficulty": "ADVANCED",
+            "url": "https://openjdk.org/jeps/444",
+            "provider": "OpenJDK",
+            "estimatedMinutes": 40,
+            "sortOrder": 2
+          },
+          {
+            "title": "Jenkov Java Concurrency",
+            "description": "Practical concurrency tutorials.",
+            "type": "ARTICLE",
+            "difficulty": "ADVANCED",
+            "url": "https://jenkov.com/tutorials/java-concurrency/index.html",
+            "provider": "Jenkov",
+            "estimatedMinutes": 150,
+            "sortOrder": 3
+          }
+        ]
+      }
+    ]
+  }
+]

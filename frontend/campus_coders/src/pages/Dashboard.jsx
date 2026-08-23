@@ -1,96 +1,54 @@
-import React, { useState, useEffect, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
+import React, { useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
-  FiChevronLeft,
-  FiChevronRight,
-  FiCode,
-  FiExternalLink,
-  FiCheckCircle
-} from "react-icons/fi";
-import DashboardLayout from "../components/DashboardLayout";
-import ActivityHeatmap from "../components/ActivityHeatmap";
-import Toast from "../components/Toast";
-import { useAuth } from "../context/AuthContext";
-import api from "../api/client";
+  FiZap, FiExternalLink,
+  FiCode, FiVolume2, FiMessageSquare, FiCalendar, FiBookOpen, FiBriefcase
+} from 'react-icons/fi';
+import DashboardLayout from '../components/DashboardLayout';
+import Toast from '../components/Toast';
+import { useAuth } from '../context/AuthContext';
+import api from '../api/client';
 
-/* Simple calendar generator */
-function MiniCalendar({ checkedInToday }) {
-  const [currentDate, setCurrentDate] = useState(new Date());
-  const todayDate = new Date();
+function greetingForHour(date = new Date()) {
+  const h = date.getHours();
+  if (h < 12) return 'Good morning';
+  if (h < 17) return 'Good afternoon';
+  return 'Good evening';
+}
 
-  const year = currentDate.getFullYear();
-  const month = currentDate.getMonth();
-  const monthName = currentDate.toLocaleString("default", { month: "long" });
-  const firstDay = new Date(year, month, 1).getDay();
-  const daysInMonth = new Date(year, month + 1, 0).getDate();
-  const prevDays = new Date(year, month, 0).getDate();
+function humanize(value) {
+  if (!value) return '';
+  return String(value)
+    .toLowerCase()
+    .split('_')
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+    .join(' ');
+}
 
-  const isCurrentMonthYear =
-    currentDate.getMonth() === todayDate.getMonth() &&
-    currentDate.getFullYear() === todayDate.getFullYear();
-  const todayVal = todayDate.getDate();
+function formatWhen(iso) {
+  if (!iso) return '';
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return '';
+  return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+}
 
-  const cells = [];
-  for (let i = firstDay - 1; i >= 0; i--) {
-    cells.push({ day: prevDays - i, current: false });
-  }
-  for (let d = 1; d <= daysInMonth; d++) {
-    const isToday = isCurrentMonthYear && d === todayVal;
-    cells.push({
-      day: d,
-      current: true,
-      isToday,
-      checkedInTodayState: isToday && checkedInToday,
-    });
-  }
-  const remaining = 42 - cells.length;
-  for (let d = 1; d <= remaining; d++) {
-    cells.push({ day: d, current: false });
-  }
+function formatEventWhen(iso) {
+  if (!iso) return '';
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return '';
+  return d.toLocaleString(undefined, {
+    month: 'short',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+  });
+}
 
-  return (
-    <div className="sd-calendar">
-      <div className="sd-calendar-header">
-        <h3 className="sd-calendar-title">
-          {monthName} {year}
-        </h3>
-        <div className="sd-calendar-nav">
-          <button onClick={() => setCurrentDate(new Date(year, month - 1, 1))}>
-            <FiChevronLeft size={16} />
-          </button>
-          <button onClick={() => setCurrentDate(new Date(year, month + 1, 1))}>
-            <FiChevronRight size={16} />
-          </button>
-        </div>
-      </div>
-      <div className="sd-calendar-grid">
-        {["S", "M", "T", "W", "T", "F", "S"].map((d, i) => (
-          <span key={i} className="sd-cal-day-label">
-            {d}
-          </span>
-        ))}
-        {cells.map((c, i) => {
-          let cellClass = "";
-          if (!c.current) {
-            cellClass = "muted";
-          } else if (c.isToday) {
-            cellClass = "today";
-          }
-
-          return (
-            <div key={i} className={`sd-cal-day-cell ${cellClass}`}>
-              <span className="sd-cal-day-num">{c.day}</span>
-              {c.isToday && (
-                <span
-                  className={`sd-cal-dot ${c.checkedInTodayState ? "green" : "red"}`}
-                ></span>
-              )}
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
+function eventStatus(event, now = new Date()) {
+  const start = event.startsAt ? new Date(event.startsAt) : null;
+  const end = event.endsAt ? new Date(event.endsAt) : null;
+  if (start && start <= now && (!end || end >= now)) return 'Live';
+  return 'Upcoming';
 }
 
 export default function Dashboard() {
@@ -99,15 +57,11 @@ export default function Dashboard() {
 
   const [summary, setSummary] = useState(null);
   const [announcements, setAnnouncements] = useState([]);
+  const [discussions, setDiscussions] = useState([]);
+  const [events, setEvents] = useState([]);
+  const [inProgress, setInProgress] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
-  /* ── Toast ── */
-  const [toast, setToast] = useState({
-    show: false,
-    type: "success",
-    message: "",
-  });
+  const [toast, setToast] = useState({ show: false, type: 'success', message: '' });
 
   const showToast = useCallback((type, message) => {
     setToast({ show: true, type, message });
@@ -122,252 +76,253 @@ export default function Dashboard() {
     try {
       const [sumRes, annRes] = await Promise.all([
         api.get('/dashboard/summary'),
-        api.get('/announcements?page=0&size=3')
+        api.get('/announcements?page=0&size=3'),
       ]);
-
       setSummary(sumRes.data);
       setAnnouncements(annRes.data.content || []);
     } catch (err) {
-      // Provide mock data for frontend-only testing
-      const todayStr = new Date().toISOString().split('T')[0];
-      const storedSolved = localStorage.getItem('potd_solved_date') === todayStr;
-
-      setSummary({
-        totalXp: 1250 + (storedSolved ? 15 : 0),
-        dailyStreak: 12 + (storedSolved ? 1 : 0),
-        problemsSolved: 45 + (storedSolved ? 1 : 0),
-        globalRank: 128,
-        checkInStatus: { checkedInToday: storedSolved },
-        todayChallenge: {
-          id: 1,
-          title: 'Two Sum',
-          platform: 'LeetCode',
-          difficulty: 'BEGINNER',
-          xpReward: 15,
-          tags: 'Arrays, Hash Table',
-          problemUrl: 'https://leetcode.com/problems/two-sum',
-          completedToday: storedSolved
-        }
-      });
-      setAnnouncements([
-        { id: 1, title: 'Welcome to Campus Coders!', message: 'Explore the new Student Dashboard and start learning!', category: 'SYSTEM', createdAt: new Date().toISOString() },
-        { id: 2, title: 'Upcoming Hackathon', message: 'Join the annual spring coding challenge this weekend.', category: 'HACKATHON', createdAt: new Date().toISOString() }
-      ]);
-      // Silently ignore error for demo mode
+      showToast('error', err.response?.data?.message || 'Failed to load dashboard.');
     } finally {
       setLoading(false);
     }
-  }, []);
+
+    try {
+      const discRes = await api.get('/discussions?page=0&size=3');
+      setDiscussions(discRes.data?.content || []);
+    } catch {
+      setDiscussions([]);
+    }
+
+    try {
+      const eventRes = await api.get('/events/upcoming?limit=5');
+      setEvents(Array.isArray(eventRes.data) ? eventRes.data : []);
+    } catch {
+      setEvents([]);
+    }
+
+    try {
+      const progressRes = await api.get('/learning-progress/in-progress');
+      setInProgress(Array.isArray(progressRes.data) ? progressRes.data : []);
+    } catch {
+      setInProgress([]);
+    }
+  }, [showToast]);
 
   useEffect(() => {
     fetchDashboardData();
   }, [fetchDashboardData]);
 
-  const handleCompleteChallenge = async () => {
-    if (!summary?.todayChallenge || isSubmitting || summary.todayChallenge.completedToday) return;
-    setIsSubmitting(true);
-    try {
-      // Mock bypass: Update POTD status and Check-in status simultaneously
-      setSummary(prev => ({ 
-        ...prev, 
-        totalXp: prev.totalXp + prev.todayChallenge.xpReward,
-        dailyStreak: prev.dailyStreak + (prev.checkInStatus.checkedInToday ? 0 : 1),
-        problemsSolved: prev.problemsSolved + 1,
-        checkInStatus: { checkedInToday: true },
-        todayChallenge: { ...prev.todayChallenge, completedToday: true }
-      }));
-      const todayStr = new Date().toISOString().split('T')[0];
-      localStorage.setItem('potd_solved_date', todayStr);
-      showToast('success', `Awesome! You completed the daily problem and checked in! +${summary.todayChallenge.xpReward} XP awarded!`);
-    } catch (err) {
-      showToast('info', err.response?.data?.message || 'Already completed today!');
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const firstName = summary?.fullName?.split(" ")[0] || user?.name?.split(" ")[0] || "Student";
-  const potd = summary?.todayChallenge;
-  const checkedIn = summary?.checkInStatus?.checkedInToday;
+  const firstName = summary?.fullName?.split(' ')[0] || user?.name?.split(' ')[0] || 'there';
+  const potdChallenge = summary?.todayChallenge;
+  const potd = potdChallenge?.codingProblem || null;
 
   return (
     <DashboardLayout>
-      <div className="sd-page">
-        {/* ── Toast ── */}
-        <Toast
-          type={toast.type}
-          message={toast.message}
-          show={toast.show}
-          onClose={hideToast}
-        />
+      <div className="sd-page sd-home">
+        <Toast type={toast.type} message={toast.message} show={toast.show} onClose={hideToast} />
 
-        {/* ── Welcome Banner ── */}
-        <div className="sd-welcome-banner">
-          <div className="sd-welcome-text">
-            <h1>Welcome back, {firstName}!</h1>
-            <p>
-              Track your daily streak, complete learning paths, and solve the Problem of the Day.
-            </p>
-          </div>
-          <div className="sd-welcome-icon">
-            <div className="sd-terminal-icon">
-              <FiCode size={28} />
+        {loading && !summary ? (
+          <div className="sd-skel-stack" aria-busy="true">
+            <div className="sd-skel sd-skel-hero" />
+            <div className="sd-skel-row">
+              <div className="sd-skel" />
+              <div className="sd-skel" />
+              <div className="sd-skel" />
             </div>
+            <div className="sd-skel sd-skel-wide" />
           </div>
-        </div>
-
-        {/* ── Metrics Row ── */}
-        <div
-          className="sd-stats-row"
-          style={{
-            marginBottom: "24px",
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
-            gap: "16px"
-          }}
-        >
-          {/* Leaderboard Stat Card */}
-          <div
-            className="sd-stat-pill clickable-stat"
-            onClick={() => navigate("/dashboard/leaderboard")}
-            style={{
-              cursor: "pointer",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              padding: "20px 24px",
-              background: "#ffffff",
-              border: "1px solid #e2e8f0",
-              borderRadius: "14px", 
-              boxShadow: "0 2px 8px rgba(0, 0, 0, 0.03)"
-            }}
-          >
-            <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
-              <span className="sd-stat-pill-icon" style={{ fontSize: "2rem" }}>🏆</span>
-              <div>
-                <div className="sd-stat-pill-label" style={{ fontSize: "0.8rem", fontWeight: 700, color: "#64748b", textTransform: "uppercase" }}>
-                  LEADERBOARD RANK
-                </div>
-                <div className="sd-stat-pill-value" style={{ fontSize: "1.4rem", fontWeight: 800, color: "#0f172a" }}>
-                  {summary?.myLeaderboardRank ? `#${summary.myLeaderboardRank}` : 'Unranked'}
-                </div>
+        ) : (
+          <>
+            <section className="sd-welcome-banner">
+              <div className="sd-welcome-text">
+                <p className="sd-kicker">{greetingForHour()}</p>
+                <h1>{firstName}.</h1>
+                <p>Learn → Practice → Discuss → Prepare. Your workspace for today.</p>
               </div>
-            </div>
-          </div>
-
-          {/* Daily Streak & XP Card */}
-          <div
-            className="sd-stat-pill"
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              padding: "20px 24px",
-              background: "#ffffff",
-              border: "1px solid #e2e8f0",
-              borderRadius: "14px", 
-              boxShadow: "0 2px 8px rgba(0, 0, 0, 0.03)"
-            }}
-          >
-            <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
-              <span className="sd-stat-pill-icon" style={{ fontSize: "2rem" }}>🔥</span>
-              <div>
-                <div className="sd-stat-pill-label" style={{ fontSize: "0.8rem", fontWeight: 700, color: "#64748b", textTransform: "uppercase" }}>
-                  DAILY STREAK & XP
-                </div>
-                <div className="sd-stat-pill-value" style={{ fontSize: "1.4rem", fontWeight: 800, color: "#0f172a" }}>
-                  {summary?.dailyStreak || 0} Days • {summary?.totalXp || 0} XP
-                </div>
+              <div className="sd-welcome-mark" aria-hidden="true">
+                <FiCode size={36} />
               </div>
-            </div>
-          </div>
-        </div>
+            </section>
 
-        {/* ── Problem of the Day ── */}
-        <div className="sd-potd-card">
-          <div className="sd-potd-header-row">
-            <span className="sd-potd-badge">PROBLEM OF THE DAY</span>
-            <span className="sd-potd-platform-badge">
-              Platform: <strong>{potd?.platform || 'LeetCode'}</strong>
-            </span>
-          </div>
-          <h2 className="sd-potd-title">{potd?.title || 'Daily Coding Challenge'}</h2>
-          <p className="sd-potd-desc">
-            Difficulty: <strong>{potd?.difficulty || 'BEGINNER'}</strong> • Reward: <strong>+{potd?.xpReward || 10} XP</strong>
-          </p>
-          <div className="sd-potd-footer">
-            <div className="sd-potd-tags">
-              {potd?.tags?.split(',').map((tag, i) => (
-                <span key={i} className="sd-potd-tag">{tag.trim()}</span>
-              )) || <span className="sd-potd-tag">Algorithms</span>}
-            </div>
+            <section className="sd-quick-links">
+              <button type="button" className="sd-quick-link" onClick={() => navigate('/dashboard/practice')}>
+                <FiCode size={16} /> Practice
+              </button>
+              <button type="button" className="sd-quick-link" onClick={() => navigate('/dashboard/resources')}>
+                <FiBookOpen size={16} /> Learning
+              </button>
+              <button type="button" className="sd-quick-link" onClick={() => navigate('/dashboard/discussions')}>
+                <FiMessageSquare size={16} /> Discuss
+              </button>
+              <button type="button" className="sd-quick-link" onClick={() => navigate('/dashboard/placement')}>
+                <FiBriefcase size={16} /> Placement
+              </button>
+            </section>
 
-            <div
-              className="sd-potd-actions-row"
-              style={{ display: "flex", gap: "12px", alignItems: "center" }}
-            >
-              {potd?.problemUrl && (
-                <a
-                  href={potd.problemUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="sd-potd-solve-btn"
-                  style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center' }}
-                >
-                  Open Problem <FiExternalLink size={14} style={{ marginLeft: "6px" }} />
-                </a>
-              )}
-              {potd && !potd.completedToday ? (
-                <button
-                  className="btn btn-primary"
-                  onClick={handleCompleteChallenge}
-                  disabled={isSubmitting}
-                  style={{ padding: '8px 16px', opacity: isSubmitting ? 0.7 : 1, cursor: isSubmitting ? 'not-allowed' : 'pointer' }}
-                >
-                  {isSubmitting ? 'Marking...' : `Mark Solved (+${potd.xpReward} XP)`}
-                </button>
-              ) : potd?.completedToday ? (
-                <span style={{ color: '#059669', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                  <FiCheckCircle size={16} /> Solved Today!
-                </span>
-              ) : null}
-            </div>
-          </div>
-        </div>
-
-        {/* ── Bottom Row: Announcements | Activity Heatmap ── */}
-        <div className="sd-bottom-grid" style={{ gridTemplateColumns: '1fr' }}>
-          {/* Activity Heatmap */}
-          <ActivityHeatmap />
-
-          {/* Announcements */}
-          <div className="sd-card">
-            <div className="sd-card-header">
-              <h3>
-                Announcements <span className="sd-card-header-icon">📢</span>
-              </h3>
-            </div>
-            <div className="sd-announce-list">
-              {announcements.length > 0 ? (
-                announcements.map((a) => (
-                  <div key={a.id} className="sd-announce-item">
-                    <span className="sd-announce-tag">{a.category}</span>
-                    <h4>{a.title}</h4>
-                    <p>{a.message}</p>
+            <section className="sd-mid sd-mid-three">
+              <article className="sd-potd">
+                <div className="sd-potd-top">
+                  <span className="sd-potd-badge">Today's challenge</span>
+                  {potd?.platform && <span className="sd-chip">{potd.platform}</span>}
+                </div>
+                {potdChallenge && potd ? (
+                  <>
+                    <h2>{potd.title}</h2>
+                    <p className="sd-potd-meta">{humanize(potd.difficulty)}</p>
+                    {potd.tags && (
+                      <div className="sd-potd-tags">
+                        {potd.tags.split(',').map((tag) => tag.trim()).filter(Boolean).map((tag) => (
+                          <span key={tag} className="sd-potd-tag">{tag}</span>
+                        ))}
+                      </div>
+                    )}
+                    <p className="sd-muted" style={{ margin: '0 0 12px', fontSize: '0.82rem' }}>
+                      Curated link only - open and practice on the host platform.
+                    </p>
+                    <div className="sd-potd-actions">
+                      {potd.problemUrl && (
+                        <a href={potd.problemUrl} target="_blank" rel="noopener noreferrer" className="btn btn-dark">
+                          Open problem <FiExternalLink size={14} />
+                        </a>
+                      )}
+                      <button type="button" className="btn btn-secondary" onClick={() => navigate('/dashboard/practice')}>
+                        Practice hub
+                      </button>
+                    </div>
+                  </>
+                ) : (
+                  <div className="sd-empty">
+                    <p>No challenge posted today.</p>
+                    <button type="button" className="sd-text-link" onClick={() => navigate('/dashboard/practice')}>
+                      Open Practice
+                    </button>
                   </div>
-                ))
+                )}
+              </article>
+
+              <article className="sd-panel">
+                <div className="sd-panel-head">
+                  <h3><FiVolume2 size={16} /> Announcements</h3>
+                  <button type="button" className="sd-text-link" onClick={() => navigate('/dashboard/announcements')}>
+                    View all
+                  </button>
+                </div>
+                {announcements.length === 0 ? (
+                  <p className="sd-muted">No announcements yet.</p>
+                ) : (
+                  <ul className="sd-list">
+                    {announcements.map((a) => (
+                      <li key={a.id}>
+                        <span className="sd-chip">{humanize(a.category)}</span>
+                        <strong>{a.title}</strong>
+                        <span className="sd-muted">{formatWhen(a.createdAt)}</span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </article>
+
+              <article className="sd-panel">
+                <div className="sd-panel-head">
+                  <h3><FiCalendar size={16} /> Events</h3>
+                  <button type="button" className="sd-text-link" onClick={() => navigate('/dashboard/events')}>
+                    View all
+                  </button>
+                </div>
+                {events.length === 0 ? (
+                  <p className="sd-muted">No contests or sessions scheduled yet.</p>
+                ) : (
+                  <ul className="sd-list">
+                    {events.map((ev) => (
+                      <li key={ev.id}>
+                        <div className="sd-event-row">
+                          <span className="sd-chip">{humanize(ev.type)}</span>
+                          <span className={`sd-chip ${eventStatus(ev) === 'Live' ? 'sd-chip-live' : ''}`}>{eventStatus(ev)}</span>
+                        </div>
+                        <strong>{ev.title}</strong>
+                        <span className="sd-muted">
+                          {ev.platform ? `${ev.platform} - ` : ''}{formatEventWhen(ev.startsAt)}
+                        </span>
+                        {ev.actionUrl && (
+                          <a href={ev.actionUrl} target="_blank" rel="noopener noreferrer" className="sd-text-link">
+                            {ev.actionLabel || 'Open'}
+                          </a>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </article>
+            </section>
+
+            <section className="sd-panel sd-continue">
+              <div className="sd-panel-head">
+                <h3><FiBookOpen size={16} /> Continue learning</h3>
+                <button type="button" className="sd-text-link" onClick={() => navigate('/dashboard/my-learning')}>
+                  My Learning
+                </button>
+              </div>
+              {inProgress.length === 0 ? (
+                <p className="sd-muted">Complete a resource in a learning path to see progress here.</p>
               ) : (
-                <p style={{ color: '#64748b', fontSize: '0.9rem' }}>No announcements available.</p>
+                <ul className="sd-continue-list">
+                  {inProgress.map((path) => (
+                    <li key={path.learningPathId}>
+                      <div className="sd-continue-copy">
+                        <strong>{path.title}</strong>
+                        <span className="sd-muted">
+                          {path.completedResources}/{path.totalResources} resources
+                          {path.difficulty ? ` - ${humanize(path.difficulty)}` : ''}
+                        </span>
+                        <div className="sd-continue-bar" aria-hidden="true">
+                          <div className="sd-continue-fill" style={{ width: `${Math.min(100, path.progressPercentage)}%` }} />
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        className="btn btn-primary"
+                        onClick={() => navigate(`/dashboard/resources/paths/${path.slug}`)}
+                      >
+                        Continue
+                      </button>
+                    </li>
+                  ))}
+                </ul>
               )}
-            </div>
-            <button
-              className="sd-card-footer-btn"
-              onClick={() => navigate("/dashboard/announcements")}
-            >
-              See all announcements
-            </button>
-          </div>
-        </div>
+            </section>
+
+            <section className="sd-mid sd-mid-bottom">
+              <article className="sd-panel">
+                <div className="sd-panel-head">
+                  <h3><FiMessageSquare size={16} /> Recent discussions</h3>
+                  <button type="button" className="sd-text-link" onClick={() => navigate('/dashboard/discussions')}>
+                    View all
+                  </button>
+                </div>
+                {discussions.length === 0 ? (
+                  <p className="sd-muted">No threads yet. Start one in Discussions.</p>
+                ) : (
+                  <ul className="sd-list">
+                    {discussions.map((d) => (
+                      <li key={d.id} className="sd-list-click" onClick={() => navigate(`/dashboard/discussions/${d.id}`)}>
+                        {d.categoryName && (
+                          <span
+                            className="sd-chip"
+                            style={d.categoryColor ? { background: `${d.categoryColor}22`, color: d.categoryColor } : undefined}
+                          >
+                            {d.categoryName}
+                          </span>
+                        )}
+                        <strong>{d.title}</strong>
+                        <span className="sd-muted">{d.repliesCount ?? 0} replies</span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </article>
+            </section>
+          </>
+        )}
       </div>
     </DashboardLayout>
   );

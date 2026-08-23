@@ -9,7 +9,9 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.campuscoders.backend.auth.dto.ForgotPasswordRequest;
 import com.campuscoders.backend.auth.dto.MessageResponse;
+import com.campuscoders.backend.auth.dto.ResendVerificationRequest;
 import com.campuscoders.backend.auth.dto.ResetPasswordRequest;
+import com.campuscoders.backend.auth.dto.VerifyEmailRequest;
 
 import jakarta.validation.Valid;
 
@@ -23,19 +25,26 @@ public class AuthController {
     this.authService = authService;
   }
 
-  // Public Endpoint: Creates a new student account and returns a signed JWT token so the user is immediately logged in.
   @PostMapping("/register")
   public AuthResponse register(@Valid @RequestBody RegisterRequest request) {
     return authService.register(request);
   }
 
-  // Public Endpoint: Validates email and BCrypt password hash before issuing a signed JWT token.
   @PostMapping("/login")
   public AuthResponse login(@Valid @RequestBody LoginRequest request) {
     return authService.login(request);
   }
 
-  // Protected Endpoint: Extracts user email from JWT claims via Authentication context to fetch current profile summary.
+  @PostMapping("/verify-email")
+  public AuthResponse verifyEmail(@Valid @RequestBody VerifyEmailRequest request) {
+    return authService.verifyEmail(request);
+  }
+
+  @PostMapping("/resend-verification")
+  public MessageResponse resendVerification(@Valid @RequestBody ResendVerificationRequest request) {
+    return authService.resendVerification(request);
+  }
+
   @GetMapping("/me")
   public CurrentUserResponse me(Authentication authentication) {
     return authService.getCurrentUser(authentication.getName());

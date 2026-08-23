@@ -1,100 +1,194 @@
-import React, { useState, useCallback } from 'react';
-import { FiPlus, FiX, FiBookOpen } from 'react-icons/fi';
+import React, { useCallback, useEffect, useState } from 'react';
 import Toast from '../../components/Toast';
-import { MOCK_TOPICS, MOCK_PATHS, loadStore, saveStore } from './adminMockData';
+import api from '../../api/client';
 
-const ICONS = ['🐍', '☕', '🧩', '🔗', '🌿', '#️⃣', '🕸', '⚙️', '🧠', '🚀', '📘', '💡'];
-const COLORS = ['#d97706', '#059669', '#4f46e5', '#0ea5e9', '#db2777', '#7c3aed', '#ea580c', '#0d9488'];
+function slugify(text) {
+  return String(text || '')
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+}
+
+const emptyForm = {
+  learningPathId: '',
+  title: '',
+  slug: '',
+  description: '',
+  estimatedMinutes: 0,
+  sortOrder: 0,
+  active: true,
+};
 
 export default function AdminManageTopics() {
-  const [topics, setTopics] = useState(() => loadStore('topics', MOCK_TOPICS));
-  const [modal, setModal] = useState(false);
-  const [form, setForm] = useState({ name: '', pathId: MOCK_PATHS[0].id, icon: '📘', color: '#d97706', description: '' });
-
+  const [topics, setTopics] = useState([]);
+  const [paths, setPaths] = useState([]);
+  const [form, setForm] = useState(emptyForm);
+  const [editingId, setEditingId] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [toast, setToast] = useState({ show: false, type: 'success', message: '' });
+
   const showToast = useCallback((type, message) => setToast({ show: true, type, message }), []);
-  const hideToast = useCallback(() => setToast(prev => ({ ...prev, show: false })), []);
+  const hideToast = useCallback(() => setToast((p) => ({ ...p, show: false })), []);
 
-  const persist = (next) => { setTopics(next); saveStore('topics', next); };
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      const [topicRes, pathRes] = await Promise.all([
+        api.get('/admin/topics'),
+        api.get('/admin/learning-paths/options'),
+      ]);
+      const pathList = Array.isArray(pathRes.data) ? pathRes.data : [];
+      setTopics(Array.isArray(topicRes.data) ? topicRes.data : []);
+      setPaths(pathList);
+      setForm((f) => (f.learningPathId || !pathList[0] ? f : { ...f, learningPathId: String(pathList[0].id) }));
+    } catch (err) {
+      showToast('error', err.response?.data?.message || 'Could not load topics.');
+      setTopics([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [showToast]);
 
-  const create = (e) => {
+  useEffect(() => { load(); }, [load]);
+
+  const submit = async (e) => {
     e.preventDefault();
-    persist([{ id: Date.now(), ...form, pathId: Number(form.pathId), resources: 0 }, ...topics]);
-    setModal(false);
-    showToast('success', `Topic “${form.name}” created.`);
+    if (!form.learningPathId) {
+      showToast('error', 'Create a learning path first.');
+      return;
+    }
+    const body = {
+      learningPathId: Number(form.learningPathId),
+      title: form.title.trim(),
+      slug: form.slug.trim() || slugify(form.title),
+      description: form.description || '',
+      estimatedMinutes: Number(form.estimatedMinutes) || 0,
+      sortOrder: Number(form.sortOrder) || 0,
+    };
+    setSaving(true);
+    try {
+      if (editingId) {
+        await api.put(`/admin/topics/${editingId}`, { ...body, active: form.active });
+        showToast('success', 'Topic updated.');
+      } else {
+        await api.post('/admin/topics', body);
+        showToast('success', 'Topic created.');
+      }
+      setForm({ ...emptyForm, learningPathId: form.learningPathId });
+      setEditingId(null);
+      await load();
+    } catch (err) {
+      showToast('error', err.response?.data?.message || 'Could not save topic.');
+    } finally {
+      setSaving(false);
+    }
   };
 
-  const pathName = (id) => MOCK_PATHS.find(p => p.id === id)?.name || 'Unassigned';
+  const startEdit = (t) => {
+    setEditingId(t.id);
+    setForm({
+      learningPathId: String(t.learningPathId),
+      title: t.title || '',
+      slug: t.slug || '',
+      description: t.description || '',
+      estimatedMinutes: t.estimatedMinutes ?? 0,
+      sortOrder: t.sortOrder ?? 0,
+      active: t.active !== false,
+    });
+  };
+
+  const toggleActive = async (t) => {
+    try {
+      await api.patch(`/admin/topics/${t.id}/${t.active ? 'deactivate' : 'activate'}`);
+      await load();
+    } catch (err) {
+      showToast('error', err.response?.data?.message || 'Could not update status.');
+    }
+  };
+
+  const pathTitle = (id) => paths.find((p) => Number(p.id) === Number(id))?.title || `#${id}`;
 
   return (
     <div>
       <Toast type={toast.type} message={toast.message} show={toast.show} onClose={hideToast} />
-      <div style={{ display: 'flex', justifyContent: 'space-between', gap: '16px', flexWrap: 'wrap', marginBottom: '24px' }}>
+      <div className="ap-header">
         <div>
           <h1 className="ap-page-title">Topics</h1>
-          <p className="ap-page-sub">Color-coded building blocks of every learning path</p>
+          <p className="ap-page-sub">Topics belong to a learning path. Attach resources after you create them.</p>
         </div>
-        <button className="btn btn-primary" onClick={() => setModal(true)}><FiPlus /> New Topic</button>
       </div>
 
-      <div className="ap-grid-3" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: '18px' }}>
-        {topics.map(topic => (
-          <div key={topic.id} className="ap-topic-card">
-            <div style={{ position: 'absolute', inset: 0, background: `linear-gradient(135deg, ${topic.color}18, transparent 60%)`, pointerEvents: 'none' }} />
-            <div style={{ display: 'flex', justifyContent: 'space-between', position: 'relative' }}>
-              <span style={{ fontSize: '1.8rem' }}>{topic.icon}</span>
-              <span className="ap-badge" style={{ background: `${topic.color}22`, color: topic.color }}>{topic.resources} resources</span>
-            </div>
-            <h3 style={{ margin: '14px 0 6px', fontSize: '1.05rem' }}>{topic.name}</h3>
-            <p style={{ color: '#64748b', fontSize: '0.82rem', margin: 0, minHeight: '40px' }}>{topic.description}</p>
-            <div style={{ marginTop: '14px', fontSize: '0.75rem', fontWeight: 700, color: '#92400e', display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <FiBookOpen size={13} /> {pathName(topic.pathId)}
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {modal && (
-        <div className="ap-overlay" onClick={() => setModal(false)}>
-          <div className="ap-modal" onClick={e => e.stopPropagation()}>
-            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-              <h3 style={{ margin: 0 }}>Create topic</h3>
-              <button className="ap-icon-btn" onClick={() => setModal(false)}><FiX /></button>
-            </div>
-            <form onSubmit={create} style={{ marginTop: '18px' }}>
-              <label style={{ fontWeight: 700, fontSize: '0.82rem' }}>Name</label>
-              <input className="form-input" required value={form.name} onChange={e => setForm({ ...form, name: e.target.value })}
-                style={{ width: '100%', margin: '6px 0 14px', padding: '10px', borderRadius: '10px', border: '1px solid #d1d5db' }} />
-              <label style={{ fontWeight: 700, fontSize: '0.82rem' }}>Learning path</label>
-              <select className="form-select" value={form.pathId} onChange={e => setForm({ ...form, pathId: e.target.value })}
-                style={{ width: '100%', margin: '6px 0 14px', padding: '10px', borderRadius: '10px' }}>
-                {MOCK_PATHS.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-              </select>
-              <label style={{ fontWeight: 700, fontSize: '0.82rem' }}>Description</label>
-              <textarea className="form-input" rows={3} value={form.description} onChange={e => setForm({ ...form, description: e.target.value })}
-                style={{ width: '100%', margin: '6px 0 14px', padding: '10px', borderRadius: '10px', border: '1px solid #d1d5db' }} />
-              <label style={{ fontWeight: 700, fontSize: '0.82rem' }}>Icon</label>
-              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', margin: '8px 0 14px' }}>
-                {ICONS.map(icon => (
-                  <button type="button" key={icon} onClick={() => setForm({ ...form, icon })}
-                    style={{ width: '40px', height: '40px', borderRadius: '10px', border: form.icon === icon ? '2px solid #d97706' : '1px solid #e2e8f0', background: '#fff', cursor: 'pointer', fontSize: '1.1rem' }}>{icon}</button>
-                ))}
-              </div>
-              <label style={{ fontWeight: 700, fontSize: '0.82rem' }}>Color</label>
-              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', margin: '8px 0 18px' }}>
-                {COLORS.map(color => (
-                  <button type="button" key={color} onClick={() => setForm({ ...form, color })}
-                    style={{ width: '32px', height: '32px', borderRadius: '50%', background: color, border: form.color === color ? '3px solid #111827' : '3px solid transparent', cursor: 'pointer' }} />
-                ))}
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
-                <button type="button" className="ap-ghost-btn" onClick={() => setModal(false)}>Cancel</button>
-                <button className="btn btn-primary" type="submit">Create topic</button>
-              </div>
-            </form>
-          </div>
-        </div>
+      {paths.length === 0 && !loading && (
+        <p className="ap-page-sub">No learning paths yet. Create a path first.</p>
       )}
+
+      <form className="ap-card-solid" onSubmit={submit} style={{ marginBottom: 20 }}>
+        <h3 style={{ margin: '0 0 14px' }}>{editingId ? 'Edit topic' : 'New topic'}</h3>
+        <label className="form-label">Learning path</label>
+        <select className="form-select" required value={form.learningPathId} onChange={(e) => setForm({ ...form, learningPathId: e.target.value })}>
+          <option value="">Select path</option>
+          {paths.map((p) => <option key={p.id} value={p.id}>{p.title}</option>)}
+        </select>
+        <label className="form-label" style={{ marginTop: 12 }}>Title</label>
+        <input
+          className="form-input"
+          required
+          value={form.title}
+          onChange={(e) => setForm({
+            ...form,
+            title: e.target.value,
+            slug: editingId ? form.slug : slugify(e.target.value),
+          })}
+        />
+        <label className="form-label" style={{ marginTop: 12 }}>App path (auto from title - not a website URL)</label>
+        <input className="form-input" required value={form.slug} onChange={(e) => setForm({ ...form, slug: slugify(e.target.value) })} />
+        <p className="ap-page-sub" style={{ margin: '4px 0 0' }}>Used only for in-app navigation. Topics do not need YouTube/docs links - put those on resources.</p>
+        <label className="form-label" style={{ marginTop: 12 }}>Estimated minutes</label>
+        <input className="form-input" type="number" min="0" value={form.estimatedMinutes} onChange={(e) => setForm({ ...form, estimatedMinutes: e.target.value })} />
+        <label className="form-label" style={{ marginTop: 12 }}>Sort order</label>
+        <input className="form-input" type="number" min="0" value={form.sortOrder} onChange={(e) => setForm({ ...form, sortOrder: e.target.value })} />
+        <label className="form-label" style={{ marginTop: 12 }}>Description</label>
+        <textarea className="form-input" rows={3} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
+        <div style={{ display: 'flex', gap: 10, marginTop: 16 }}>
+          <button type="submit" className="btn btn-primary" disabled={saving || paths.length === 0}>{saving ? 'Saving...' : (editingId ? 'Update' : 'Create')}</button>
+          {editingId && <button type="button" className="btn btn-secondary" onClick={() => { setEditingId(null); setForm({ ...emptyForm, learningPathId: form.learningPathId }); }}>Cancel</button>}
+        </div>
+      </form>
+
+      <div className="ap-card-solid">
+        {loading ? <p className="ap-page-sub">Loading...</p> : topics.length === 0 ? (
+          <p className="ap-page-sub">No topics yet.</p>
+        ) : (
+          <table className="ap-table">
+            <thead>
+              <tr>
+                <th>Title</th>
+                <th>Path</th>
+                <th>Order</th>
+                <th>Status</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {topics.map((t) => (
+                <tr key={t.id}>
+                  <td style={{ fontWeight: 700 }}>{t.title}</td>
+                  <td>{t.learningPathTitle || pathTitle(t.learningPathId)}</td>
+                  <td>{t.sortOrder ?? '-'}</td>
+                  <td>{t.active ? 'Live' : 'Hidden'}</td>
+                  <td>
+                    <button type="button" className="sd-text-link" onClick={() => startEdit(t)}>Edit</button>
+                    {' - '}
+                    <button type="button" className="sd-text-link" onClick={() => toggleActive(t)}>{t.active ? 'Hide' : 'Show'}</button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
     </div>
   );
 }

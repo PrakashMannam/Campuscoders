@@ -1,4 +1,4 @@
-/* Admin panel — scoped styles. Imported only from AdminLayout. */
+﻿/* Admin panel - scoped styles. Imported only from AdminLayout. */
 
 .admin-shell .dl-sidebar {
   width: 228px;
@@ -14,7 +14,13 @@
 
 .admin-shell .dl-main {
   margin-left: 228px;
-  background: #f8fafc;
+  background: var(--paper);
+}
+
+@media (max-width: 980px) {
+  .admin-shell .dl-main {
+    margin-left: 0;
+  }
 }
 
 .admin-shell .dl-content {
@@ -23,7 +29,7 @@
 }
 
 .admin-shell .dl-topbar {
-  background: #ffffff;
+  background: var(--surface);
   justify-content: flex-end;
 }
 
@@ -34,7 +40,7 @@
 .admin-brand-label {
   font-size: 0.68rem;
   font-weight: 800;
-  color: #64748b;
+  color: var(--ink-muted);
   margin-top: 6px;
   padding-left: 40px;
   letter-spacing: 0.12em;
@@ -43,7 +49,7 @@
 .admin-user-block {
   margin-top: auto;
   padding: 14px 16px;
-  border-top: 1px solid #e2e8f0;
+  border-top: 1px solid var(--line);
   position: relative;
 }
 
@@ -67,7 +73,7 @@
 .admin-user-name {
   font-size: 0.85rem;
   font-weight: 700;
-  color: #111827;
+  color: var(--ink);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -75,7 +81,7 @@
 
 .admin-user-email {
   font-size: 0.72rem;
-  color: #64748b;
+  color: var(--ink-muted);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -90,19 +96,19 @@
   display: flex;
   flex-direction: column;
   padding-left: 16px;
-  border-left: 1px solid #e2e8f0;
+  border-left: 1px solid var(--line);
   line-height: 1.2;
 }
 
 .admin-top-role strong {
   font-size: 0.88rem;
   font-weight: 700;
-  color: #111827;
+  color: var(--ink);
 }
 
 .admin-top-role span {
   font-size: 0.72rem;
-  color: #64748b;
+  color: var(--ink-muted);
 }
 
 .ap-header {
@@ -118,19 +124,19 @@
   font-family: var(--font-title);
   font-size: 1.65rem;
   font-weight: 800;
-  color: #111827;
+  color: var(--ink);
   margin: 0 0 6px;
 }
 
 .ap-page-sub {
-  color: #6b7280;
+  color: var(--ink-muted);
   margin: 0;
   font-size: 0.9rem;
 }
 
 .ap-crumb {
   font-size: 0.82rem;
-  color: #64748b;
+  color: var(--ink-muted);
   margin-bottom: 8px;
 }
 
@@ -144,8 +150,8 @@
 }
 
 .ap-card-solid {
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
+  background: var(--surface);
+  border: 1px solid var(--line);
   border-radius: 16px;
   padding: 24px;
   box-shadow: 0 2px 8px rgba(15, 17, 21, 0.03);
@@ -159,7 +165,7 @@
   display: flex;
   gap: 6px;
   padding: 4px;
-  background: #f1f5f9;
+  background: var(--paper);
   border-radius: 12px;
   width: fit-content;
   max-width: 100%;
@@ -174,7 +180,7 @@
   border-radius: 10px;
   font-weight: 700;
   font-size: 0.84rem;
-  color: #64748b;
+  color: var(--ink-muted);
   cursor: pointer;
   white-space: nowrap;
   display: inline-flex;
@@ -183,8 +189,8 @@
 }
 
 .ap-tab.active {
-  background: #ffffff;
-  color: #92400e;
+  background: var(--surface);
+  color: var(--gold-text);
   box-shadow: 0 1px 4px rgba(15, 17, 21, 0.08);
 }
 
@@ -200,7 +206,7 @@
 }
 
 .ap-modal {
-  background: #ffffff;
+  background: var(--surface);
   border-radius: 16px;
   width: min(680px, 100%);
   max-height: 88vh;
@@ -223,8 +229,8 @@
 }
 
 .ap-ghost-btn {
-  background: #fff;
-  border: 1px solid #d1d5db;
+  background: var(--surface);
+  border: 1px solid var(--line);
   border-radius: 8px;
   padding: 8px 14px;
   cursor: pointer;
@@ -238,7 +244,7 @@
 
 .ap-ghost-btn:hover:not(:disabled) {
   border-color: #d4af37;
-  color: #92400e;
+  color: var(--gold-text);
 }
 
 .ap-ghost-btn:disabled {
@@ -266,13 +272,13 @@
   background: none;
   border: none;
   cursor: pointer;
-  color: #64748b;
+  color: var(--ink-muted);
   padding: 4px;
   border-radius: 6px;
   display: inline-flex;
 }
 
-.ap-icon-btn:hover { background: #f8fafc; color: #d97706; }
+.ap-icon-btn:hover { background: var(--paper); color: #d97706; }
 .ap-icon-btn.danger:hover { color: #ef4444; }
 .ap-icon-btn.accent { color: #d97706; }
 
@@ -280,8 +286,8 @@
   position: absolute;
   right: 0;
   top: 28px;
-  background: #fff;
-  border: 1px solid #e2e8f0;
+  background: var(--surface);
+  border: 1px solid var(--line);
   border-radius: 12px;
   box-shadow: 0 12px 32px rgba(15, 17, 21, 0.1);
   min-width: 210px;
@@ -300,11 +306,11 @@
   cursor: pointer;
   font-size: 0.84rem;
   font-weight: 600;
-  color: #374151;
+  color: var(--ink);
   text-align: left;
 }
 
-.ap-menu button:hover { background: #fffbeb; color: #92400e; }
+.ap-menu button:hover { background: var(--gold-soft); color: var(--gold-text); }
 .ap-menu button.danger { color: #dc2626; }
 
 .ap-cal-grid {
@@ -322,10 +328,10 @@
 
 .ap-cal-cell {
   min-height: 68px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--line);
   border-radius: 10px;
   padding: 6px;
-  background: #fff;
+  background: var(--surface);
   cursor: pointer;
   text-align: left;
 }
@@ -333,31 +339,31 @@
 .ap-cal-cell:hover { border-color: #d4af37; }
 .ap-cal-cell.selected {
   border-color: #d97706;
-  background: #fff7ed;
+  background: var(--gold-soft);
 }
 
 .ap-cal-title {
   font-size: 0.65rem;
   font-weight: 700;
-  color: #92400e;
+  color: var(--gold-text);
   margin-top: 4px;
   line-height: 1.3;
 }
 
 .ap-topic-card {
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--line);
   border-radius: 16px;
   padding: 20px;
-  background: #fff;
+  background: var(--surface);
   position: relative;
   overflow: hidden;
 }
 
 .ap-flag-card {
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--line);
   border-radius: 16px;
   padding: 20px;
-  background: #fff;
+  background: var(--surface);
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -368,10 +374,10 @@
   border-radius: 12px;
   padding: 24px;
   text-align: center;
-  background: #f8fafc;
+  background: var(--paper);
   cursor: pointer;
   display: block;
-  color: #64748b;
+  color: var(--ink-muted);
   font-size: 0.85rem;
 }
 
@@ -381,8 +387,8 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  background: #fffbeb;
-  color: #92400e;
+  background: var(--gold-soft);
+  color: var(--gold-text);
   border: 1px solid #fde68a;
   border-radius: 999px;
   padding: 4px 10px;
@@ -394,7 +400,7 @@
   border: none;
   background: none;
   cursor: pointer;
-  color: #92400e;
+  color: var(--gold-text);
   padding: 0;
   display: inline-flex;
 }
@@ -424,25 +430,25 @@
   padding: 12px;
   font-size: 0.78rem;
   font-weight: 700;
-  color: #64748b;
+  color: var(--ink-muted);
   text-align: left;
-  border-bottom: 2px solid #f1f5f9;
+  border-bottom: 2px solid var(--line);
   white-space: nowrap;
 }
 
 .ap-table td {
   padding: 14px 12px;
-  border-bottom: 1px solid #f1f5f9;
+  border-bottom: 1px solid var(--line);
   font-size: 0.88rem;
-  color: #374151;
+  color: var(--ink);
   vertical-align: middle;
 }
 
-.ap-table tbody tr:hover { background: #f8fafc; }
+.ap-table tbody tr:hover { background: var(--paper); }
 
 .ap-stat {
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
+  background: var(--surface);
+  border: 1px solid var(--line);
   border-radius: 16px;
   padding: 20px;
   display: flex;
@@ -463,7 +469,7 @@
 .ap-stat-label {
   font-size: 0.72rem;
   font-weight: 700;
-  color: #64748b;
+  color: var(--ink-muted);
   text-transform: uppercase;
   letter-spacing: 0.4px;
 }
@@ -471,7 +477,7 @@
 .ap-stat-value {
   font-size: 1.5rem;
   font-weight: 800;
-  color: #0f172a;
+  color: var(--ink);
 }
 
 .ap-stat-grid {
@@ -522,14 +528,14 @@
   display: block;
   font-size: 0.82rem;
   font-weight: 700;
-  color: #111827;
+  color: var(--ink);
   margin-bottom: 6px;
 }
 
 .ap-hint {
   font-size: 0.78rem;
   font-weight: 700;
-  color: #64748b;
+  color: var(--ink-muted);
   margin-bottom: 6px;
 }
 
@@ -538,10 +544,10 @@
   width: 100%;
   padding: 10px 14px;
   border-radius: 10px;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--line);
   font-size: 0.9rem;
   font-family: var(--font-body);
-  background: #fff;
+  background: var(--surface);
 }
 
 .ap-input:focus {
@@ -551,7 +557,7 @@
 }
 
 .ap-input:disabled {
-  background: #f3f4f6;
+  background: var(--paper);
   color: #94a3b8;
 }
 
@@ -564,7 +570,7 @@
 
 .ap-actions.end {
   justify-content: flex-end;
-  border-top: 1px solid #f1f5f9;
+  border-top: 1px solid var(--line);
   padding-top: 16px;
   margin-top: 8px;
 }
@@ -598,7 +604,7 @@
   width: 18px;
   left: 3px;
   bottom: 3px;
-  background: #fff;
+  background: var(--surface);
   border-radius: 50%;
   transition: left 0.2s;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
@@ -613,12 +619,12 @@
 }
 
 .ap-notice {
-  background: #fffbeb;
+  background: var(--gold-soft);
   border: 1px solid #fde68a;
   border-radius: 10px;
   padding: 12px 14px;
   margin-bottom: 16px;
-  color: #92400e;
+  color: var(--gold-text);
   font-size: 0.84rem;
 }
 
@@ -633,8 +639,8 @@
 .ap-path-btn {
   width: 100%;
   text-align: left;
-  border: 1px solid #e2e8f0;
-  background: #fff;
+  border: 1px solid var(--line);
+  background: var(--surface);
   border-radius: 12px;
   padding: 14px;
   margin-bottom: 8px;
@@ -643,7 +649,7 @@
 
 .ap-path-btn.active {
   border-color: #d97706;
-  background: #fffbeb;
+  background: var(--gold-soft);
 }
 
 .ap-order-row {
@@ -651,10 +657,10 @@
   align-items: center;
   gap: 12px;
   padding: 12px 14px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--line);
   border-radius: 12px;
   margin-bottom: 8px;
-  background: #fff;
+  background: var(--surface);
 }
 
 .ap-index {
@@ -678,15 +684,15 @@
 .ap-quick-link {
   display: block;
   padding: 18px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--line);
   border-radius: 14px;
-  background: #fff;
-  color: #111827;
+  background: var(--surface);
+  color: var(--ink);
 }
 
 .ap-quick-link:hover {
   border-color: #d4af37;
-  background: #fffbeb;
+  background: var(--gold-soft);
 }
 
 .ap-quick-link strong {
@@ -696,7 +702,7 @@
 
 .ap-quick-link span {
   font-size: 0.8rem;
-  color: #64748b;
+  color: var(--ink-muted);
 }
 
 .ap-pager {
@@ -705,11 +711,11 @@
   align-items: center;
   margin-top: 16px;
   padding-top: 16px;
-  border-top: 1px solid #f1f5f9;
+  border-top: 1px solid var(--line);
   gap: 12px;
   flex-wrap: wrap;
   font-size: 0.85rem;
-  color: #64748b;
+  color: var(--ink-muted);
 }
 
 .ap-chart {
@@ -720,7 +726,7 @@
   display: inline-block;
   width: 20px;
   height: 20px;
-  border: 3px solid #f1f5f9;
+  border: 3px solid var(--line);
   border-top: 3px solid #d97706;
   border-radius: 50%;
   animation: adminSpin 0.8s linear infinite;

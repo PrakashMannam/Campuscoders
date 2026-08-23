@@ -1,5 +1,7 @@
 package com.campuscoders.backend.profile.dto;
 
+import java.time.Instant;
+
 import com.campuscoders.backend.user.Role;
 
 // Safe profile data returned to the frontend; password is never exposed.
@@ -14,5 +16,8 @@ public record ProfileResponse(
     String geeksforgeeksUrl,
     String githubUrl,
     String linkedinUrl,
-    String avatarUrl) {
+    String portfolioUrl,
+    String avatarUrl,
+    Boolean publicProfileVisible,
+    Instant createdAt) {
 }
