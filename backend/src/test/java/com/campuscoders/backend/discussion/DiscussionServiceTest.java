@@ -55,7 +55,7 @@ class DiscussionServiceTest {
     category.setActive(true);
     category.setName("Java");
 
-    CreateDiscussionPostRequest req = new CreateDiscussionPostRequest(10L, "Java Title", "Java Content", "java,spring");
+    CreateDiscussionPostRequest req = new CreateDiscussionPostRequest(10L, "Java Title", "Java Content", "java,spring-boot");
 
     DiscussionPost savedPost = new DiscussionPost();
     savedPost.setId(100L);

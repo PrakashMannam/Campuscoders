@@ -537,7 +537,7 @@ public class DiscussionService {
 
   public static final List<String> ALLOWED_TAGS = List.of(
       "java", "python", "c++", "javascript", "typescript", "go", "rust", "sql", "html", "css",
-      "react", "spring-boot", "nodejs", "django", "angular", "vue", "express", "mongodb", "postgresql", "docker", "aws",
+      "react", "spring", "spring-boot", "nodejs", "django", "angular", "vue", "express", "mongodb", "postgresql", "docker", "aws",
       "git",
       "frontend", "backend", "full-stack", "mobile", "machine-learning", "data-science", "devops", "cloud",
       "cybersecurity",

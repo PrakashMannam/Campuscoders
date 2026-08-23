@@ -8,6 +8,9 @@ campuscoders:
 spring:
   application:
     name: campuscoders-backend
+  # Local default is "dev" (seeds admin/student). Set SPRING_PROFILES_ACTIVE=prod on a host.
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:dev}
   datasource:
     url: ${DB_URL:jdbc:mysql://localhost:3306/campuscoders}
     username: ${DB_USERNAME:root}
@@ -25,6 +28,9 @@ spring:
     properties:
       mail.smtp.auth: true
       mail.smtp.starttls.enable: true
+
+# spring-dotenv: reads a file named ".env" from the process working directory
+# (normally backend/ when you run mvn spring-boot:run). OS env vars still win.
 
 jwt:
   secret: ${JWT_SECRET:campus-coders-secret-key-campus-coders-secret-key}

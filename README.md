@@ -19,18 +19,36 @@ Open learning portal for students and early-career engineers.
 - Node.js 18+
 - MySQL with database `campuscoders`
 
+### Backend env (important)
+
+Spring reads config from **environment variables** (and optionally a **`backend/.env` file** via `spring-dotenv`).
+
+The repo-root `.env.example` is only a pointer. Real example lives at:
+
+`backend/.env.example` → copy to `backend/.env`
+
+```bash
+cd backend
+copy .env.example .env   # Windows
+# then edit MAIL_*, DB_*, JWT_SECRET
+mvn spring-boot:run
+```
+
+`application.yml` maps names like `${MAIL_HOST:}` — it does **not** auto-load a file at the monorepo root.
+
+Default profile is `dev` (seeds `admin@campus.com` / `student@campus.com` with `email_verified=true`).
+On a host set `SPRING_PROFILES_ACTIVE=prod`.
+
 ### Backend
 
 ```bash
 cd backend
-# Optional mail (Gmail App Password recommended):
-# set MAIL_HOST, MAIL_PORT, MAIL_USERNAME, MAIL_PASSWORD, MAIL_FROM, FRONTEND_URL
 mvn spring-boot:run
 ```
 
 API base: `http://localhost:8080/api`
 
-Dev seed users (when `dev` profile / DataInitializer runs):
+Dev seed users:
 
 - `admin@campus.com` / `admin123`
 - `student@campus.com` / `student123`

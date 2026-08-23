@@ -1,6 +1,5 @@
 package com.campuscoders.backend.auth;
 
-import java.security.SecureRandom;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.UUID;
@@ -19,6 +18,7 @@ import com.campuscoders.backend.auth.dto.VerifyEmailRequest;
 import com.campuscoders.backend.auth.emailverification.DisposableEmailGuard;
 import com.campuscoders.backend.auth.emailverification.EmailVerificationCode;
 import com.campuscoders.backend.auth.emailverification.EmailVerificationCodeRepository;
+import com.campuscoders.backend.auth.emailverification.EmailVerificationCodeService;
 import com.campuscoders.backend.auth.emailverification.EmailVerificationMailService;
 import com.campuscoders.backend.auth.passwordreset.PasswordResetMailService;
 import com.campuscoders.backend.auth.passwordreset.PasswordResetToken;
@@ -32,9 +32,7 @@ import com.campuscoders.backend.user.repository.UserRepository;
 public class AuthService {
 
   private static final long RESET_TOKEN_EXPIRY_MINUTES = 15;
-  private static final long OTP_EXPIRY_MINUTES = 10;
   private static final int OTP_MAX_ATTEMPTS = 5;
-  private static final SecureRandom SECURE_RANDOM = new SecureRandom();
 
   private final UserRepository userRepository;
   private final PasswordEncoder passwordEncoder;
@@ -42,6 +40,7 @@ public class AuthService {
   private final PasswordResetTokenRepository passwordResetTokenRepository;
   private final PasswordResetMailService passwordResetMailService;
   private final EmailVerificationCodeRepository emailVerificationCodeRepository;
+  private final EmailVerificationCodeService emailVerificationCodeService;
   private final EmailVerificationMailService emailVerificationMailService;
   private final DisposableEmailGuard disposableEmailGuard;
 
@@ -52,6 +51,7 @@ public class AuthService {
       PasswordResetTokenRepository passwordResetTokenRepository,
       PasswordResetMailService passwordResetMailService,
       EmailVerificationCodeRepository emailVerificationCodeRepository,
+      EmailVerificationCodeService emailVerificationCodeService,
       EmailVerificationMailService emailVerificationMailService,
       DisposableEmailGuard disposableEmailGuard) {
     this.userRepository = userRepository;
@@ -60,6 +60,7 @@ public class AuthService {
     this.passwordResetTokenRepository = passwordResetTokenRepository;
     this.passwordResetMailService = passwordResetMailService;
     this.emailVerificationCodeRepository = emailVerificationCodeRepository;
+    this.emailVerificationCodeService = emailVerificationCodeService;
     this.emailVerificationMailService = emailVerificationMailService;
     this.disposableEmailGuard = disposableEmailGuard;
   }
@@ -114,7 +115,7 @@ public class AuthService {
     }
 
     if (!Boolean.TRUE.equals(user.getEmailVerified()) && emailVerificationMailService.isConfigured()) {
-      // Workbench/manual unverified (or expired OTP): send a fresh code so verify page is usable.
+      // Fresh OTP committed in its own transaction before this FORBIDDEN response.
       issueAndSendVerificationCode(user);
       throw new ResponseStatusException(
           HttpStatus.FORBIDDEN,
@@ -152,8 +153,9 @@ public class AuthService {
       throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Too many attempts. Request a new code.");
     }
 
+    String code = request.code() == null ? "" : request.code().trim();
     latest.setAttemptCount(latest.getAttemptCount() + 1);
-    if (!passwordEncoder.matches(request.code(), latest.getCodeHash())) {
+    if (!passwordEncoder.matches(code, latest.getCodeHash())) {
       emailVerificationCodeRepository.save(latest);
       throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid verification code");
     }
@@ -172,7 +174,6 @@ public class AuthService {
     String email = normalizeEmail(request.email());
     User user = userRepository.findByEmail(email).orElse(null);
 
-    // Same generic message whether the account exists or not.
     String ok = "If an account needs verification, a new code has been sent.";
 
     if (user == null || Boolean.TRUE.equals(user.getEmailVerified())) {
@@ -259,22 +260,7 @@ public class AuthService {
   }
 
   private void issueAndSendVerificationCode(User user) {
-    emailVerificationCodeRepository.findByUserIdAndUsedFalse(user.getId())
-        .forEach(code -> {
-          code.setUsed(true);
-          emailVerificationCodeRepository.save(code);
-        });
-
-    String rawCode = String.format("%06d", SECURE_RANDOM.nextInt(1_000_000));
-
-    EmailVerificationCode entity = new EmailVerificationCode();
-    entity.setUser(user);
-    entity.setCodeHash(passwordEncoder.encode(rawCode));
-    entity.setExpiresAt(Instant.now().plus(OTP_EXPIRY_MINUTES, ChronoUnit.MINUTES));
-    entity.setUsed(false);
-    entity.setAttemptCount(0);
-    emailVerificationCodeRepository.save(entity);
-
+    String rawCode = emailVerificationCodeService.issueRawCode(user);
     emailVerificationMailService.sendVerificationCode(user.getEmail(), rawCode);
   }
 
