@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  FiZap, FiExternalLink,
+  FiExternalLink,
   FiCode, FiVolume2, FiMessageSquare, FiCalendar, FiBookOpen, FiBriefcase
 } from 'react-icons/fi';
 import DashboardLayout from '../components/DashboardLayout';
