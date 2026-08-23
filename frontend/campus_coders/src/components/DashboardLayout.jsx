@@ -80,16 +80,23 @@ export default function DashboardLayout({ children }) {
   const [unread, setUnread] = useState(0);
   const dropdownRef = useRef(null);
 
-  useEffect(() => {
-    let cancelled = false;
+  const refreshUnread = useCallback(() => {
     api.get('/dashboard/summary')
       .then((res) => {
-        if (cancelled) return;
         setUnread(res.data.unreadNotificationsCount || 0);
       })
       .catch(() => { });
-    return () => { cancelled = true; };
-  }, [location.pathname]);
+  }, []);
+
+  useEffect(() => {
+    refreshUnread();
+  }, [location.pathname, refreshUnread]);
+
+  useEffect(() => {
+    const onNotificationsChanged = () => refreshUnread();
+    window.addEventListener('campuscoders:notifications-changed', onNotificationsChanged);
+    return () => window.removeEventListener('campuscoders:notifications-changed', onNotificationsChanged);
+  }, [refreshUnread]);
 
   useEffect(() => {
     const handleClickOutside = (e) => {
