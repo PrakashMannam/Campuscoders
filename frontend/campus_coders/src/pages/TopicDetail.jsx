@@ -5,7 +5,6 @@ import DashboardLayout from '../components/DashboardLayout';
 import ResourceCard from '../components/ResourceCard';
 import Toast from '../components/Toast';
 import api from '../api/client';
-import { formatMinutes } from '../utils/label';
 
 export default function TopicDetail() {
   const { topicId } = useParams();
@@ -154,7 +153,6 @@ export default function TopicDetail() {
                   {topic.description && <p className="top-subtitle">{topic.description}</p>}
                   <div className="top-meta-pills">
                     <span className="top-pill">{resources.length} resources</span>
-                    {topic.estimatedMinutes != null && <span className="top-pill">{formatMinutes(topic.estimatedMinutes)}</span>}
                     {progress && <span className="top-pill">{progress.progressPercentage}% complete</span>}
                   </div>
                 </div>

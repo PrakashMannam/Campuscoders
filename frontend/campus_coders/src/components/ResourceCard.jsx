@@ -1,6 +1,6 @@
 import React from 'react';
 import { FiBookmark, FiExternalLink, FiVideo, FiFileText, FiBookOpen, FiFile, FiLink, FiCheck } from 'react-icons/fi';
-import { formatMinutes, humanize } from '../utils/label';
+import { humanize } from '../utils/label';
 
 function typeIcon(type) {
   switch (String(type || '').toUpperCase()) {
@@ -21,8 +21,7 @@ export default function ResourceCard({
 }) {
   const typeLabel = humanize(resource.type);
   const diffLabel = humanize(resource.difficulty);
-  const minutes = formatMinutes(resource.estimatedMinutes);
-  const meta = [typeLabel, resource.provider, minutes, diffLabel].filter(Boolean).join(' · ');
+  const meta = [typeLabel, resource.provider, diffLabel].filter(Boolean).join(' · ');
 
   const open = () => {
     if (resource.url) {

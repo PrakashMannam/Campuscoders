@@ -4,7 +4,7 @@ import { FiSearch, FiChevronRight, FiBookmark, FiMessageSquare, FiX } from 'reac
 import DashboardLayout from '../components/DashboardLayout';
 import Toast from '../components/Toast';
 import api from '../api/client';
-import { difficultyClass, formatMinutes, humanize } from '../utils/label';
+import { difficultyClass, humanize } from '../utils/label';
 
 export default function Resources() {
   const navigate = useNavigate();
@@ -168,7 +168,6 @@ export default function Resources() {
                     <h4 className="res-path-title">{path.title}</h4>
                     <p className="res-path-desc">{path.shortDescription || path.description}</p>
                     <div className="res-path-meta">
-                      {path.estimatedHours != null && <span>{path.estimatedHours}h</span>}
                       {path.category && <span>{path.category}</span>}
                     </div>
                     {progress && progress.totalResources > 0 && (
@@ -210,7 +209,6 @@ export default function Resources() {
                     <th style={{ padding: 14, textAlign: 'left' }}>Resource</th>
                     <th style={{ padding: 14, textAlign: 'left' }}>Type</th>
                     <th style={{ padding: 14, textAlign: 'left' }}>Difficulty</th>
-                    <th style={{ padding: 14, textAlign: 'left' }}>Duration</th>
                     <th style={{ padding: 14, textAlign: 'left' }}></th>
                   </tr>
                 </thead>
@@ -220,7 +218,6 @@ export default function Resources() {
                       <td style={{ padding: 14, fontWeight: 600 }}>{r.title}</td>
                       <td style={{ padding: 14 }}>{humanize(r.type)}</td>
                       <td style={{ padding: 14 }}>{humanize(r.difficulty)}</td>
-                      <td style={{ padding: 14 }}>{formatMinutes(r.estimatedMinutes) || '-'}</td>
                       <td style={{ padding: 14 }}>
                         {r.url && (
                           <a href={r.url} target="_blank" rel="noopener noreferrer" className="sd-text-link">Open</a>
