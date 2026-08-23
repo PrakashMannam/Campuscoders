@@ -9,7 +9,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.campuscoders.backend.dailychallenge.dto.CodingProblemResponse;
-import com.campuscoders.backend.dailychallenge.dto.CompleteDailyChallengeResponse;
 import com.campuscoders.backend.dailychallenge.dto.CreateCodingProblemRequest;
 import com.campuscoders.backend.dailychallenge.dto.CreateDailyChallengeRequest;
 import com.campuscoders.backend.dailychallenge.dto.DailyChallengeResponse;
@@ -17,8 +16,9 @@ import com.campuscoders.backend.dailychallenge.dto.UpdateCodingProblemRequest;
 import com.campuscoders.backend.dailychallenge.dto.UpdateDailyChallengeRequest;
 import com.campuscoders.backend.dailychallenge.repository.CodingProblemRepository;
 import com.campuscoders.backend.dailychallenge.repository.DailyChallengeRepository;
-import com.campuscoders.backend.dailychallenge.repository.UserDailyChallengeAttemptRepository;
 import com.campuscoders.backend.exception.CustomException;
+import com.campuscoders.backend.notification.NotificationService;
+import com.campuscoders.backend.notification.NotificationType;
 import com.campuscoders.backend.user.User;
 import com.campuscoders.backend.user.repository.UserRepository;
 
@@ -27,89 +27,39 @@ public class DailyChallengeService {
 
   private final CodingProblemRepository codingProblemRepository;
   private final DailyChallengeRepository dailyChallengeRepository;
-  private final UserDailyChallengeAttemptRepository attemptRepository;
   private final UserRepository userRepository;
+  private final NotificationService notificationService;
 
   public DailyChallengeService(
       CodingProblemRepository codingProblemRepository,
       DailyChallengeRepository dailyChallengeRepository,
-      UserDailyChallengeAttemptRepository attemptRepository,
-      UserRepository userRepository) {
+      UserRepository userRepository,
+      NotificationService notificationService) {
     this.codingProblemRepository = codingProblemRepository;
     this.dailyChallengeRepository = dailyChallengeRepository;
-    this.attemptRepository = attemptRepository;
     this.userRepository = userRepository;
+    this.notificationService = notificationService;
   }
 
-  // --- Student Service Methods ---
-
-  // Fetches today's active challenge using LocalDate.now(ZoneOffset.UTC) and checks whether authenticated student completed it.
   @Transactional(readOnly = true)
   public DailyChallengeResponse getTodayChallenge(String userEmail) {
-    User user = getUserByEmail(userEmail);
+    getUserByEmail(userEmail);
     LocalDate today = LocalDate.now(ZoneOffset.UTC);
 
     DailyChallenge challenge = dailyChallengeRepository.findByChallengeDateAndActiveTrue(today)
         .orElseThrow(() -> new CustomException("No active daily challenge found for today", HttpStatus.NOT_FOUND));
 
-    boolean completed = attemptRepository.existsByUserIdAndDailyChallengeId(user.getId(), challenge.getId());
-
-    return toDailyChallengeResponse(challenge, completed);
+    return toDailyChallengeResponse(challenge);
   }
 
-  // Atomically completes today's challenge: saves attempt, awards XP, and increments problemsSolved.
-  // Both XP increment and attempt persistence MUST happen in one transaction to avoid partial DB state.
-  @Transactional
-  public CompleteDailyChallengeResponse completeChallenge(String userEmail, Long dailyChallengeId) {
-    User user = getUserByEmail(userEmail);
-
-    DailyChallenge challenge = dailyChallengeRepository.findById(dailyChallengeId)
-        .orElseThrow(() -> new CustomException("Daily challenge not found", HttpStatus.NOT_FOUND));
-
-    if (!challenge.getActive()) {
-      throw new CustomException("This daily challenge is no longer active", HttpStatus.BAD_REQUEST);
-    }
-
-    // Duplicate Completion Guard: Prevents double XP claims for the same daily challenge.
-    if (attemptRepository.existsByUserIdAndDailyChallengeId(user.getId(), dailyChallengeId)) {
-      throw new CustomException("You have already completed this daily challenge", HttpStatus.BAD_REQUEST);
-    }
-
-    // 1️⃣ Save attempt bridge entity
-    UserDailyChallengeAttempt attempt = new UserDailyChallengeAttempt();
-    attempt.setUser(user);
-    attempt.setDailyChallenge(challenge);
-    attempt.setXpAwarded(challenge.getXpReward());
-    UserDailyChallengeAttempt savedAttempt = attemptRepository.save(attempt);
-
-    // 2️⃣ Mutate user statistics atomically: add XP reward and increment problemsSolved counter
-    user.setTotalXp(user.getTotalXp() + challenge.getXpReward());
-    user.setProblemsSolved(user.getProblemsSolved() + 1);
-    User updatedUser = userRepository.save(user);
-
-    return new CompleteDailyChallengeResponse(
-        challenge.getId(),
-        challenge.getCodingProblem().getTitle(),
-        challenge.getXpReward(),
-        updatedUser.getTotalXp(),
-        updatedUser.getProblemsSolved(),
-        savedAttempt.getCompletedAt());
-  }
-
-  // Fetches historical daily challenges alongside user's completion status.
   @Transactional(readOnly = true)
   public List<DailyChallengeResponse> getChallengeHistory(String userEmail) {
-    User user = getUserByEmail(userEmail);
+    getUserByEmail(userEmail);
 
     return dailyChallengeRepository.findByActiveTrueOrderByChallengeDateDesc().stream()
-        .map(challenge -> {
-          boolean completed = attemptRepository.existsByUserIdAndDailyChallengeId(user.getId(), challenge.getId());
-          return toDailyChallengeResponse(challenge, completed);
-        })
+        .map(this::toDailyChallengeResponse)
         .toList();
   }
-
-  // --- Admin Service Methods ---
 
   @Transactional
   public CodingProblemResponse createCodingProblem(CreateCodingProblemRequest req) {
@@ -136,16 +86,13 @@ public class DailyChallengeService {
   public CodingProblemResponse updateCodingProblem(Long problemId, UpdateCodingProblemRequest req) {
     CodingProblem problem = codingProblemRepository.findById(problemId)
         .orElseThrow(() -> new CustomException("Coding problem not found", HttpStatus.NOT_FOUND));
-
     problem.setTitle(req.title());
     problem.setPlatform(req.platform());
     problem.setProblemUrl(req.problemUrl());
     problem.setDifficulty(req.difficulty());
     problem.setTags(req.tags());
     problem.setActive(req.active());
-
-    CodingProblem saved = codingProblemRepository.save(problem);
-    return toCodingProblemResponse(saved);
+    return toCodingProblemResponse(codingProblemRepository.save(problem));
   }
 
   @Transactional
@@ -169,25 +116,34 @@ public class DailyChallengeService {
     CodingProblem problem = codingProblemRepository.findById(req.codingProblemId())
         .orElseThrow(() -> new CustomException("Coding problem not found", HttpStatus.NOT_FOUND));
 
-    // One Challenge Per Date Guard: Avoid assigning multiple active challenges to the exact same date.
     if (dailyChallengeRepository.existsByChallengeDateAndActiveTrue(req.challengeDate())) {
-      throw new CustomException("An active daily challenge already exists for date " + req.challengeDate(), HttpStatus.BAD_REQUEST);
+      throw new CustomException("An active daily challenge already exists for date " + req.challengeDate(),
+          HttpStatus.BAD_REQUEST);
     }
 
     DailyChallenge challenge = new DailyChallenge();
     challenge.setCodingProblem(problem);
     challenge.setChallengeDate(req.challengeDate());
-    challenge.setXpReward(req.xpReward());
+    challenge.setXpReward(0);
     challenge.setActive(true);
 
     DailyChallenge saved = dailyChallengeRepository.save(challenge);
-    return toDailyChallengeResponse(saved, false);
+
+    if (req.challengeDate().equals(LocalDate.now(ZoneOffset.UTC))) {
+      notificationService.notifyAllUsers(
+          "New Daily Challenge",
+          "Today's coding problem is now available: " + problem.getTitle(),
+          NotificationType.SYSTEM,
+          "/dashboard/practice");
+    }
+
+    return toDailyChallengeResponse(saved);
   }
 
   @Transactional(readOnly = true)
   public List<DailyChallengeResponse> getAllDailyChallengesForAdmin() {
     return dailyChallengeRepository.findAllByOrderByChallengeDateDesc().stream()
-        .map(challenge -> toDailyChallengeResponse(challenge, false))
+        .map(this::toDailyChallengeResponse)
         .toList();
   }
 
@@ -201,11 +157,10 @@ public class DailyChallengeService {
 
     challenge.setCodingProblem(problem);
     challenge.setChallengeDate(req.challengeDate());
-    challenge.setXpReward(req.xpReward());
+    challenge.setXpReward(0);
     challenge.setActive(req.active());
 
-    DailyChallenge saved = dailyChallengeRepository.save(challenge);
-    return toDailyChallengeResponse(saved, false);
+    return toDailyChallengeResponse(dailyChallengeRepository.save(challenge));
   }
 
   @Transactional
@@ -213,7 +168,7 @@ public class DailyChallengeService {
     DailyChallenge challenge = dailyChallengeRepository.findById(challengeId)
         .orElseThrow(() -> new CustomException("Daily challenge not found", HttpStatus.NOT_FOUND));
     challenge.setActive(false);
-    return toDailyChallengeResponse(dailyChallengeRepository.save(challenge), false);
+    return toDailyChallengeResponse(dailyChallengeRepository.save(challenge));
   }
 
   @Transactional
@@ -221,10 +176,8 @@ public class DailyChallengeService {
     DailyChallenge challenge = dailyChallengeRepository.findById(challengeId)
         .orElseThrow(() -> new CustomException("Daily challenge not found", HttpStatus.NOT_FOUND));
     challenge.setActive(true);
-    return toDailyChallengeResponse(dailyChallengeRepository.save(challenge), false);
+    return toDailyChallengeResponse(dailyChallengeRepository.save(challenge));
   }
-
-  // --- Helper Mapping Methods ---
 
   private User getUserByEmail(String email) {
     return userRepository.findByEmail(email)
@@ -232,6 +185,8 @@ public class DailyChallengeService {
   }
 
   private CodingProblemResponse toCodingProblemResponse(CodingProblem problem) {
+    if (problem == null)
+      return null;
     return new CodingProblemResponse(
         problem.getId(),
         problem.getTitle(),
@@ -242,13 +197,11 @@ public class DailyChallengeService {
         problem.getActive());
   }
 
-  private DailyChallengeResponse toDailyChallengeResponse(DailyChallenge challenge, boolean completed) {
+  private DailyChallengeResponse toDailyChallengeResponse(DailyChallenge challenge) {
     return new DailyChallengeResponse(
         challenge.getId(),
         toCodingProblemResponse(challenge.getCodingProblem()),
         challenge.getChallengeDate(),
-        challenge.getXpReward(),
-        challenge.getActive(),
-        completed);
+        challenge.getActive());
   }
 }

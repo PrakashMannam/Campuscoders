@@ -18,6 +18,7 @@ import com.campuscoders.backend.discussion.dto.DiscussionPostResponse;
 import com.campuscoders.backend.discussion.repository.DiscussionCategoryRepository;
 import com.campuscoders.backend.discussion.repository.DiscussionPostRepository;
 import com.campuscoders.backend.discussion.repository.DiscussionReplyRepository;
+import com.campuscoders.backend.discussion.repository.DiscussionVoteRepository;
 import com.campuscoders.backend.exception.CustomException;
 import com.campuscoders.backend.user.User;
 import com.campuscoders.backend.user.repository.UserRepository;
@@ -33,6 +34,9 @@ class DiscussionServiceTest {
 
   @Mock
   private DiscussionReplyRepository replyRepository;
+
+  @Mock
+  private DiscussionVoteRepository voteRepository;
 
   @Mock
   private UserRepository userRepository;
@@ -51,7 +55,7 @@ class DiscussionServiceTest {
     category.setActive(true);
     category.setName("Java");
 
-    CreateDiscussionPostRequest req = new CreateDiscussionPostRequest(10L, "Java Title", "Java Content", "java,spring");
+    CreateDiscussionPostRequest req = new CreateDiscussionPostRequest(10L, "Java Title", "Java Content", "java,spring-boot");
 
     DiscussionPost savedPost = new DiscussionPost();
     savedPost.setId(100L);
@@ -64,6 +68,8 @@ class DiscussionServiceTest {
     when(userRepository.findByEmail("student@campus.com")).thenReturn(Optional.of(author));
     when(categoryRepository.findById(10L)).thenReturn(Optional.of(category));
     when(postRepository.save(any(DiscussionPost.class))).thenReturn(savedPost);
+    when(replyRepository.countByPostIdAndActiveTrue(100L)).thenReturn(0L);
+    when(voteRepository.findByUserIdAndPostId(1L, 100L)).thenReturn(Optional.empty());
 
     DiscussionPostResponse res = discussionService.createPost("student@campus.com", req);
 

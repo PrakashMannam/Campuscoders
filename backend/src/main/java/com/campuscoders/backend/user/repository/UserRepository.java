@@ -1,6 +1,5 @@
 package com.campuscoders.backend.user.repository;
 
-import java.util.List;
 import java.util.Optional;
 
 import org.springframework.data.domain.Page;
@@ -32,14 +31,4 @@ public interface UserRepository extends JpaRepository<User, Long> {
       @Param("enabled") Boolean enabled,
       @Param("search") String search,
       Pageable pageable);
-
-  // Database-side filtering and multi-tier tie-break sorting for Leaderboard rankings.
-  // Performs enabled = true filtering and ORDER BY totalXp DESC, problemsSolved DESC, dailyStreak DESC, createdAt ASC directly in SQL.
-  @Query("SELECT u FROM User u " +
-         "WHERE u.enabled = true " +
-         "ORDER BY COALESCE(u.totalXp, 0) DESC, " +
-         "COALESCE(u.problemsSolved, 0) DESC, " +
-         "COALESCE(u.dailyStreak, 0) DESC, " +
-         "u.createdAt ASC")
-  List<User> findLeaderboardUsers();
 }

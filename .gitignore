@@ -32,8 +32,23 @@ build/
 ### Node / React ###
 node_modules/
 dist/
+coverage/
 .env
 .env.*
+!.env.example
+!**/.env.example
 
-### VS Code ###
+### Logs / temp ###
+*.log
+logs/
+.tmp/
+*.tmp
+
+### Local tooling / agent artifacts ###
+.cursor/
+.playwright-mcp/
 .vscode/
+
+### OS ###
+.DS_Store
+Thumbs.db

@@ -12,7 +12,15 @@ import org.springframework.web.server.ResponseStatusException;
 
 import com.campuscoders.backend.auth.dto.ForgotPasswordRequest;
 import com.campuscoders.backend.auth.dto.MessageResponse;
+import com.campuscoders.backend.auth.dto.ResendVerificationRequest;
 import com.campuscoders.backend.auth.dto.ResetPasswordRequest;
+import com.campuscoders.backend.auth.dto.VerifyEmailRequest;
+import com.campuscoders.backend.auth.emailverification.DisposableEmailGuard;
+import com.campuscoders.backend.auth.emailverification.EmailVerificationCode;
+import com.campuscoders.backend.auth.emailverification.EmailVerificationCodeRepository;
+import com.campuscoders.backend.auth.emailverification.EmailVerificationCodeService;
+import com.campuscoders.backend.auth.emailverification.EmailVerificationMailService;
+import com.campuscoders.backend.auth.passwordreset.PasswordResetMailService;
 import com.campuscoders.backend.auth.passwordreset.PasswordResetToken;
 import com.campuscoders.backend.auth.passwordreset.PasswordResetTokenRepository;
 import com.campuscoders.backend.security.JwtService;
@@ -24,44 +32,78 @@ import com.campuscoders.backend.user.repository.UserRepository;
 public class AuthService {
 
   private static final long RESET_TOKEN_EXPIRY_MINUTES = 15;
+  private static final int OTP_MAX_ATTEMPTS = 5;
 
   private final UserRepository userRepository;
   private final PasswordEncoder passwordEncoder;
   private final JwtService jwtService;
   private final PasswordResetTokenRepository passwordResetTokenRepository;
+  private final PasswordResetMailService passwordResetMailService;
+  private final EmailVerificationCodeRepository emailVerificationCodeRepository;
+  private final EmailVerificationCodeService emailVerificationCodeService;
+  private final EmailVerificationMailService emailVerificationMailService;
+  private final DisposableEmailGuard disposableEmailGuard;
 
   public AuthService(
       UserRepository userRepository,
       PasswordEncoder passwordEncoder,
       JwtService jwtService,
-      PasswordResetTokenRepository passwordResetTokenRepository) {
+      PasswordResetTokenRepository passwordResetTokenRepository,
+      PasswordResetMailService passwordResetMailService,
+      EmailVerificationCodeRepository emailVerificationCodeRepository,
+      EmailVerificationCodeService emailVerificationCodeService,
+      EmailVerificationMailService emailVerificationMailService,
+      DisposableEmailGuard disposableEmailGuard) {
     this.userRepository = userRepository;
     this.passwordEncoder = passwordEncoder;
     this.jwtService = jwtService;
     this.passwordResetTokenRepository = passwordResetTokenRepository;
+    this.passwordResetMailService = passwordResetMailService;
+    this.emailVerificationCodeRepository = emailVerificationCodeRepository;
+    this.emailVerificationCodeService = emailVerificationCodeService;
+    this.emailVerificationMailService = emailVerificationMailService;
+    this.disposableEmailGuard = disposableEmailGuard;
   }
 
+  @Transactional
   public AuthResponse register(RegisterRequest registerRequest) {
-    // Email is the login identity, so duplicate accounts are blocked early.
-    if (userRepository.existsByEmail(registerRequest.getEmail())) {
+    String email = normalizeEmail(registerRequest.getEmail());
+    disposableEmailGuard.rejectIfDisposable(email);
+
+    if (userRepository.existsByEmail(email)) {
       throw new ResponseStatusException(HttpStatus.CONFLICT, "Email already exists");
     }
 
-    // Store only encoded passwords. Never save raw passwords in the database.
     User user = new User();
-    user.setFullName(registerRequest.getFullName());
-    user.setEmail(registerRequest.getEmail());
+    user.setFullName(registerRequest.getFullName().trim());
+    user.setEmail(email);
     user.setPassword(passwordEncoder.encode(registerRequest.getPassword()));
     user.setRole(Role.STUDENT);
     user.setEnabled(true);
 
+    boolean mailReady = emailVerificationMailService.isConfigured();
+    user.setEmailVerified(!mailReady);
+
     User savedUser = userRepository.save(user);
+
+    if (mailReady) {
+      issueAndSendVerificationCode(savedUser);
+      AuthResponse pending = new AuthResponse();
+      pending.setEmail(savedUser.getEmail());
+      pending.setFullName(savedUser.getFullName());
+      pending.setRole(savedUser.getRole());
+      pending.setEmailVerified(false);
+      pending.setRequiresEmailVerification(true);
+      pending.setToken(null);
+      return pending;
+    }
 
     return buildAuthResponse(savedUser);
   }
 
   public AuthResponse login(LoginRequest request) {
-    User user = userRepository.findByEmail(request.getEmail())
+    String email = normalizeEmail(request.getEmail());
+    User user = userRepository.findByEmail(email)
         .orElseThrow(() -> new ResponseStatusException(
             HttpStatus.UNAUTHORIZED,
             "Invalid email or password"));
@@ -72,7 +114,80 @@ public class AuthService {
           "Invalid email or password");
     }
 
+    if (!Boolean.TRUE.equals(user.getEmailVerified()) && emailVerificationMailService.isConfigured()) {
+      // Fresh OTP committed in its own transaction before this FORBIDDEN response.
+      issueAndSendVerificationCode(user);
+      throw new ResponseStatusException(
+          HttpStatus.FORBIDDEN,
+          "Please verify your email before signing in. Check your inbox for the code.");
+    }
+
     return buildAuthResponse(user);
+  }
+
+  @Transactional
+  public AuthResponse verifyEmail(VerifyEmailRequest request) {
+    String email = normalizeEmail(request.email());
+    User user = userRepository.findByEmail(email)
+        .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid verification request"));
+
+    if (Boolean.TRUE.equals(user.getEmailVerified())) {
+      return buildAuthResponse(user);
+    }
+
+    EmailVerificationCode latest = emailVerificationCodeRepository
+        .findFirstByUserIdAndUsedFalseOrderByCreatedAtDesc(user.getId())
+        .orElseThrow(() -> new ResponseStatusException(
+            HttpStatus.BAD_REQUEST,
+            "No active verification code. Request a new one."));
+
+    if (latest.getExpiresAt().isBefore(Instant.now())) {
+      latest.setUsed(true);
+      emailVerificationCodeRepository.save(latest);
+      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Verification code has expired");
+    }
+
+    if (latest.getAttemptCount() >= OTP_MAX_ATTEMPTS) {
+      latest.setUsed(true);
+      emailVerificationCodeRepository.save(latest);
+      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Too many attempts. Request a new code.");
+    }
+
+    String code = request.code() == null ? "" : request.code().trim();
+    latest.setAttemptCount(latest.getAttemptCount() + 1);
+    if (!passwordEncoder.matches(code, latest.getCodeHash())) {
+      emailVerificationCodeRepository.save(latest);
+      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid verification code");
+    }
+
+    latest.setUsed(true);
+    emailVerificationCodeRepository.save(latest);
+
+    user.setEmailVerified(true);
+    userRepository.save(user);
+
+    return buildAuthResponse(user);
+  }
+
+  @Transactional
+  public MessageResponse resendVerification(ResendVerificationRequest request) {
+    String email = normalizeEmail(request.email());
+    User user = userRepository.findByEmail(email).orElse(null);
+
+    String ok = "If an account needs verification, a new code has been sent.";
+
+    if (user == null || Boolean.TRUE.equals(user.getEmailVerified())) {
+      return new MessageResponse(ok);
+    }
+
+    if (!emailVerificationMailService.isConfigured()) {
+      user.setEmailVerified(true);
+      userRepository.save(user);
+      return new MessageResponse("Email delivery is not configured locally. Your account was marked verified.");
+    }
+
+    issueAndSendVerificationCode(user);
+    return new MessageResponse(ok);
   }
 
   public CurrentUserResponse getCurrentUser(String email) {
@@ -90,11 +205,9 @@ public class AuthService {
     return response;
   }
 
-  // We return the same message whether the email exists or not, so attackers
-  // cannot use this endpoint to discover registered accounts.
   @Transactional
   public MessageResponse forgotPassword(ForgotPasswordRequest request) {
-    User user = userRepository.findByEmail(request.email()).orElse(null);
+    User user = userRepository.findByEmail(normalizeEmail(request.email())).orElse(null);
 
     if (user == null) {
       return new MessageResponse("If an account exists for this email, password reset instructions have been generated.");
@@ -112,6 +225,7 @@ public class AuthService {
     passwordResetToken.setUsed(false);
 
     passwordResetTokenRepository.save(passwordResetToken);
+    passwordResetMailService.sendResetLink(user.getEmail(), rawToken);
 
     return new MessageResponse("If an account exists for this email, password reset instructions have been generated.");
   }
@@ -145,13 +259,23 @@ public class AuthService {
     return new MessageResponse("Password reset successful");
   }
 
-  // Auth responses include the JWT and safe user fields needed by the frontend.
+  private void issueAndSendVerificationCode(User user) {
+    String rawCode = emailVerificationCodeService.issueRawCode(user);
+    emailVerificationMailService.sendVerificationCode(user.getEmail(), rawCode);
+  }
+
   private AuthResponse buildAuthResponse(User user) {
     AuthResponse response = new AuthResponse();
     response.setToken(jwtService.generateToken(user));
     response.setEmail(user.getEmail());
     response.setFullName(user.getFullName());
     response.setRole(user.getRole());
+    response.setEmailVerified(Boolean.TRUE.equals(user.getEmailVerified()));
+    response.setRequiresEmailVerification(false);
     return response;
+  }
+
+  private static String normalizeEmail(String email) {
+    return email == null ? "" : email.trim().toLowerCase();
   }
 }

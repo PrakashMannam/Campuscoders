@@ -51,26 +51,35 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     // 2️⃣ Strip "Bearer " prefix (7 characters) to extract raw JWT string.
     String token = authHeader.substring(7);
-    String email = jwtService.extractEmail(token);
 
-    // 3️⃣ If token contains a subject and SecurityContext isn't authenticated yet for this thread:
-    if (email != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-      User user = userRepository.findByEmail(email).orElse(null);
+    try {
+      String email = jwtService.extractEmail(token);
 
-      // 4️⃣ Verify signature and expiration; if valid, populate Spring Security's SecurityContext.
-      if (user != null && jwtService.validateToken(token, user)) {
-        UserDetails userDetails = userDetailsService.loadUserByUsername(email);
+      // 3️⃣ If token contains a subject and SecurityContext isn't authenticated yet for this thread:
+      if (email != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+        User user = userRepository.findByEmail(email).orElse(null);
 
-        UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(
-            userDetails,
-            null,
-            userDetails.getAuthorities());
+        // 4️⃣ Verify signature and expiration; if valid, populate Spring Security's SecurityContext.
+        // Also verify the user is enabled (not deactivated)
+        if (user != null && user.getEnabled() && jwtService.validateToken(token, user)) {
+          UserDetails userDetails = userDetailsService.loadUserByUsername(email);
 
-        authenticationToken.setDetails(
-            new WebAuthenticationDetailsSource().buildDetails(request));
+          UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(
+              userDetails,
+              null,
+              userDetails.getAuthorities());
 
-        SecurityContextHolder.getContext().setAuthentication(authenticationToken);
+          authenticationToken.setDetails(
+              new WebAuthenticationDetailsSource().buildDetails(request));
+
+          SecurityContextHolder.getContext().setAuthentication(authenticationToken);
+        }
       }
+    } catch (Exception ex) {
+      // Token is invalid or expired.
+      // By swallowing the exception here, the request proceeds as unauthenticated.
+      // If the route is protected, Spring Security's ExceptionTranslationFilter will block it
+      // and invoke the CustomAuthenticationEntryPoint to return a consistent 401 JSON.
     }
 
     // 5️⃣ Continue filter chain to target controller method.

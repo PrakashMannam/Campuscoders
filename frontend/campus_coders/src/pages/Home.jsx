@@ -1,233 +1,187 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FiCheck, FiFolder, FiMessageSquare, FiZap } from 'react-icons/fi';
+import { useAuth } from '../context/AuthContext';
+import { FiBookOpen, FiMessageSquare, FiCode, FiVolume2, FiCalendar, FiBriefcase } from 'react-icons/fi';
 
 export default function Home() {
   const navigate = useNavigate();
-  const [feedbackName, setFeedbackName] = useState('');
-  const [feedbackText, setFeedbackText] = useState('');
-  const [submitted, setSubmitted] = useState(false);
-  const [successMessage, setSuccessMessage] = useState('');
+  const { user } = useAuth();
 
-  const handleFeedbackSubmit = (e) => {
-    e.preventDefault();
-    if (!feedbackName || !feedbackText) return;
-    
-    // Simulate feedback submission
-    setSubmitted(true);
-    setSuccessMessage('');
-    setTimeout(() => {
-      setFeedbackName('');
-      setFeedbackText('');
-      setSubmitted(false);
-      setSuccessMessage('Thank you for your valuable feedback!');
-      
-      // Auto clear after 5 seconds
-      setTimeout(() => {
-        setSuccessMessage('');
-      }, 5000);
-    }, 1000);
+  const handlePrimaryCTA = () => {
+    if (user) {
+      navigate(user.role === 'admin' ? '/admin' : '/dashboard');
+    } else {
+      navigate('/register');
+    }
   };
 
-  const handleGetStarted = () => {
-    navigate('/register');
+  const handleSecondaryCTA = () => {
+    if (!user) {
+      const el = document.getElementById('features');
+      if (el) el.scrollIntoView({ behavior: 'smooth' });
+    } else {
+      const el = document.getElementById('how');
+      if (el) el.scrollIntoView({ behavior: 'smooth' });
+    }
   };
 
   return (
-    <div style={{ position: 'relative' }}>
-      {/* SECTION 1: HERO SECTION */}
-      <section id="home" className="hero-section">
-        
+    <div className="landing-page">
+      <section id="home" className="hero-section hero-grid">
+        <div className="hero-content">
+          <div className="badge-live">
+            <span className="badge-live-dot"></span>
+            Engineering learning workspace
+          </div>
 
-        {/* Headline */}
-        <h1>
-          Everything Your College <span className="highlight">Engineering</span> Needs.
-        </h1>
+          <h1>
+            The coding workspace for <span className="highlight">students and aspiring engineers.</span>
+          </h1>
 
-        {/* Subtitle */}
-        <p className="hero-subtitle">
-          Empowering the next generation of engineers with high-fidelity resources, collaborative discussions, and real-time updates. Join the elite community of Campus Coders.
-        </p>
-
-        {/* CTA Button */}
-        <button className="btn btn-dark" style={{ padding: '14px 36px', fontSize: '1rem' }} onClick={handleGetStarted}>
-          Get Started
-        </button>
-      </section>
-
-      {/* SECTION 2: STATS & SUMMARY SECTION */}
-      <section id="about" className="stats-section">
-        <div className="stats-copy">
-          <span className="badge-tag">ENGINEERING EXCELLENCE</span>
-          <h2>Empowering the Engineers of Tomorrow.</h2>
-          <p>
-            Campus Coders is more than just a platform; it's a mission-driven ecosystem designed for engineering excellence. We believe in providing every student with the tools they need to transcend traditional academic boundaries.
+          <p className="hero-subtitle">
+            Daily problems as curated links, learning paths, discussions, and announcements - in one place for students and admins.
           </p>
 
-          <div className="check-list">
-            <div className="check-item">
-              <span className="check-icon">
-                <FiCheck size={12} />
-              </span>
-              <span>High-fidelity curated technical resources.</span>
-            </div>
-            <div className="check-item">
-              <span className="check-icon">
-                <FiCheck size={12} />
-              </span>
-              <span>Global community collaboration for real-world projects.</span>
-            </div>
-            <div className="check-item">
-              <span className="check-icon">
-                <FiCheck size={12} />
-              </span>
-              <span>Mentorship from industry-leading technical experts.</span>
-            </div>
-          </div>
-        </div>
-
-        
-      </section>
-
-      {/* SECTION 3: FEATURES SECTION */}
-      <section id="features" className="features-section-wrapper">
-        <div className="features-section">
-          <h2>Powerful Features for Growth</h2>
-          <p className="subtitle">
-            Every tool you need to excel in your technical journey, integrated into a single seamless experience.
-          </p>
-
-          <div className="feature-cards-grid">
-            {/* Card 1 */}
-            <div className="feature-card">
-              <div className="feature-icon-wrapper blue">
-                <FiFolder size={20} />
-              </div>
-              <h3>Resource Hub</h3>
-              <p>
-                Access thousands of technical papers, coding templates, and academic notes curated by top faculty.
-              </p>
-            </div>
-
-            {/* Card 2 */}
-            <div className="feature-card">
-              <div className="feature-icon-wrapper pink">
-                <FiMessageSquare size={20} />
-              </div>
-              <h3>Community Collab</h3>
-              <p>
-                Engage in threaded discussions, solve bugs collectively, and find partners for your next big project.
-              </p>
-            </div>
-
-            {/* Card 3 */}
-            <div className="feature-card">
-              <div className="feature-icon-wrapper gold">
-                <FiZap size={20} />
-              </div>
-              <h3>Live Feed</h3>
-              <p>
-                Stay updated with instant notifications on hackathons, campus events, and tech news across the globe.
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* SECTION 4: FEEDBACK / INPUT SECTION */}
-      <section id="feedback" className="feedback-section">
-        <div className="feedback-card">
-          {/* Info */}
-          <div className="feedback-info">
-            <h2>We value your input</h2>
-            <p>
-              Help us shape the future of Campus Coders. Tell us what features you want to see next or report any issues.
-            </p>
-
-            <div className="feedback-contributors">
-              <div className="contributor-avatars">
-                {/* Visual Avatar Placeholders using inline styled circles/images */}
-                <div style={{
-                  width: '32px',
-                  height: '32px',
-                  borderRadius: '50%',
-                  backgroundColor: '#D4AF37',
-                  border: '2px solid #0F1115',
-                  marginRight: '-10px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontWeight: 600,
-                  fontSize: '0.65rem',
-                  color: '#4A3B00'
-                }}>JD</div>
-                <div style={{
-                  width: '32px',
-                  height: '32px',
-                  borderRadius: '50%',
-                  backgroundColor: '#FFF0FB',
-                  border: '2px solid #0F1115',
-                  marginRight: '-10px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontWeight: 600,
-                  fontSize: '0.65rem',
-                  color: '#D61B9E'
-                }}>AR</div>
-                <div style={{
-                  width: '32px',
-                  height: '32px',
-                  borderRadius: '50%',
-                  backgroundColor: '#EEF5FF',
-                  border: '2px solid #0F1115',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontWeight: 600,
-                  fontSize: '0.65rem',
-                  color: '#1E6BFA'
-                }}>PM</div>
-              </div>
-              <span className="contributors-text">Join 500+ daily contributors</span>
-            </div>
-          </div>
-
-          {/* Form */}
-          <form className="feedback-form" onSubmit={handleFeedbackSubmit}>
-            {successMessage && (
-              <div style={{
-                backgroundColor: '#ECFDF5',
-                color: '#059669',
-                padding: '12px',
-                borderRadius: '8px',
-                fontSize: '0.85rem',
-                fontWeight: 600,
-                border: '1px solid #A7F3D0',
-                marginBottom: '10px'
-              }}>
-                {successMessage}
-              </div>
-            )}
-            <input
-              type="text"
-              placeholder="Your Name"
-              value={feedbackName}
-              onChange={(e) => setFeedbackName(e.target.value)}
-              required
-            />
-            <textarea
-              placeholder="Your feedback or suggestions..."
-              rows="4"
-              value={feedbackText}
-              onChange={(e) => setFeedbackText(e.target.value)}
-              required
-            />
-            <button type="submit" className="btn btn-primary" style={{ padding: '14px', width: '100%', fontWeight: 700 }}>
-              {submitted ? 'Submitting...' : 'Submit Feedback'}
+          <div className="hero-ctas">
+            <button type="button" className="btn btn-primary hero-btn" onClick={handlePrimaryCTA}>
+              {user ? (user.role === 'admin' ? 'Open admin' : 'Open dashboard') : 'Start coding'}
             </button>
-          </form>
+            <button type="button" className="btn btn-secondary hero-btn-outline" onClick={handleSecondaryCTA}>
+              {user ? 'See how it works' : 'Explore features'}
+            </button>
+          </div>
         </div>
+
+        <div className="hero-visual" aria-hidden="true">
+          <div className="radial-glow"></div>
+          <div className="mock-dashboard">
+            <div className="mock-sidebar">
+              <div className="mock-logo">
+                <span className="mock-logo-c">C</span>
+                <span className="mock-logo-text">CampusCoders</span>
+              </div>
+              <div className="mock-nav-item active">Dashboard</div>
+              <div className="mock-nav-item">Learning</div>
+              <div className="mock-nav-item">Practice</div>
+              <div className="mock-nav-item">Discussions</div>
+              <div className="mock-nav-item">Placement</div>
+            </div>
+            <div className="mock-main">
+              <div className="mock-header">
+                <div className="mock-greeting">Welcome back</div>
+              </div>
+              <div className="mock-grid">
+                <div className="mock-col-left">
+                  <div className="mock-card">
+                    <div className="mock-card-title">Today's challenge</div>
+                    <div className="mock-potd-box">
+                      <div className="mock-potd-icon">&lt;/&gt;</div>
+                      <div className="mock-potd-info">Problem of the day</div>
+                    </div>
+                  </div>
+                  <div className="mock-card">
+                    <div className="mock-card-title">Learning paths</div>
+                    <div className="mock-progress-bar"><div className="mock-progress-fill" style={{ width: '55%' }}></div></div>
+                    <div className="mock-progress-bar" style={{ marginTop: 8 }}><div className="mock-progress-fill" style={{ width: '35%' }}></div></div>
+                  </div>
+                </div>
+                <div className="mock-col-right">
+                  <div className="mock-card">
+                    <div className="mock-card-title">Announcements</div>
+                    <div className="mock-skel-line"></div>
+                    <div className="mock-skel-line mock-skel-short"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="how" className="features-section-wrapper">
+        <div className="features-section">
+          <h2>How it works</h2>
+          <p className="subtitle">
+            Three steps. No extra apps. A shared workspace to build your developer identity.
+          </p>
+          <div className="how-cards">
+            <div className="how-card">
+              <div className="step-number">1</div>
+              <h3>Create an account</h3>
+              <p>Register with your email, then sign in to a student dashboard or an admin workspace.</p>
+            </div>
+            <div className="how-card">
+              <div className="step-number">2</div>
+              <h3>Practice every day</h3>
+              <p>Open the problem of the day, follow a learning path, and mark resources complete as you go.</p>
+            </div>
+            <div className="how-card">
+              <div className="step-number">3</div>
+              <h3>Discuss and learn</h3>
+              <p>Join discussions and stay updated.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="features" className="features-section landing-features">
+        <h2>What's included</h2>
+        <p className="subtitle">
+          Only what the product actually has - not a marketing catalog.
+        </p>
+        <div className="feature-cards-grid landing-feature-grid">
+          <div className="feature-card">
+            <div className="feature-icon-wrapper gold"><FiCode size={20} /></div>
+            <h3>Daily challenge</h3>
+            <p>A curated coding problem link for today - practice if you want.</p>
+          </div>
+          <div className="feature-card">
+            <div className="feature-icon-wrapper gold"><FiBookOpen size={20} /></div>
+            <h3>Learning paths</h3>
+            <p>Curated topics and resources, with progress you can track.</p>
+          </div>
+          <div className="feature-card">
+            <div className="feature-icon-wrapper gold"><FiMessageSquare size={20} /></div>
+            <h3>Discussions</h3>
+            <p>Threads, replies, votes, and categories for questions.</p>
+          </div>
+          <div className="feature-card">
+            <div className="feature-icon-wrapper gold"><FiVolume2 size={20} /></div>
+            <h3>Announcements</h3>
+            <p>Official updates from the admin team, with optional links.</p>
+          </div>
+          <div className="feature-card">
+            <div className="feature-icon-wrapper gold"><FiCalendar size={20} /></div>
+            <h3>Events</h3>
+            <p>Upcoming contests, sessions, and campus events.</p>
+          </div>
+          <div className="feature-card">
+            <div className="feature-icon-wrapper gold"><FiBriefcase size={20} /></div>
+            <h3>Placement Prep</h3>
+            <p>Core resources and guides for technical interviews.</p>
+          </div>
+        </div>
+      </section>
+
+      <section id="who" className="who-section">
+        <div className="who-grid">
+          <div className="who-card">
+            <h3>For students</h3>
+            <p>Show up for the daily problem, move through paths, bookmark resources, and join discussions.</p>
+          </div>
+          <div className="who-card">
+            <h3>For admins</h3>
+            <p>Publish paths, resources, daily challenges, and announcements, and moderate discussions.</p>
+          </div>
+        </div>
+      </section>
+
+      <section className="landing-cta">
+        <h2>{user ? 'Jump back into your workspace' : 'Ready to start?'}</h2>
+        <p>{user ? 'Open the app you already use.' : 'Create a free account and go to your dashboard.'}</p>
+        <button type="button" className="btn btn-primary" onClick={handlePrimaryCTA}>
+          {user ? (user.role === 'admin' ? 'Open admin' : 'Open dashboard') : 'Start coding'}
+        </button>
       </section>
     </div>
   );

@@ -9,6 +9,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
 
 import com.campuscoders.backend.common.dto.PageResponse;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -107,13 +108,29 @@ public class DiscussionController {
       @PathVariable Long postId) {
     return discussionService.reopenPost(authentication.getName(), postId);
   }
+  // Author or Admin deletes a discussion thread.
+  @DeleteMapping("/discussions/{postId}")
+  public void deletePost(
+      Authentication authentication,
+      @PathVariable Long postId) {
+    discussionService.deletePost(authentication.getName(), postId);
+  }
 
-  // Post author or Admin marks a reply as the accepted answer.
-  @PatchMapping("/discussions/replies/{replyId}/accepted")
-  public DiscussionReplyResponse markReplyAsAccepted(
+  // Author or Admin updates a reply.
+  @PutMapping("/discussions/replies/{replyId}")
+  public DiscussionReplyResponse updateReply(
+      Authentication authentication,
+      @PathVariable Long replyId,
+      @Valid @RequestBody com.campuscoders.backend.discussion.dto.UpdateDiscussionReplyRequest request) {
+    return discussionService.updateReply(authentication.getName(), replyId, request);
+  }
+
+  // Author or Admin deletes a reply.
+  @DeleteMapping("/discussions/replies/{replyId}")
+  public void deleteReply(
       Authentication authentication,
       @PathVariable Long replyId) {
-    return discussionService.markReplyAsAccepted(authentication.getName(), replyId);
+    discussionService.deleteReply(authentication.getName(), replyId);
   }
 
   // Upvote or Downvote a discussion post

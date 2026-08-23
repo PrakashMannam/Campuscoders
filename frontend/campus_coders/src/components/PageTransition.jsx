@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 const pageVariants = {
   initial: {
     opacity: 0,
-    y: 10,
+    y: 8,
   },
   in: {
     opacity: 1,
@@ -12,14 +12,14 @@ const pageVariants = {
   },
   out: {
     opacity: 0,
-    y: -10,
+    y: -8,
   },
 };
 
 const pageTransition = {
   type: 'tween',
-  ease: 'anticipate',
-  duration: 0.4,
+  ease: 'easeOut',
+  duration: 0.2,
 };
 
 export default function PageTransition({ children }) {

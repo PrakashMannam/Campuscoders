@@ -1,175 +1,198 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FiChevronRight, FiShield, FiBell } from 'react-icons/fi';
 import DashboardLayout from '../components/DashboardLayout';
 import Toast from '../components/Toast';
+import api from '../api/client';
 import { useAuth } from '../context/AuthContext';
 
 export default function Settings() {
-  const { user, updateUser } = useAuth();
+  const { user } = useAuth();
   const navigate = useNavigate();
-  const fileInputRef = React.useRef(null);
   const [profileVisible, setProfileVisible] = useState(true);
-  const [notifications, setNotifications] = useState({
+  const [emailDigests, setEmailDigests] = useState(true);
+  const [settingsLoading, setSettingsLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [discussionMentions, setDiscussionMentions] = useState(true);
+
+  const [savedState, setSavedState] = useState({
+    profileVisible: true,
     emailDigests: true,
-    pushNotifications: true,
     discussionMentions: true,
   });
 
-  /* ── Track saved state ── */
-  const [savedState, setSavedState] = useState({
-    profileVisible: true,
-    notifications: { emailDigests: true, pushNotifications: true, discussionMentions: true },
-  });
-
-  /* ── Toast ── */
   const [toast, setToast] = useState({ show: false, type: 'success', message: '' });
   const showToast = useCallback((type, message) => {
     setToast({ show: true, type, message });
   }, []);
   const hideToast = useCallback(() => {
-    setToast(prev => ({ ...prev, show: false }));
+    setToast((prev) => ({ ...prev, show: false }));
   }, []);
 
+  useEffect(() => {
+    const loadSettings = async () => {
+      setSettingsLoading(true);
+      try {
+        const res = await api.get('/profile/me/settings');
+        const data = res.data;
+        const next = {
+          profileVisible: data.publicProfileVisible ?? true,
+          emailDigests: data.emailDigests ?? true,
+          discussionMentions: data.discussionMentions ?? true,
+        };
+        setProfileVisible(next.profileVisible);
+        setEmailDigests(next.emailDigests);
+        setDiscussionMentions(next.discussionMentions);
+        setSavedState(next);
+      } catch {
+        showToast('error', 'Failed to load settings.');
+      } finally {
+        setSettingsLoading(false);
+      }
+    };
+    loadSettings();
+  }, [showToast]);
+
   const userInitials = user?.name
-    ? user.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()
+    ? user.name.split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase()
     : 'U';
 
-  const toggleNotification = (key) => {
-    setNotifications(prev => ({ ...prev, [key]: !prev[key] }));
-  };
-
-  const handleSave = () => {
-    setSavedState({ profileVisible, notifications: { ...notifications } });
-    showToast('success', 'Settings saved successfully!');
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      await api.put('/profile/me/settings', {
+        publicProfileVisible: profileVisible,
+        emailDigests,
+        pushNotifications: false,
+        discussionMentions,
+      });
+      setSavedState({ profileVisible, emailDigests, discussionMentions });
+      showToast('success', 'Settings saved.');
+    } catch (err) {
+      showToast('error', err.response?.data?.message || 'Failed to save settings.');
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleDiscard = () => {
     setProfileVisible(savedState.profileVisible);
-    setNotifications({ ...savedState.notifications });
+    setEmailDigests(savedState.emailDigests);
+    setDiscussionMentions(savedState.discussionMentions);
     showToast('info', 'Changes discarded.');
-  };
-
-  const handleAvatarChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        updateUser({ avatar: reader.result });
-        showToast('success', 'Profile photo updated successfully!');
-      };
-      reader.readAsDataURL(file);
-    }
   };
 
   return (
     <DashboardLayout>
       <div className="sett-page">
         <h2 className="sett-title">Settings</h2>
-
-        {/* ── Toast ── */}
         <Toast type={toast.type} message={toast.message} show={toast.show} onClose={hideToast} />
 
-        {/* ── User Card ── */}
-        <div className="sett-user-card">
-          <div className="sett-user-avatar" onClick={() => fileInputRef.current.click()} style={{ cursor: 'pointer' }}>
-            {user?.avatar ? (
-              <img src={user.avatar} alt="Profile" className="dl-avatar-img-round" style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} />
-            ) : (
-              <span>{userInitials}</span>
-            )}
-            <div className="sett-avatar-edit">📷</div>
-          </div>
-          <input
-            type="file"
-            ref={fileInputRef}
-            onChange={handleAvatarChange}
-            accept="image/*"
-            style={{ display: 'none' }}
-          />
-          <div className="sett-user-info">
-            <h3>{user?.name || 'Alex Chen'}</h3>
-            <p>Senior Engineering Student</p>
-            <p className="sett-user-email">{user?.email || 'alex.chen@campuscoders.edu'}</p>
-            <div className="sett-user-badges">
-            </div>
-          </div>
-        </div>
-
-        {/* ── Security + Notifications ── */}
-        <div className="sett-grid">
-          {/* Account Security */}
-          <div className="sett-section">
-            <h4 className="sett-section-title">
-              <FiShield size={16} /> ACCOUNT SECURITY
-            </h4>
-            <div className="sett-card">
-              <div
-                className="sett-row clickable"
-                id="change-password-btn"
-                onClick={() => navigate('/dashboard/change-password')}
-              >
-                <div>
-                  <span className="sett-row-title">Change Password</span>
-                  <span className="sett-row-sub">Last updated 3 months ago</span>
-                </div>
-                <FiChevronRight size={18} className="sett-row-arrow" />
+        {settingsLoading ? (
+          <p style={{ color: 'var(--ink-muted)', padding: '24px' }}>Loading settings...</p>
+        ) : (
+          <>
+            <div className="sett-user-card">
+              <div className="sett-user-avatar">
+                {user?.avatar ? (
+                  <img
+                    src={user.avatar}
+                    alt=""
+                    className="dl-avatar-img-round"
+                    style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }}
+                  />
+                ) : (
+                  <span>{userInitials}</span>
+                )}
               </div>
-              <div className="sett-divider" />
-              <div className="sett-row">
-                <div>
-                  <span className="sett-row-title">Public Profile Visibility</span>
-                  <span className="sett-row-sub">Control who can see your activity</span>
-                </div>
-                <button
-                  className={`sett-toggle ${profileVisible ? 'on' : ''}`}
-                  id="profile-visibility-toggle"
-                  onClick={() => setProfileVisible(!profileVisible)}
-                >
-                  <span className="sett-toggle-knob" />
-                </button>
+              <div className="sett-user-info">
+                <h3>{user?.name || 'Student'}</h3>
+                <p className="sett-user-email">{user?.email || ''}</p>
+                <p className="sett-row-sub" style={{ marginTop: 8 }}>
+                  Change your photo from Profile using an image URL.
+                </p>
               </div>
             </div>
-          </div>
 
-          {/* Notifications */}
-          <div className="sett-section">
-            <h4 className="sett-section-title">
-              <FiBell size={16} /> NOTIFICATIONS
-            </h4>
-            <div className="sett-card">
-              {[
-                { key: 'emailDigests', title: 'Email Digests', sub: 'Weekly summary of top discussions' },
-                { key: 'pushNotifications', title: 'Push Notifications', sub: 'Real-time alerts for code reviews' },
-                { key: 'discussionMentions', title: 'Discussion Mentions', sub: 'Notify when someone @mentions you' },
-              ].map((item, idx) => (
-                <React.Fragment key={item.key}>
-                  {idx > 0 && <div className="sett-divider" />}
+            <div className="sett-grid">
+              <div className="sett-section">
+                <h4 className="sett-section-title">
+                  <FiShield size={16} /> ACCOUNT SECURITY
+                </h4>
+                <div className="sett-card">
+                  <div
+                    className="sett-row clickable"
+                    onClick={() => navigate('/dashboard/change-password')}
+                  >
+                    <div>
+                      <span className="sett-row-title">Change Password</span>
+                      <span className="sett-row-sub">Update your account password</span>
+                    </div>
+                    <FiChevronRight size={18} className="sett-row-arrow" />
+                  </div>
+                  <div className="sett-divider" />
                   <div className="sett-row">
                     <div>
-                      <span className="sett-row-title">{item.title}</span>
-                      <span className="sett-row-sub">{item.sub}</span>
+                      <span className="sett-row-title">Public Profile Visibility</span>
+                      <span className="sett-row-sub">Allow others to view your public profile page</span>
                     </div>
-                    <label className="sett-checkbox-wrap">
-                      <input
-                        type="checkbox"
-                        checked={notifications[item.key]}
-                        onChange={() => toggleNotification(item.key)}
-                      />
-                      <span className="sett-checkbox" />
-                    </label>
+                    <button
+                      type="button"
+                      className={`sett-toggle ${profileVisible ? 'on' : ''}`}
+                      onClick={() => setProfileVisible(!profileVisible)}
+                    >
+                      <span className="sett-toggle-knob" />
+                    </button>
                   </div>
-                </React.Fragment>
-              ))}
-            </div>
-          </div>
-        </div>
+                </div>
+              </div>
 
-        {/* ── Footer Actions ── */}
-        <div className="sett-actions">
-          <button className="sett-discard" id="discard-changes-btn" onClick={handleDiscard}>Discard Changes</button>
-          <button className="sett-save" id="save-changes-btn" onClick={handleSave}>Save All Changes</button>
-        </div>
+              <div className="sett-section">
+                <h4 className="sett-section-title">
+                  <FiBell size={16} /> PREFERENCES
+                </h4>
+                <div className="sett-card">
+                  <div className="sett-row">
+                    <div>
+                      <span className="sett-row-title">Email digests</span>
+                      <span className="sett-row-sub">Opt in for occasional platform email updates</span>
+                    </div>
+                    <button
+                      type="button"
+                      className={`sett-toggle ${emailDigests ? 'on' : ''}`}
+                      onClick={() => setEmailDigests(!emailDigests)}
+                    >
+                      <span className="sett-toggle-knob" />
+                    </button>
+                  </div>
+                  <div className="sett-divider" />
+                  <div className="sett-row">
+                    <div>
+                      <span className="sett-row-title">Discussion reply alerts</span>
+                      <span className="sett-row-sub">In-app notifications when someone replies to your threads</span>
+                    </div>
+                    <button
+                      type="button"
+                      className={`sett-toggle ${discussionMentions ? 'on' : ''}`}
+                      onClick={() => setDiscussionMentions(!discussionMentions)}
+                    >
+                      <span className="sett-toggle-knob" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="sett-actions">
+              <button type="button" className="sett-discard" onClick={handleDiscard} disabled={saving}>
+                Discard Changes
+              </button>
+              <button type="button" className="sett-save" onClick={handleSave} disabled={saving}>
+                {saving ? 'Saving...' : 'Save All Changes'}
+              </button>
+            </div>
+          </>
+        )}
       </div>
     </DashboardLayout>
   );

@@ -74,4 +74,12 @@ public class LearningResourceController {
   public LearningResourceResponse activateLearningResource(@PathVariable Long resourceId) {
     return learningResourceService.activateLearningResource(resourceId);
   }
+
+  // Toggles the bookmark status of a resource for the authenticated user.
+  @PostMapping("/{id}/bookmark")
+  public com.campuscoders.backend.common.dto.BookmarkToggleResponse toggleBookmark(
+      org.springframework.security.core.Authentication authentication,
+      @PathVariable Long id) {
+    return learningResourceService.toggleBookmark(authentication.getName(), id);
+  }
 }

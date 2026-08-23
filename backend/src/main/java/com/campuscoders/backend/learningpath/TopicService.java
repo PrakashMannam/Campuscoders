@@ -2,29 +2,61 @@ package com.campuscoders.backend.learningpath;
 
 import java.util.Comparator;
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
+import com.campuscoders.backend.bookmark.UserBookmarkedTopic;
+import com.campuscoders.backend.bookmark.repository.UserBookmarkedTopicRepository;
+import com.campuscoders.backend.common.dto.BookmarkToggleResponse;
 import com.campuscoders.backend.learningpath.dto.CreateTopicRequest;
 import com.campuscoders.backend.learningpath.dto.TopicResponse;
 import com.campuscoders.backend.learningpath.dto.UpdateTopicRequest;
 import com.campuscoders.backend.learningpath.repository.LearningPathRepository;
 import com.campuscoders.backend.learningpath.repository.TopicRepository;
+import com.campuscoders.backend.user.User;
+import com.campuscoders.backend.user.repository.UserRepository;
 
 @Service
 public class TopicService {
 
   private final TopicRepository topicRepository;
   private final LearningPathRepository learningPathRepository;
+  private final UserBookmarkedTopicRepository userBookmarkedTopicRepository;
+  private final UserRepository userRepository;
 
   public TopicService(
       TopicRepository topicRepository,
-      LearningPathRepository learningPathRepository) {
+      LearningPathRepository learningPathRepository,
+      UserBookmarkedTopicRepository userBookmarkedTopicRepository,
+      UserRepository userRepository) {
     this.topicRepository = topicRepository;
     this.learningPathRepository = learningPathRepository;
+    this.userBookmarkedTopicRepository = userBookmarkedTopicRepository;
+    this.userRepository = userRepository;
+  }
+
+  @Transactional
+  public BookmarkToggleResponse toggleBookmark(String userEmail, Long topicId) {
+    User user = userRepository.findByEmail(userEmail)
+        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+    Topic topic = findTopicById(topicId);
+
+    Optional<UserBookmarkedTopic> existingBookmark = userBookmarkedTopicRepository.findByUserIdAndTopicId(user.getId(), topic.getId());
+
+    if (existingBookmark.isPresent()) {
+      userBookmarkedTopicRepository.delete(existingBookmark.get());
+      return new BookmarkToggleResponse(false);
+    } else {
+      UserBookmarkedTopic newBookmark = new UserBookmarkedTopic();
+      newBookmark.setUser(user);
+      newBookmark.setTopic(topic);
+      userBookmarkedTopicRepository.save(newBookmark);
+      return new BookmarkToggleResponse(true);
+    }
   }
 
   @Transactional
@@ -52,6 +84,16 @@ public class TopicService {
     Topic savedTopic = topicRepository.save(topic);
 
     return toResponse(savedTopic);
+  }
+
+  @Transactional(readOnly = true)
+  public TopicResponse getActiveTopicBySlug(String slug) {
+    Topic topic = topicRepository.findBySlug(slug)
+        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Topic not found"));
+    if (!Boolean.TRUE.equals(topic.getActive())) {
+      throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Topic not found");
+    }
+    return toResponse(topic);
   }
 
   @Transactional(readOnly = true)
@@ -150,6 +192,8 @@ public class TopicService {
     return new TopicResponse(
         topic.getId(),
         topic.getLearningPath().getId(),
+        topic.getLearningPath().getSlug(),
+        topic.getLearningPath().getTitle(),
         topic.getTitle(),
         topic.getSlug(),
         topic.getDescription(),

@@ -1,29 +1,20 @@
 import React, { useMemo } from 'react';
-
-/**
- * GitHub/Codolio-style Activity Heatmap Calendar
- * Shows daily activity intensity with color-coded cells.
- * 
- * Props:
- *   - activityData: array of { date: "YYYY-MM-DD", count: number }
- *   - year: optional year to display (defaults to current)
- */
+import BrandMark from './BrandMark';
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 const DAYS = ['', 'Mon', '', 'Wed', '', 'Fri', ''];
 
-// Yellow/amber color scale (like GitHub but in warm tones)
 const COLOR_LEVELS = [
-  '#f3f4f6',  // 0: no activity (light gray)
-  '#fef9c3',  // 1-2: very light yellow
-  '#fde68a',  // 3-4: light yellow
-  '#fbbf24',  // 5-7: golden yellow
-  '#d97706',  // 8-10: amber/orange
-  '#92400e',  // 11+: deep brown
+  '#f3f4f6',
+  '#fef3c7',
+  '#fde68a',
+  '#fbbf24',
+  '#d97706',
+  '#92400e',
 ];
 
 function getColorLevel(count) {
-  if (count === 0) return 0;
+  if (count <= 0) return 0;
   if (count <= 2) return 1;
   if (count <= 4) return 2;
   if (count <= 7) return 3;
@@ -31,238 +22,166 @@ function getColorLevel(count) {
   return 5;
 }
 
-function generateMockActivityData(yearStr) {
-  const data = [];
-  let startDate, endDate;
-  
-  if (yearStr === 'past_year') {
-    endDate = new Date();
-    startDate = new Date();
-    startDate.setMonth(startDate.getMonth() - 11); // Last 11 months + current = 12 months
-    startDate.setDate(1);
-  } else {
-    const yearNum = parseInt(yearStr, 10);
-    startDate = new Date(yearNum, 0, 1);
-    endDate = new Date(yearNum, 11, 31);
-    const today = new Date();
-    if (endDate > today) endDate = today;
+function friendlyMessage(message) {
+  if (!message) return '';
+  const text = String(message);
+  const lower = text.toLowerCase();
+  if (lower.includes('github_token') || lower.includes('server token') || lower.includes('classic pat')) {
+    return 'GitHub activity isn’t available right now.';
   }
-
-  for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
-    const dateStr = d.toISOString().split('T')[0];
-    // Random activity: 70% chance of 0, otherwise 1-15
-    const rand = Math.random();
-    let count = 0;
-    if (rand > 0.3) {
-      count = Math.floor(Math.random() * 12) + 1;
-    }
-    data.push({ date: dateStr, count });
+  if (lower.includes('graphql') || lower.includes('pat with')) {
+    return 'Couldn’t load this calendar right now.';
   }
-  return data;
+  return text;
 }
 
-export default function ActivityHeatmap({ activityData }) {
-  const [selectedYear, setSelectedYear] = React.useState('past_year');
+export default function ActivityHeatmap({
+  brand = 'LeetCode',
+  title = 'LeetCode activity',
+  countLabel = 'submissions',
+  streakLabel = 'streak',
+  note = 'From your public LeetCode profile. Not a Campus Coders rank.',
+  activityData = [],
+  year,
+  yearOptions,
+  onYearChange,
+  username,
+  streak,
+  totalActiveDays,
+  totalActivity,
+  totalSolved,
+  easySolved,
+  mediumSolved,
+  hardSolved,
+  ranking,
+  loading,
+  message,
+}) {
   const currentYearNum = new Date().getFullYear();
+  const selectedYear = year || currentYearNum;
 
-  // Use provided data or generate mock data
-  const data = useMemo(() => {
-    if (activityData && activityData.length > 0) return activityData;
-    return generateMockActivityData(selectedYear);
-  }, [activityData, selectedYear]);
+  const years = useMemo(() => {
+    const fromApi = (yearOptions || []).filter((value) => Number.isFinite(value));
+    const merged = fromApi.length
+      ? [...new Set([...fromApi, currentYearNum, selectedYear])]
+      : [currentYearNum, currentYearNum - 1, currentYearNum - 2];
+    return merged.sort((a, b) => b - a);
+  }, [yearOptions, currentYearNum, selectedYear]);
 
-  // Create a map for quick lookup
   const dataMap = useMemo(() => {
     const map = {};
-    data.forEach(d => { map[d.date] = d.count; });
+    (activityData || []).forEach((d) => { map[d.date] = d.count; });
     return map;
-  }, [data]);
+  }, [activityData]);
 
-  // Generate months grid
   const monthsGrid = useMemo(() => {
-    let startDate, endDate;
-    if (selectedYear === 'past_year') {
-      endDate = new Date();
-      startDate = new Date();
-      startDate.setMonth(startDate.getMonth() - 11); // Exactly 12 months including current
-      startDate.setDate(1);
-    } else {
-      const yearNum = parseInt(selectedYear, 10);
-      startDate = new Date(yearNum, 0, 1);
-      endDate = new Date(yearNum, 11, 31);
-    }
-    
+    const startDate = new Date(selectedYear, 0, 1);
+    const endDate = new Date(selectedYear, 11, 31);
     const grid = [];
-    
-    let curr = new Date(startDate);
-    curr.setDate(1);
+    const curr = new Date(startDate);
 
     while (curr <= endDate) {
       const m = curr.getMonth();
       const y = curr.getFullYear();
-      
       const monthWeeks = [];
       let week = [];
-      
       const firstDay = new Date(y, m, 1).getDay();
-      for (let i = 0; i < firstDay; i++) {
-        week.push(null); 
-      }
-      
+      for (let i = 0; i < firstDay; i += 1) week.push(null);
+
       const daysInMonth = new Date(y, m + 1, 0).getDate();
-      for (let d = 1; d <= daysInMonth; d++) {
-        const dateObj = new Date(y, m, d);
-        const dateStr = [
-          y,
-          String(m + 1).padStart(2, '0'),
-          String(d).padStart(2, '0')
-        ].join('-');
-
-        const count = dataMap[dateStr] || 0;
-        const isValidDate = dateObj >= startDate && dateObj <= endDate;
-
+      for (let d = 1; d <= daysInMonth; d += 1) {
+        const dateStr = `${y}-${String(m + 1).padStart(2, '0')}-${String(d).toString().padStart(2, '0')}`;
         week.push({
           date: dateStr,
-          count: isValidDate ? count : -1,
-          dayOfWeek: dateObj.getDay(),
-          month: m,
-          day: d,
-          year: y
+          count: dataMap[dateStr] || 0,
         });
-
         if (week.length === 7) {
           monthWeeks.push(week);
           week = [];
         }
       }
-      
       if (week.length > 0) {
-        while (week.length < 7) {
-          week.push(null);
-        }
+        while (week.length < 7) week.push(null);
         monthWeeks.push(week);
       }
-      
-      grid.push({
-        month: m,
-        year: y,
-        weeks: monthWeeks,
-        label: MONTHS[m] + (selectedYear === 'past_year' && (m === 0 || grid.length === 0) ? ` '${String(y).slice(2)}` : '')
-      });
-
+      grid.push({ month: m, weeks: monthWeeks, label: MONTHS[m] });
       curr.setMonth(curr.getMonth() + 1);
     }
-    
     return grid;
   }, [dataMap, selectedYear]);
 
-  // Calculate total activity
-  const totalActivity = useMemo(() => {
-    return data.reduce((sum, d) => sum + d.count, 0);
-  }, [data]);
-
-  const activeDays = useMemo(() => {
-    return data.filter(d => d.count > 0).length;
-  }, [data]);
+  const summedActivity = useMemo(
+    () => (activityData || []).reduce((sum, d) => sum + (d.count || 0), 0),
+    [activityData]
+  );
+  const displayedTotal = totalActivity ?? summedActivity;
+  const displayMessage = friendlyMessage(message);
+  const hasSolved = totalSolved != null;
+  const hasCalendarStats = displayedTotal > 0 || (activityData || []).length > 0 || streak != null || totalActiveDays != null;
 
   return (
-    <div className="activity-heatmap-container" style={{
-      background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '16px',
-      padding: '20px 24px', boxShadow: '0 2px 8px rgba(0,0,0,0.03)',
-      width: '100%', boxSizing: 'border-box', overflow: 'hidden'
-    }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '12px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <h3 style={{ fontSize: '1rem', fontWeight: 800, color: '#111827', margin: 0 }}>
-            📊 Activity Calendar
-          </h3>
-          <select 
-            value={selectedYear} 
-            onChange={(e) => setSelectedYear(e.target.value)}
-            style={{
-              padding: '4px 8px',
-              borderRadius: '6px',
-              border: '1px solid #e2e8f0',
-              background: '#f8fafc',
-              fontSize: '0.8rem',
-              color: '#475569',
-              fontWeight: 600,
-              cursor: 'pointer',
-              outline: 'none'
-            }}
+    <div className="pf-card pf-heatmap">
+      <div className="pf-heatmap-head">
+        <div className="pf-heatmap-title">
+          <BrandMark name={brand} size={18} />
+          <h3>{title}</h3>
+          {username && <span className="sd-muted">@{username}</span>}
+          <select
+            value={selectedYear}
+            onChange={(e) => onYearChange?.(Number(e.target.value))}
+            aria-label="Calendar year"
           >
-            <option value="past_year">Current</option>
-            <option value={currentYearNum}>{currentYearNum}</option>
-            <option value={currentYearNum - 1}>{currentYearNum - 1}</option>
-            <option value={currentYearNum - 2}>{currentYearNum - 2}</option>
+            {years.map((optionYear) => (
+              <option key={optionYear} value={optionYear}>{optionYear}</option>
+            ))}
           </select>
         </div>
-        <div style={{ display: 'flex', gap: '16px', fontSize: '0.78rem', color: '#64748b' }}>
-          <span><strong style={{ color: '#d97706' }}>{totalActivity}</strong> problems solved</span>
-          <span><strong style={{ color: '#10b981' }}>{activeDays}</strong> active days</span>
-        </div>
+        {!loading && hasCalendarStats && (
+          <div className="pf-heatmap-stats">
+            <span><strong>{displayedTotal}</strong> {countLabel}</span>
+            <span><strong>{totalActiveDays ?? activityData.filter((d) => d.count > 0).length}</strong> active days</span>
+            {streak != null && <span><strong>{streak}</strong> {streakLabel}</span>}
+          </div>
+        )}
       </div>
 
-      <div style={{ overflowX: 'auto', paddingBottom: '8px' }}>
-        <div style={{ display: 'inline-block', minWidth: '700px' }}>
-          <div style={{ display: 'flex', gap: '12px', marginTop: '0px' }}>
-            {/* Day labels */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', marginRight: '4px', paddingTop: '20px' }}>
+      {!loading && hasSolved && (
+        <div className="pf-heatmap-solved">
+          <span><strong>{totalSolved}</strong> solved</span>
+          <span>Easy {easySolved ?? 0}</span>
+          <span>Medium {mediumSolved ?? 0}</span>
+          <span>Hard {hardSolved ?? 0}</span>
+          {ranking != null && ranking > 0 && <span>Rank {ranking.toLocaleString()}</span>}
+        </div>
+      )}
+
+      {loading ? (
+        <p className="sd-muted">Loading calendar...</p>
+      ) : displayMessage && !hasSolved && activityData.length === 0 ? (
+        <p className="sd-muted">{displayMessage}</p>
+      ) : (
+        <div className="pf-heatmap-scroll">
+          <div className="pf-heatmap-grid">
+            <div className="pf-heatmap-days">
               {DAYS.map((day, i) => (
-                <div key={i} style={{
-                  width: '28px', height: '11px', fontSize: '0.62rem',
-                  color: '#94a3b8', display: 'flex', alignItems: 'center',
-                  fontWeight: 600,
-                }}>
-                  {day}
-                </div>
+                <div key={i}>{day}</div>
               ))}
             </div>
-
-            {/* Months grid */}
-            {monthsGrid.map((monthData, mIdx) => (
-              <div key={mIdx} style={{ display: 'flex', flexDirection: 'column' }}>
-                {/* Month label */}
-                <div style={{
-                  fontSize: '0.68rem',
-                  color: '#94a3b8',
-                  fontWeight: 600,
-                  marginBottom: '4px',
-                  height: '16px',
-                  display: 'flex',
-                  alignItems: 'flex-end'
-                }}>
-                  {monthData.label}
-                </div>
-                
-                {/* Weeks of this month */}
-                <div style={{ display: 'flex', gap: '2px' }}>
+            {monthsGrid.map((monthData) => (
+              <div key={monthData.month} className="pf-heatmap-month">
+                <div className="pf-heatmap-month-label">{monthData.label}</div>
+                <div className="pf-heatmap-weeks">
                   {monthData.weeks.map((week, wIdx) => (
-                    <div key={wIdx} style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                    <div key={wIdx} className="pf-heatmap-week">
                       {week.map((day, dIdx) => {
-                        if (!day) {
-                          return <div key={dIdx} style={{ width: '11px', height: '11px' }} />;
-                        }
-                        const level = day.count >= 0 ? getColorLevel(day.count) : -1;
+                        if (!day) return <div key={dIdx} className="pf-heat-cell empty" />;
+                        const level = getColorLevel(day.count);
                         return (
                           <div
                             key={dIdx}
-                            title={day.count >= 0 ? `${day.date}: ${day.count} problems solved` : ''}
-                            style={{
-                              width: '11px',
-                              height: '11px',
-                              borderRadius: '2px',
-                              background: level < 0 ? 'transparent' : COLOR_LEVELS[level],
-                              border: level >= 0 ? '1px solid rgba(0,0,0,0.04)' : 'none',
-                              cursor: level >= 0 ? 'pointer' : 'default',
-                              transition: 'transform 0.15s',
-                            }}
-                            onMouseEnter={e => {
-                              if (level >= 0) e.currentTarget.style.transform = 'scale(1.4)';
-                            }}
-                            onMouseLeave={e => {
-                              e.currentTarget.style.transform = 'scale(1)';
-                            }}
+                            className="pf-heat-cell"
+                            title={`${day.date}: ${day.count} ${countLabel}`}
+                            style={{ background: COLOR_LEVELS[level] }}
                           />
                         );
                       })}
@@ -272,23 +191,16 @@ export default function ActivityHeatmap({ activityData }) {
               </div>
             ))}
           </div>
-
-          {/* Legend */}
-          <div style={{
-            display: 'flex', alignItems: 'center', justifyContent: 'flex-end',
-            gap: '4px', marginTop: '12px', fontSize: '0.68rem', color: '#94a3b8'
-          }}>
+          <div className="pf-heatmap-legend">
             <span>Less</span>
-            {COLOR_LEVELS.map((color, i) => (
-              <div key={i} style={{
-                width: '11px', height: '11px', borderRadius: '2px',
-                background: color, border: '1px solid rgba(0,0,0,0.04)'
-              }} />
+            {COLOR_LEVELS.map((color) => (
+              <div key={color} className="pf-heat-cell" style={{ background: color }} />
             ))}
             <span>More</span>
           </div>
         </div>
-      </div>
+      )}
+      {note ? <p className="pf-heatmap-note">{note}</p> : null}
     </div>
   );
 }

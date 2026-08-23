@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { FiArrowLeft, FiMail, FiLock, FiEye, FiEyeOff, FiLogIn } from 'react-icons/fi';
+import { FiMail, FiLock, FiEye, FiEyeOff, FiLogIn } from 'react-icons/fi';
 import { useAuth } from '../context/AuthContext';
-import Logo from '../components/Logo';
+import AuthShell from '../components/AuthShell';
 
 export default function Login() {
   const navigate = useNavigate();
@@ -32,75 +32,61 @@ export default function Login() {
       } else {
         navigate('/dashboard');
       }
+    } else if (result.needsVerification) {
+      navigate(`/verify-email?email=${encodeURIComponent(email)}`);
     } else {
       setError(result.error || 'Invalid email or password.');
     }
   };
 
   return (
-    <div className="dotted-bg">
-      {/* Upper header navigation */}
-      <div className="auth-header">
-        <Link to="/" className="back-link">
-          <FiArrowLeft size={16} />
-          Back to Home
-        </Link>
-        <Logo size={38} showText={true} layout="inline" theme="light" />
-        <div style={{ width: '90px' }}></div>
-      </div>
-
-      {/* Main card */}
+    <AuthShell backTo="/" backLabel="Back to Home">
       <div className="auth-card">
-        <h2>Welcome Back</h2>
-        <p className="subtitle">Enter your credentials to access your workspace.</p>
+        <h2>Welcome back</h2>
+        <p className="subtitle">Sign in with your email and password.</p>
 
-        {error && (
-          <div className="inline-error">
-            {error}
-          </div>
-        )}
+        {error && <div className="inline-error">{error}</div>}
 
         <form onSubmit={handleSubmit}>
-          {/* Email */}
           <div className="form-group">
-            <label className="form-label">Email Address</label>
-            <div className="input-wrapper" style={{ position: 'relative' }}>
-              <span className="input-icon-left" style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8', display: 'flex', alignItems: 'center' }}><FiMail size={18} /></span>
+            <label className="form-label" htmlFor="login-email">Email</label>
+            <div className="input-wrapper">
+              <span className="input-icon-left"><FiMail size={18} /></span>
               <input
+                id="login-email"
                 type="email"
-                placeholder="name@college.edu"
+                placeholder="you@example.com"
                 className="form-input"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
+                autoComplete="email"
                 required
-                style={{ paddingLeft: '40px' }}
               />
             </div>
           </div>
 
-          {/* Password */}
           <div className="form-group">
             <div className="form-label-row">
-              <label className="form-label">Password</label>
-              <Link to="/forgot-password" className="forgot-link">Forgot Password?</Link>
+              <label className="form-label" htmlFor="login-password">Password</label>
+              <Link to="/forgot-password" className="forgot-link">Forgot password?</Link>
             </div>
-            <div className="input-wrapper" style={{ position: 'relative' }}>
-              <span className="input-icon-left" style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8', display: 'flex', alignItems: 'center' }}><FiLock size={18} /></span>
+            <div className="input-wrapper">
+              <span className="input-icon-left"><FiLock size={18} /></span>
               <input
+                id="login-password"
                 type={showPassword ? 'text' : 'password'}
-                placeholder="••••••••"
+                placeholder="Your password"
                 className="form-input"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
+                autoComplete="current-password"
                 required
-                style={{ paddingLeft: '40px', letterSpacing: showPassword ? 'normal' : '0.2em' }}
               />
               <button
                 type="button"
                 className="input-icon-right"
                 onClick={() => setShowPassword(!showPassword)}
-                aria-label="Toggle password visibility"
-                style={{ position: 'absolute', right: '14px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
+                aria-label="Show password"
               >
                 {showPassword ? <FiEyeOff size={18} /> : <FiEye size={18} />}
               </button>
@@ -109,27 +95,18 @@ export default function Login() {
 
           <button
             type="submit"
-            className="btn btn-primary btn-full"
+            className="btn btn-dark btn-full"
             style={{ padding: '14px', marginTop: '12px', gap: '10px' }}
             disabled={loading}
           >
-            {loading ? 'Logging in...' : (<>Login <FiLogIn size={18} /></>)}
+            {loading ? 'Signing in...' : (<>Sign in <FiLogIn size={18} /></>)}
           </button>
         </form>
 
         <p className="auth-footer-text">
-          Don't have an account? <Link to="/register">Sign Up</Link>
+          Don't have an account? <Link to="/register">Create account</Link>
         </p>
       </div>
-
-      <div className="auth-page-footer">
-        <div className="auth-page-footer-links">
-          <a href="#support">Support</a>
-          <a href="#privacy">Privacy Policy</a>
-          <a href="#terms">Terms of Service</a>
-        </div>
-        <div>© 2024 Campus Coders. All rights reserved.</div>
-      </div>
-    </div>
+    </AuthShell>
   );
 }

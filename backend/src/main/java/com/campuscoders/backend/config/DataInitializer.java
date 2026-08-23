@@ -1,5 +1,6 @@
 package com.campuscoders.backend.config;
 
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.util.List;
@@ -23,6 +24,9 @@ import com.campuscoders.backend.discussion.DiscussionReply;
 import com.campuscoders.backend.discussion.repository.DiscussionCategoryRepository;
 import com.campuscoders.backend.discussion.repository.DiscussionPostRepository;
 import com.campuscoders.backend.discussion.repository.DiscussionReplyRepository;
+import com.campuscoders.backend.event.CampusEvent;
+import com.campuscoders.backend.event.CampusEventType;
+import com.campuscoders.backend.event.repository.CampusEventRepository;
 import com.campuscoders.backend.learningpath.DifficultyLevel;
 import com.campuscoders.backend.learningpath.LearningPath;
 import com.campuscoders.backend.learningpath.LearningResource;
@@ -36,7 +40,7 @@ import com.campuscoders.backend.user.User;
 import com.campuscoders.backend.user.repository.UserRepository;
 
 @Component
-@Profile({"dev", "default"})
+@Profile("dev")
 public class DataInitializer implements CommandLineRunner {
 
   private final LearningPathRepository learningPathRepository;
@@ -48,6 +52,7 @@ public class DataInitializer implements CommandLineRunner {
   private final DiscussionCategoryRepository discussionCategoryRepository;
   private final DiscussionPostRepository discussionPostRepository;
   private final DiscussionReplyRepository discussionReplyRepository;
+  private final CampusEventRepository campusEventRepository;
   private final UserRepository userRepository;
   private final PasswordEncoder passwordEncoder;
 
@@ -61,6 +66,7 @@ public class DataInitializer implements CommandLineRunner {
       DiscussionCategoryRepository discussionCategoryRepository,
       DiscussionPostRepository discussionPostRepository,
       DiscussionReplyRepository discussionReplyRepository,
+      CampusEventRepository campusEventRepository,
       UserRepository userRepository,
       PasswordEncoder passwordEncoder) {
     this.learningPathRepository = learningPathRepository;
@@ -72,6 +78,7 @@ public class DataInitializer implements CommandLineRunner {
     this.discussionCategoryRepository = discussionCategoryRepository;
     this.discussionPostRepository = discussionPostRepository;
     this.discussionReplyRepository = discussionReplyRepository;
+    this.campusEventRepository = campusEventRepository;
     this.userRepository = userRepository;
     this.passwordEncoder = passwordEncoder;
   }
@@ -83,6 +90,9 @@ public class DataInitializer implements CommandLineRunner {
 
     if (learningPathRepository.count() == 0) {
       seedCurriculum();
+    }
+    if (!learningPathRepository.existsBySlug("interview-prep")) {
+      seedPlacementPath();
     }
 
     if (announcementRepository.count() == 0) {
@@ -96,6 +106,10 @@ public class DataInitializer implements CommandLineRunner {
     if (discussionCategoryRepository.count() == 0) {
       seedDiscussionCategoriesAndPosts();
     }
+    
+    if (campusEventRepository.count() == 0) {
+      seedCampusEvents();
+    }
   }
 
   private void seedDefaultUsers() {
@@ -105,9 +119,8 @@ public class DataInitializer implements CommandLineRunner {
     student.setPassword(passwordEncoder.encode("student123"));
     student.setRole(Role.STUDENT);
     student.setEnabled(true);
-    if (student.getTotalXp() == null) student.setTotalXp(120);
-    if (student.getDailyStreak() == null) student.setDailyStreak(5);
-    if (student.getProblemsSolved() == null) student.setProblemsSolved(15);
+    student.setEmailVerified(true);
+
     userRepository.save(student);
 
     User admin = userRepository.findByEmail("admin@campus.com").orElseGet(User::new);
@@ -116,9 +129,8 @@ public class DataInitializer implements CommandLineRunner {
     admin.setPassword(passwordEncoder.encode("admin123"));
     admin.setRole(Role.ADMIN);
     admin.setEnabled(true);
-    if (admin.getTotalXp() == null) admin.setTotalXp(500);
-    if (admin.getDailyStreak() == null) admin.setDailyStreak(20);
-    if (admin.getProblemsSolved() == null) admin.setProblemsSolved(50);
+    admin.setEmailVerified(true);
+
     userRepository.save(admin);
   }
 
@@ -151,8 +163,8 @@ public class DataInitializer implements CommandLineRunner {
     res1.setDescription("Learn classes, instances, inheritance, and encapsulation with real examples.");
     res1.setType(ResourceType.VIDEO);
     res1.setDifficulty(DifficultyLevel.BEGINNER);
-    res1.setUrl("https://youtube.com");
-    res1.setProvider("YouTube");
+    res1.setUrl("https://www.youtube.com/watch?v=A74TOX803D0");
+    res1.setProvider("freeCodeCamp");
     res1.setEstimatedMinutes(45);
     res1.setSortOrder(1);
     res1.setActive(true);
@@ -164,7 +176,7 @@ public class DataInitializer implements CommandLineRunner {
     res2.setDescription("Overview of modern Java 21 features including pattern matching and virtual threads.");
     res2.setType(ResourceType.ARTICLE);
     res2.setDifficulty(DifficultyLevel.INTERMEDIATE);
-    res2.setUrl("https://dev.java");
+    res2.setUrl("https://dev.java/learn/");
     res2.setProvider("Oracle Dev");
     res2.setEstimatedMinutes(30);
     res2.setSortOrder(2);
@@ -187,7 +199,7 @@ public class DataInitializer implements CommandLineRunner {
     res3.setDescription("Step-by-step guide to @RestController, @GetMapping, @PostMapping, and DTO mappings.");
     res3.setType(ResourceType.ARTICLE);
     res3.setDifficulty(DifficultyLevel.INTERMEDIATE);
-    res3.setUrl("https://spring.io/guides");
+    res3.setUrl("https://spring.io/guides/gs/rest-service");
     res3.setProvider("Spring.io");
     res3.setEstimatedMinutes(60);
     res3.setSortOrder(1);
@@ -195,10 +207,70 @@ public class DataInitializer implements CommandLineRunner {
     learningResourceRepository.save(res3);
   }
 
+  private void seedPlacementPath() {
+    LearningPath path = new LearningPath();
+    path.setTitle("Interview prep");
+    path.setSlug("interview-prep");
+    path.setShortDescription("DSA patterns, resume basics, and how to talk through solutions.");
+    path.setDescription("A placement track: arrays and hashing, interviews on paper, and a concise resume checklist. Practice stays on LeetCode and similar sites.");
+    path.setIconName("briefcase");
+    path.setCategory("Placement");
+    path.setDifficulty(DifficultyLevel.INTERMEDIATE);
+    path.setEstimatedHours(20);
+    path.setActive(true);
+    LearningPath saved = learningPathRepository.save(path);
+
+    Topic dsa = new Topic();
+    dsa.setLearningPath(saved);
+    dsa.setTitle("Core DSA patterns");
+    dsa.setSlug("core-dsa-patterns");
+    dsa.setDescription("The patterns that show up most in intern and new-grad screens.");
+    dsa.setEstimatedMinutes(240);
+    dsa.setSortOrder(1);
+    dsa.setActive(true);
+    Topic savedDsa = topicRepository.save(dsa);
+
+    LearningResource twoSum = new LearningResource();
+    twoSum.setTopic(savedDsa);
+    twoSum.setTitle("Two Sum (LeetCode)");
+    twoSum.setDescription("Hash map pattern — start here.");
+    twoSum.setType(ResourceType.PRACTICE);
+    twoSum.setDifficulty(DifficultyLevel.BEGINNER);
+    twoSum.setUrl("https://leetcode.com/problems/two-sum/");
+    twoSum.setProvider("LeetCode");
+    twoSum.setEstimatedMinutes(25);
+    twoSum.setSortOrder(1);
+    twoSum.setActive(true);
+    learningResourceRepository.save(twoSum);
+
+    Topic resume = new Topic();
+    resume.setLearningPath(saved);
+    resume.setTitle("Resume and story");
+    resume.setSlug("resume-and-story");
+    resume.setDescription("What to put on a one-page resume and how to explain a project.");
+    resume.setEstimatedMinutes(90);
+    resume.setSortOrder(2);
+    resume.setActive(true);
+    Topic savedResume = topicRepository.save(resume);
+
+    LearningResource resumeGuide = new LearningResource();
+    resumeGuide.setTopic(savedResume);
+    resumeGuide.setTitle("Write a one-page technical resume");
+    resumeGuide.setDescription("STAR stories, projects, and what to leave off.");
+    resumeGuide.setType(ResourceType.ARTICLE);
+    resumeGuide.setDifficulty(DifficultyLevel.BEGINNER);
+    resumeGuide.setUrl("https://www.techinterviewhandbook.org/resume/");
+    resumeGuide.setProvider("Tech Interview Handbook");
+    resumeGuide.setEstimatedMinutes(20);
+    resumeGuide.setSortOrder(1);
+    resumeGuide.setActive(true);
+    learningResourceRepository.save(resumeGuide);
+  }
+
   private void seedAnnouncement() {
     Announcement announcement = new Announcement();
     announcement.setTitle("Welcome to Campus Coders!");
-    announcement.setMessage("Explore learning paths, track your daily check-in streak, and solve the Problem of the Day.");
+    announcement.setMessage("Explore learning paths, join discussions, and solve the Problem of the Day.");
     announcement.setCategory(AnnouncementCategory.PLATFORM_UPDATE);
     announcement.setActionLabel("Browse Paths");
     announcement.setActionUrl("/paths");
@@ -227,21 +299,21 @@ public class DataInitializer implements CommandLineRunner {
       DailyChallenge todayChallenge = new DailyChallenge();
       todayChallenge.setCodingProblem(savedProblems.get(0));
       todayChallenge.setChallengeDate(today);
-      todayChallenge.setXpReward(15);
+
       todayChallenge.setActive(true);
       dailyChallengeRepository.save(todayChallenge);
     }
   }
 
   private void seedDiscussionCategoriesAndPosts() {
-    DiscussionCategory catJava = createCategory("Java", "java", "Core Java 21, OOP, Collections, and JVM topics", "#F59E0B", "coffee", 1);
-    DiscussionCategory catPython = createCategory("Python", "python", "Python 3 syntax, Django, FastAPI, and data scripting", "#3B82F6", "terminal", 2);
-    DiscussionCategory catDsa = createCategory("Data Structures & Algorithms", "dsa", "LeetCode problems, dynamic programming, trees, and sorting algorithms", "#10B981", "cpu", 3);
-    DiscussionCategory catWeb = createCategory("Web Development", "web-development", "HTML, CSS, React, RESTful APIs, and full-stack architecture", "#8B5CF6", "globe", 4);
-    DiscussionCategory catCareer = createCategory("Career Advice", "career-advice", "Resume reviews, internship preparation, and placement tips", "#EC4899", "briefcase", 5);
-    DiscussionCategory catGeneral = createCategory("General", "general", "General tech discussions, platform feedback, and community chat", "#6B7280", "message-square", 6);
+    DiscussionCategory catQuestions = createCategory("Interview Questions", "interview-questions", "Technical interview coding questions and logic puzzles", "#EF4444", "help-circle", 1);
+    DiscussionCategory catExperience = createCategory("Interview Experience", "interview-experience", "Share your full interview journey and process", "#10B981", "briefcase", 2);
+    DiscussionCategory catCareer = createCategory("Career & Compensation", "career-compensation", "Salary negotiations, resume reviews, and career advice", "#F59E0B", "trending-up", 3);
+    DiscussionCategory catStudy = createCategory("Study Guides & Resources", "study-guides", "Roadmaps, cheat sheets, and course recommendations", "#3B82F6", "book-open", 4);
+    DiscussionCategory catProjects = createCategory("Projects & Hackathons", "projects-hackathons", "Find teammates and showcase your work", "#8B5CF6", "star", 5);
+    DiscussionCategory catGeneral = createCategory("General Discussion", "general", "Casual tech talk and community chat", "#6B7280", "message-square", 6);
 
-    discussionCategoryRepository.saveAll(List.of(catJava, catPython, catDsa, catWeb, catCareer, catGeneral));
+    discussionCategoryRepository.saveAll(List.of(catQuestions, catExperience, catCareer, catStudy, catProjects, catGeneral));
 
     if (discussionPostRepository.count() == 0) {
       User firstUser = userRepository.findAll().stream().findFirst().orElse(null);
@@ -251,7 +323,7 @@ public class DataInitializer implements CommandLineRunner {
 
       DiscussionPost post1 = new DiscussionPost();
       post1.setAuthor(firstUser);
-      post1.setCategory(catJava);
+      post1.setCategory(catQuestions);
       post1.setTitle("What is the difference between Comparable and Comparator in Java?");
       post1.setContent("I'm confused about when to use Comparable vs Comparator in Java 21 collections. Could someone explain with clear code examples?");
       post1.setTags("java,collections,sorting");
@@ -264,7 +336,6 @@ public class DataInitializer implements CommandLineRunner {
       reply1.setPost(savedPost1);
       reply1.setAuthor(firstUser);
       reply1.setContent("Comparable is implemented by the class itself via compareTo(). Comparator is external via compare() and useful for multiple custom sorting orders.");
-      reply1.setAcceptedAnswer(true);
       reply1.setActive(true);
       discussionReplyRepository.save(reply1);
 
@@ -279,6 +350,32 @@ public class DataInitializer implements CommandLineRunner {
       post2.setActive(true);
       discussionPostRepository.save(post2);
     }
+  }
+  
+  private void seedCampusEvents() {
+    CampusEvent event1 = new CampusEvent();
+    event1.setTitle("Spring Boot Masterclass");
+    event1.setDescription("Join our expert panel to discuss microservices using Spring Boot 3.");
+    event1.setType(CampusEventType.WORKSHOP);
+    event1.setPlatform("Zoom");
+    event1.setStartsAt(Instant.now().plusSeconds(86400 * 2)); // 2 days from now
+    event1.setEndsAt(Instant.now().plusSeconds(86400 * 2 + 7200)); 
+    event1.setActionLabel("Register");
+    event1.setActionUrl("https://zoom.us");
+    event1.setActive(true);
+    campusEventRepository.save(event1);
+
+    CampusEvent event2 = new CampusEvent();
+    event2.setTitle("Weekend Coding Contest");
+    event2.setDescription("Test your DSA skills against your peers. Top 3 win an interview bypass!");
+    event2.setType(CampusEventType.CONTEST);
+    event2.setPlatform("LeetCode");
+    event2.setStartsAt(Instant.now().plusSeconds(86400 * 5)); // 5 days from now
+    event2.setEndsAt(Instant.now().plusSeconds(86400 * 5 + 10800)); 
+    event2.setActionLabel("Contest Page");
+    event2.setActionUrl("https://leetcode.com/contest");
+    event2.setActive(true);
+    campusEventRepository.save(event2);
   }
 
   private DiscussionCategory createCategory(String name, String slug, String description, String color, String iconName, Integer sortOrder) {

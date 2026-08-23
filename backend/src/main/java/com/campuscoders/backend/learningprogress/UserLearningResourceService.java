@@ -16,6 +16,7 @@ import com.campuscoders.backend.learningpath.repository.LearningResourceReposito
 import com.campuscoders.backend.learningpath.repository.TopicRepository;
 import com.campuscoders.backend.learningprogress.dto.CompleteResourceRequest;
 import com.campuscoders.backend.learningprogress.dto.CompletedResourceResponse;
+import com.campuscoders.backend.learningprogress.dto.InProgressLearningPathResponse;
 import com.campuscoders.backend.learningprogress.dto.LearningPathProgressResponse;
 import com.campuscoders.backend.learningprogress.dto.TopicProgressResponse;
 import com.campuscoders.backend.learningprogress.repository.UserLearningResourceRepository;
@@ -80,6 +81,15 @@ public class UserLearningResourceService {
         saved.getCompletedAt());
   }
 
+  @Transactional
+  public void uncomplete(String userEmail, Long resourceId) {
+    User user = userRepo.findByEmail(userEmail)
+        .orElseThrow(() -> new CustomException("User not found", HttpStatus.NOT_FOUND));
+    UserLearningResource row = ulrRepo.findByUserIdAndResourceId(user.getId(), resourceId)
+        .orElseThrow(() -> new CustomException("This resource is not marked complete", HttpStatus.NOT_FOUND));
+    ulrRepo.delete(row);
+  }
+
   @Transactional(readOnly = true)
   public List<CompletedResourceResponse> listCompleted(String userEmail) {
     User user = userRepo.findByEmail(userEmail)
@@ -118,6 +128,33 @@ public class UserLearningResourceService {
         totalResources,
         completedResources,
         percentage);
+  }
+
+  @Transactional(readOnly = true)
+  public List<InProgressLearningPathResponse> getInProgressPaths(String userEmail) {
+    User user = userRepo.findByEmail(userEmail)
+        .orElseThrow(() -> new CustomException("User not found", HttpStatus.NOT_FOUND));
+
+    return ulrRepo.findDistinctLearningPathIdsByUserId(user.getId()).stream()
+        .map(pathId -> learningPathRepository.findById(pathId).orElse(null))
+        .filter(path -> path != null && Boolean.TRUE.equals(path.getActive()))
+        .map(path -> {
+          long totalResources = lrRepo.countByTopicLearningPathIdAndActiveTrue(path.getId());
+          long completedResources = ulrRepo.countByUserIdAndResourceTopicLearningPathId(user.getId(), path.getId());
+          double percentage = calculatePercentage(completedResources, totalResources);
+          return new InProgressLearningPathResponse(
+              path.getId(),
+              path.getTitle(),
+              path.getSlug(),
+              path.getCategory(),
+              path.getDifficulty(),
+              totalResources,
+              completedResources,
+              percentage);
+        })
+        .filter(row -> row.completedResources() > 0 && row.progressPercentage() < 100.0)
+        .sorted((a, b) -> Double.compare(b.progressPercentage(), a.progressPercentage()))
+        .collect(Collectors.toList());
   }
 
   // Calculates completion percentage for a Topic (handles 0 total resources safely).

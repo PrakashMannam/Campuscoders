@@ -14,4 +14,6 @@ public class AuthResponse {
   private String email;
   private String fullName;
   private Role role;
+  private Boolean emailVerified;
+  private Boolean requiresEmailVerification;
 }

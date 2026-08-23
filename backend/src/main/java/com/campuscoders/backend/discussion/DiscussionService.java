@@ -1,6 +1,6 @@
 package com.campuscoders.backend.discussion;
 
-import java.util.List;
+import java.util.*;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -21,11 +21,15 @@ import com.campuscoders.backend.discussion.dto.PopularTagResponse;
 import com.campuscoders.backend.discussion.dto.TopContributorResponse;
 import com.campuscoders.backend.discussion.dto.UpdateDiscussionCategoryRequest;
 import com.campuscoders.backend.discussion.dto.UpdateDiscussionPostRequest;
+import com.campuscoders.backend.discussion.dto.UpdateDiscussionReplyRequest;
 import com.campuscoders.backend.discussion.repository.DiscussionCategoryRepository;
 import com.campuscoders.backend.discussion.repository.DiscussionPostRepository;
 import com.campuscoders.backend.discussion.repository.DiscussionReplyRepository;
 import com.campuscoders.backend.discussion.repository.DiscussionVoteRepository;
 import com.campuscoders.backend.exception.CustomException;
+import com.campuscoders.backend.notification.NotificationService;
+import com.campuscoders.backend.notification.NotificationType;
+import com.campuscoders.backend.notification.dto.CreateNotificationRequest;
 import com.campuscoders.backend.user.Role;
 import com.campuscoders.backend.user.User;
 import com.campuscoders.backend.user.repository.UserRepository;
@@ -38,18 +42,21 @@ public class DiscussionService {
   private final DiscussionCategoryRepository categoryRepository;
   private final DiscussionVoteRepository voteRepository;
   private final UserRepository userRepository;
+  private final NotificationService notificationService;
 
   public DiscussionService(
       DiscussionPostRepository postRepository,
       DiscussionReplyRepository replyRepository,
       DiscussionCategoryRepository categoryRepository,
       DiscussionVoteRepository voteRepository,
-      UserRepository userRepository) {
+      UserRepository userRepository,
+      NotificationService notificationService) {
     this.postRepository = postRepository;
     this.replyRepository = replyRepository;
     this.categoryRepository = categoryRepository;
     this.voteRepository = voteRepository;
     this.userRepository = userRepository;
+    this.notificationService = notificationService;
   }
 
   // --- Discussion Category Management Methods ---
@@ -120,7 +127,8 @@ public class DiscussionService {
     return toCategoryResponse(categoryRepository.save(category));
   }
 
-  // Soft Deactivation: Sets active = false, keeping category data in DB to preserve historical posts.
+  // Soft Deactivation: Sets active = false, keeping category data in DB to
+  // preserve historical posts.
   @Transactional
   public DiscussionCategoryResponse deactivateCategory(Long categoryId) {
     DiscussionCategory category = getCategoryById(categoryId);
@@ -130,7 +138,8 @@ public class DiscussionService {
 
   // --- Student & Public Discussion Post Methods ---
 
-  // Fetches active discussion threads supporting optional filters for categorySlug, featured status, text search, and sorting.
+  // Fetches active discussion threads supporting optional filters for
+  // categorySlug, featured status, text search, and sorting.
   @Transactional(readOnly = true)
   public PageResponse<DiscussionPostResponse> getDiscussions(
       String userEmail,
@@ -140,26 +149,32 @@ public class DiscussionService {
       String search,
       Pageable pageable) {
 
-    // Override sort based on filter if provided
-    if (filter != null) {
-      if ("most_replied".equals(filter)) {
-        pageable = org.springframework.data.domain.PageRequest.of(
-            pageable.getPageNumber(), pageable.getPageSize(), org.springframework.data.domain.Sort.by(org.springframework.data.domain.Sort.Direction.DESC, "repliesCount"));
-      } else if ("latest".equals(filter)) {
-        pageable = org.springframework.data.domain.PageRequest.of(
-            pageable.getPageNumber(), pageable.getPageSize(), org.springframework.data.domain.Sort.by(org.springframework.data.domain.Sort.Direction.DESC, "createdAt"));
-      } else if ("unanswered".equals(filter)) {
-        // Handled by custom repository query or we can just stick to default sort and let repository filter
-        // Actually, we need to pass unanswered to the repository if we want it paginated properly.
-        // For now, let's keep it simple and just fetch and filter, or update repository to accept unanswered flag.
-      }
+    String sortFilter = filter == null ? "latest" : filter.toLowerCase();
+    Boolean featuredFlag = featured;
+    Boolean unansweredFlag = null;
+
+    if ("featured".equals(sortFilter)) {
+      featuredFlag = true;
+    }
+    if ("unanswered".equals(sortFilter)) {
+      unansweredFlag = true;
     }
 
-    // Since we need to support 'unanswered', we should update the repository method or add a new one.
-    // For now we will use the existing findActiveDiscussions. If unanswered is needed, we will modify the repo next.
+    org.springframework.data.domain.Sort.Direction desc = org.springframework.data.domain.Sort.Direction.DESC;
+    org.springframework.data.domain.Sort sort = org.springframework.data.domain.Sort.by(desc, "createdAt");
+    if ("top".equals(sortFilter) || "most_voted".equals(sortFilter)) {
+      sort = org.springframework.data.domain.Sort.by(desc, "voteScore")
+          .and(org.springframework.data.domain.Sort.by(desc, "createdAt"));
+    } else if ("most_replied".equals(sortFilter)) {
+      sort = org.springframework.data.domain.Sort.by(desc, "repliesCount")
+          .and(org.springframework.data.domain.Sort.by(desc, "createdAt"));
+    }
+
+    pageable = org.springframework.data.domain.PageRequest.of(
+        pageable.getPageNumber(), pageable.getPageSize(), sort);
 
     Page<DiscussionPost> postsPage = postRepository.findActiveDiscussions(
-        categorySlug, featured, search, pageable);
+        categorySlug, featuredFlag, search, unansweredFlag, pageable);
     List<DiscussionPostResponse> mapped = postsPage.getContent().stream()
         .map(post -> toPostResponse(post, userEmail))
         .toList();
@@ -227,7 +242,8 @@ public class DiscussionService {
     return toPostResponse(saved, userEmail);
   }
 
-  // Closed Post Reply Guard: Prevents new responses from being posted to closed/archived discussion threads.
+  // Closed Post Reply Guard: Prevents new responses from being posted to
+  // closed/archived discussion threads.
   @Transactional
   public DiscussionReplyResponse addReply(String authorEmail, Long postId, CreateDiscussionReplyRequest req) {
     User author = getUserByEmail(authorEmail);
@@ -245,14 +261,25 @@ public class DiscussionService {
     reply.setPost(post);
     reply.setAuthor(author);
     reply.setContent(req.content());
-    reply.setAcceptedAnswer(false);
     reply.setActive(true);
 
     DiscussionReply saved = replyRepository.save(reply);
-    
+
     // Update repliesCount on parent post
     post.setRepliesCount(post.getRepliesCount() + 1);
     postRepository.save(post);
+
+    // Emit notification to post author when they opted into discussion alerts
+    if (!post.getAuthor().getId().equals(author.getId())
+        && !Boolean.FALSE.equals(post.getAuthor().getDiscussionMentions())) {
+      notificationService.createNotification(new CreateNotificationRequest(
+          post.getAuthor().getId(),
+          "New Reply",
+          author.getFullName() + " replied to your discussion: " + post.getTitle(),
+          NotificationType.DISCUSSION,
+          "/dashboard/discussions/" + post.getId()
+      ));
+    }
 
     return toReplyResponse(saved);
   }
@@ -281,26 +308,49 @@ public class DiscussionService {
     return toPostResponse(postRepository.save(post), userEmail);
   }
 
-  // Single Accepted Answer Rule: A post can have at most one accepted answer.
-  // Setting a new reply as accepted automatically resets any previously accepted reply.
+  // Ownership Guard: Only the post author or an ADMIN can delete a thread.
   @Transactional
-  public DiscussionReplyResponse markReplyAsAccepted(String userEmail, Long replyId) {
+  public void deletePost(String userEmail, Long postId) {
+    User currentUser = getUserByEmail(userEmail);
+    DiscussionPost post = getPostById(postId);
+
+    verifyAuthorOrAdmin(post.getAuthor(), currentUser);
+
+    post.setActive(false);
+    postRepository.save(post);
+  }
+
+  // Soft Delete Decision: Deactivating sets active = false.
+  @Transactional
+  public void deleteReply(String userEmail, Long replyId) {
     User currentUser = getUserByEmail(userEmail);
 
     DiscussionReply reply = replyRepository.findById(replyId)
         .orElseThrow(() -> new CustomException("Discussion reply not found", HttpStatus.NOT_FOUND));
 
+    verifyAuthorOrAdmin(reply.getAuthor(), currentUser);
+
+    reply.setActive(false);
+    replyRepository.save(reply);
+
+    // Decrease replies count on parent post
     DiscussionPost post = reply.getPost();
-    verifyAuthorOrAdmin(post.getAuthor(), currentUser);
+    if (post.getRepliesCount() > 0) {
+      post.setRepliesCount(post.getRepliesCount() - 1);
+      postRepository.save(post);
+    }
+  }
 
-    // Clear previously accepted reply on this post if present
-    replyRepository.findByPostIdAndAcceptedAnswerTrue(post.getId())
-        .ifPresent(prev -> {
-          prev.setAcceptedAnswer(false);
-          replyRepository.save(prev);
-        });
+  @Transactional
+  public DiscussionReplyResponse updateReply(String userEmail, Long replyId, UpdateDiscussionReplyRequest req) {
+    User currentUser = getUserByEmail(userEmail);
 
-    reply.setAcceptedAnswer(true);
+    DiscussionReply reply = replyRepository.findById(replyId)
+        .orElseThrow(() -> new CustomException("Discussion reply not found", HttpStatus.NOT_FOUND));
+
+    verifyAuthorOrAdmin(reply.getAuthor(), currentUser);
+
+    reply.setContent(req.content());
     return toReplyResponse(replyRepository.save(reply));
   }
 
@@ -312,29 +362,34 @@ public class DiscussionService {
     if (!post.getActive()) {
       throw new CustomException("Cannot vote on an inactive discussion post", HttpStatus.BAD_REQUEST);
     }
+    if (voteValue != 1 && voteValue != -1) {
+      throw new CustomException("Vote value must be 1 or -1", HttpStatus.BAD_REQUEST);
+    }
 
-    java.util.Optional<DiscussionVote> existingVoteOpt = voteRepository.findByUserIdAndPostId(currentUser.getId(), post.getId());
+    int currentScore = post.getVoteScore() == null ? 0 : post.getVoteScore();
+    java.util.Optional<DiscussionVote> existingVoteOpt = voteRepository.findByUserIdAndPostId(currentUser.getId(),
+        post.getId());
 
     if (existingVoteOpt.isPresent()) {
       DiscussionVote existingVote = existingVoteOpt.get();
-      if (existingVote.getVoteValue() == voteValue) {
-        // User clicked same vote again, meaning remove vote
-        post.setVoteScore(post.getVoteScore() - existingVote.getVoteValue());
-        voteRepository.delete(existingVote);
-      } else {
-        // User changed vote (e.g. from 1 to -1)
-        post.setVoteScore(post.getVoteScore() - existingVote.getVoteValue() + voteValue);
-        existingVote.setVoteValue(voteValue);
-        voteRepository.save(existingVote);
-      }
+      // Same button undoes the vote. Opposite button returns to 0 instead of flipping
+      // e.g. upvote then downvote would otherwise jump 0 → 1 → -1.
+      post.setVoteScore(currentScore - existingVote.getVoteValue());
+      voteRepository.delete(existingVote);
+    } else if (voteValue == -1 && currentScore <= 0) {
+      // Do not let a downvote push a 0-score thread into negatives.
+      return toPostResponse(post, userEmail);
     } else {
-      // New vote
       DiscussionVote newVote = new DiscussionVote();
       newVote.setUser(currentUser);
       newVote.setPost(post);
       newVote.setVoteValue(voteValue);
       voteRepository.save(newVote);
-      post.setVoteScore(post.getVoteScore() + voteValue);
+      post.setVoteScore(currentScore + voteValue);
+    }
+
+    if (post.getVoteScore() == null || post.getVoteScore() < 0) {
+      post.setVoteScore(0);
     }
 
     return toPostResponse(postRepository.save(post), userEmail);
@@ -355,7 +410,10 @@ public class DiscussionService {
 
   @Transactional(readOnly = true)
   public List<PopularTagResponse> getPopularTags() {
-    List<DiscussionPost> recentPosts = postRepository.findAll(org.springframework.data.domain.PageRequest.of(0, 100, org.springframework.data.domain.Sort.by(org.springframework.data.domain.Sort.Direction.DESC, "createdAt"))).getContent();
+    List<DiscussionPost> recentPosts = postRepository
+        .findAll(org.springframework.data.domain.PageRequest.of(0, 100,
+            org.springframework.data.domain.Sort.by(org.springframework.data.domain.Sort.Direction.DESC, "createdAt")))
+        .getContent();
     java.util.Map<String, Long> tagCounts = new java.util.HashMap<>();
 
     for (DiscussionPost post : recentPosts) {
@@ -411,7 +469,8 @@ public class DiscussionService {
     return toPostResponse(postRepository.save(post), null);
   }
 
-  // Soft Delete Decision: Deactivating sets active = false, preserving post data for audit trails.
+  // Soft Delete Decision: Deactivating sets active = false, preserving post data
+  // for audit trails.
   @Transactional
   public DiscussionPostResponse deactivatePost(Long postId) {
     DiscussionPost post = getPostById(postId);
@@ -446,7 +505,8 @@ public class DiscussionService {
 
   private DiscussionCategory getCategoryById(Long categoryId) {
     return categoryRepository.findById(categoryId)
-        .orElseThrow(() -> new CustomException("Discussion category not found with ID: " + categoryId, HttpStatus.NOT_FOUND));
+        .orElseThrow(
+            () -> new CustomException("Discussion category not found with ID: " + categoryId, HttpStatus.NOT_FOUND));
   }
 
   private User getUserByEmail(String email) {
@@ -475,11 +535,33 @@ public class DiscussionService {
     return name.trim().toLowerCase().replaceAll("[^a-z0-9-]+", "-");
   }
 
+  public static final List<String> ALLOWED_TAGS = List.of(
+      "java", "python", "c++", "javascript", "typescript", "go", "rust", "sql", "html", "css",
+      "react", "spring", "spring-boot", "nodejs", "django", "angular", "vue", "express", "mongodb", "postgresql", "docker", "aws",
+      "git",
+      "frontend", "backend", "full-stack", "mobile", "machine-learning", "data-science", "devops", "cloud",
+      "cybersecurity",
+      "dsa", "system-design", "object-oriented-programming", "database-design", "api", "testing",
+      "interview-experience", "resume-review", "compensation", "tips", "off-campus", "internship", "hackathon",
+      "competitive-programming", "contest",
+      "array", "string", "dynamic-programming", "two-pointers", "graph", "tree", "greedy", "math");
+
   private String cleanTags(String tags) {
     if (tags == null || tags.trim().isEmpty()) {
       return null;
     }
-    return tags.trim().toLowerCase();
+    String[] tagArray = tags.toLowerCase().split(",");
+    List<String> validTags = new ArrayList<>();
+    for (String tag : tagArray) {
+      String t = tag.trim();
+      if (!t.isEmpty()) {
+        if (!ALLOWED_TAGS.contains(t)) {
+          throw new CustomException("Invalid tag provided: " + t, HttpStatus.BAD_REQUEST);
+        }
+        validTags.add(t);
+      }
+    }
+    return String.join(",", validTags);
   }
 
   private DiscussionCategoryResponse toCategoryResponse(DiscussionCategory category) {
@@ -498,9 +580,8 @@ public class DiscussionService {
 
   private DiscussionPostResponse toPostResponse(DiscussionPost post, String userEmail) {
     long repliesCount = replyRepository.countByPostIdAndActiveTrue(post.getId());
-    boolean hasAcceptedAnswer = replyRepository.findByPostIdAndAcceptedAnswerTrue(post.getId()).isPresent();
 
-    final Integer[] userVote = {0};
+    final Integer[] userVote = { 0 };
     if (userEmail != null) {
       userRepository.findByEmail(userEmail).ifPresent(user -> {
         voteRepository.findByUserIdAndPostId(user.getId(), post.getId())
@@ -531,15 +612,15 @@ public class DiscussionService {
         post.getVoteScore(),
         userVote[0],
         repliesCount,
-        hasAcceptedAnswer,
         post.getCreatedAt(),
         post.getUpdatedAt());
   }
 
-  private DiscussionPostDetailsResponse toPostDetailsResponse(DiscussionPost post, List<DiscussionReplyResponse> replies, String userEmail) {
+  private DiscussionPostDetailsResponse toPostDetailsResponse(DiscussionPost post,
+      List<DiscussionReplyResponse> replies, String userEmail) {
     long repliesCount = replyRepository.countByPostIdAndActiveTrue(post.getId());
 
-    final Integer[] userVote = {0};
+    final Integer[] userVote = { 0 };
     if (userEmail != null) {
       userRepository.findByEmail(userEmail).ifPresent(user -> {
         voteRepository.findByUserIdAndPostId(user.getId(), post.getId())
@@ -578,7 +659,6 @@ public class DiscussionService {
         reply.getAuthor().getFullName(),
         reply.getAuthor().getAvatarUrl(),
         reply.getContent(),
-        reply.getAcceptedAnswer(),
         reply.getActive(),
         reply.getCreatedAt(),
         reply.getUpdatedAt());

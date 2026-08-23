@@ -4,6 +4,8 @@ package com.campuscoders.backend.learningpath.dto;
 public record TopicResponse(
     Long id,
     Long learningPathId,
+    String learningPathSlug,
+    String learningPathTitle,
     String title,
     String slug,
     String description,
