@@ -1,10 +1,10 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { FiArrowLeft, FiClock, FiBook, FiCheckCircle, FiPlayCircle, FiBookmark, FiChevronRight } from 'react-icons/fi';
+import { FiArrowLeft, FiBook, FiCheckCircle, FiPlayCircle, FiBookmark, FiChevronRight } from 'react-icons/fi';
 import DashboardLayout from '../components/DashboardLayout';
 import Toast from '../components/Toast';
 import api from '../api/client';
-import { difficultyClass, formatMinutes, humanize } from '../utils/label';
+import { difficultyClass, humanize } from '../utils/label';
 
 export default function LearningPathDetail() {
   const { pathId } = useParams();
@@ -108,15 +108,6 @@ export default function LearningPathDetail() {
                     <div className="lpd-stat-lbl">Topics</div>
                   </div>
                 </div>
-                {path.estimatedHours != null && (
-                  <div className="lpd-stat-item">
-                    <FiClock size={18} className="lpd-stat-icon" />
-                    <div>
-                      <div className="lpd-stat-val">{path.estimatedHours}h</div>
-                      <div className="lpd-stat-lbl">Est. duration</div>
-                    </div>
-                  </div>
-                )}
                 <div className="lpd-stat-item progress">
                   <div className="lpd-progress-header">
                     <span>Progress</span>
@@ -138,7 +129,6 @@ export default function LearningPathDetail() {
                     <h4 className="lpd-continue-topic">{nextTopic.title}</h4>
                     <p className="lpd-continue-sub">
                       {nextTopic.resources?.length || 0} resources
-                      {nextTopic.estimatedMinutes ? ` - ${formatMinutes(nextTopic.estimatedMinutes)}` : ''}
                     </p>
                   </div>
                 </div>
@@ -173,7 +163,6 @@ export default function LearningPathDetail() {
                         <div className="lpd-topic-info">
                           <h5 className="lpd-topic-title">{t.title}</h5>
                           <div className="lpd-topic-meta">
-                            {t.estimatedMinutes != null && <span>{formatMinutes(t.estimatedMinutes)}</span>}
                             <span>{t.resources?.length || 0} resources</span>
                             {pct > 0 && <span>{pct}%</span>}
                           </div>

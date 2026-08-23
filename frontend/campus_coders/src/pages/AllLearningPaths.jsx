@@ -139,9 +139,6 @@ export default function AllLearningPaths() {
                     </div>
                     <h4 className="alp-card-title">{path.title}</h4>
                     <p className="alp-card-desc">{path.shortDescription || path.description}</p>
-                    {path.estimatedHours != null && (
-                      <div className="alp-card-meta"><span>{path.estimatedHours}h</span></div>
-                    )}
                     <button
                       type="button"
                       className="alp-explore-btn"
