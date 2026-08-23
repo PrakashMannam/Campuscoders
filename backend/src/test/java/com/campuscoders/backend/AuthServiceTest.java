@@ -33,6 +33,7 @@ import com.campuscoders.backend.auth.dto.MessageResponse;
 import com.campuscoders.backend.auth.dto.ResetPasswordRequest;
 import com.campuscoders.backend.auth.emailverification.DisposableEmailGuard;
 import com.campuscoders.backend.auth.emailverification.EmailVerificationCodeRepository;
+import com.campuscoders.backend.auth.emailverification.EmailVerificationCodeService;
 import com.campuscoders.backend.auth.emailverification.EmailVerificationMailService;
 import com.campuscoders.backend.auth.passwordreset.PasswordResetMailService;
 import com.campuscoders.backend.auth.passwordreset.PasswordResetToken;
@@ -62,6 +63,9 @@ class AuthServiceTest {
 
   @Mock
   private EmailVerificationCodeRepository emailVerificationCodeRepository;
+
+  @Mock
+  private EmailVerificationCodeService emailVerificationCodeService;
 
   @Mock
   private EmailVerificationMailService emailVerificationMailService;
@@ -123,13 +127,13 @@ class AuthServiceTest {
       u.setId(1L);
       return u;
     });
-    when(emailVerificationCodeRepository.findByUserIdAndUsedFalse(1L)).thenReturn(List.of());
+    when(emailVerificationCodeService.issueRawCode(any(User.class))).thenReturn("123456");
 
     AuthResponse response = authService.register(request);
 
     assertNull(response.getToken());
     assertTrue(Boolean.TRUE.equals(response.getRequiresEmailVerification()));
-    verify(emailVerificationMailService).sendVerificationCode(eq("prakash@gmail.com"), anyString());
+    verify(emailVerificationMailService).sendVerificationCode(eq("prakash@gmail.com"), eq("123456"));
   }
 
   @Test
@@ -178,8 +182,10 @@ class AuthServiceTest {
     when(userRepository.findByEmail("prakash@gmail.com")).thenReturn(Optional.of(user));
     when(passwordEncoder.matches("secret123", "encoded-secret")).thenReturn(true);
     when(emailVerificationMailService.isConfigured()).thenReturn(true);
+    when(emailVerificationCodeService.issueRawCode(user)).thenReturn("654321");
 
     assertThrows(ResponseStatusException.class, () -> authService.login(request));
+    verify(emailVerificationMailService).sendVerificationCode("prakash@gmail.com", "654321");
   }
 
   @Test
