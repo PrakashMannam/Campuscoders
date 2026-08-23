@@ -6,12 +6,17 @@ import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -26,6 +31,10 @@ import com.campuscoders.backend.auth.RegisterRequest;
 import com.campuscoders.backend.auth.dto.ForgotPasswordRequest;
 import com.campuscoders.backend.auth.dto.MessageResponse;
 import com.campuscoders.backend.auth.dto.ResetPasswordRequest;
+import com.campuscoders.backend.auth.emailverification.DisposableEmailGuard;
+import com.campuscoders.backend.auth.emailverification.EmailVerificationCodeRepository;
+import com.campuscoders.backend.auth.emailverification.EmailVerificationMailService;
+import com.campuscoders.backend.auth.passwordreset.PasswordResetMailService;
 import com.campuscoders.backend.auth.passwordreset.PasswordResetToken;
 import com.campuscoders.backend.auth.passwordreset.PasswordResetTokenRepository;
 import com.campuscoders.backend.security.JwtService;
@@ -48,45 +57,87 @@ class AuthServiceTest {
   @Mock
   private PasswordResetTokenRepository passwordResetTokenRepository;
 
+  @Mock
+  private PasswordResetMailService passwordResetMailService;
+
+  @Mock
+  private EmailVerificationCodeRepository emailVerificationCodeRepository;
+
+  @Mock
+  private EmailVerificationMailService emailVerificationMailService;
+
+  @Mock
+  private DisposableEmailGuard disposableEmailGuard;
+
   @InjectMocks
   private AuthService authService;
 
   @Test
-  void register_shouldCreateUserAndReturnAuthResponse() {
+  void register_withoutMail_shouldAutoVerifyAndReturnToken() {
     RegisterRequest request = new RegisterRequest();
     request.setFullName("Prakash");
-    request.setEmail("prakash@campus.com");
+    request.setEmail("prakash@gmail.com");
     request.setPassword("secret123");
 
-    when(userRepository.existsByEmail("prakash@campus.com")).thenReturn(false);
+    when(userRepository.existsByEmail("prakash@gmail.com")).thenReturn(false);
     when(passwordEncoder.encode("secret123")).thenReturn("encoded-secret");
+    when(emailVerificationMailService.isConfigured()).thenReturn(false);
 
     User savedUser = new User();
     savedUser.setId(1L);
     savedUser.setFullName("Prakash");
-    savedUser.setEmail("prakash@campus.com");
+    savedUser.setEmail("prakash@gmail.com");
     savedUser.setPassword("encoded-secret");
     savedUser.setRole(Role.STUDENT);
     savedUser.setEnabled(true);
+    savedUser.setEmailVerified(true);
 
-    when(userRepository.save(any(User.class))).thenReturn(savedUser);
-    when(jwtService.generateToken(savedUser)).thenReturn("mock-jwt-token");
+    when(userRepository.save(any(User.class))).thenAnswer(inv -> {
+      User u = inv.getArgument(0);
+      u.setId(1L);
+      return u;
+    });
+    when(jwtService.generateToken(any(User.class))).thenReturn("mock-jwt-token");
 
     AuthResponse response = authService.register(request);
 
     assertNotNull(response);
     assertEquals("mock-jwt-token", response.getToken());
-    assertEquals("prakash@campus.com", response.getEmail());
-    assertEquals("Prakash", response.getFullName());
+    assertEquals("prakash@gmail.com", response.getEmail());
     assertEquals(Role.STUDENT, response.getRole());
+    assertTrue(Boolean.TRUE.equals(response.getEmailVerified()));
+  }
+
+  @Test
+  void register_withMail_shouldRequireVerificationWithoutToken() {
+    RegisterRequest request = new RegisterRequest();
+    request.setFullName("Prakash");
+    request.setEmail("prakash@gmail.com");
+    request.setPassword("secret123");
+
+    when(userRepository.existsByEmail("prakash@gmail.com")).thenReturn(false);
+    when(passwordEncoder.encode(anyString())).thenReturn("encoded");
+    when(emailVerificationMailService.isConfigured()).thenReturn(true);
+    when(userRepository.save(any(User.class))).thenAnswer(inv -> {
+      User u = inv.getArgument(0);
+      u.setId(1L);
+      return u;
+    });
+    when(emailVerificationCodeRepository.findByUserIdAndUsedFalse(1L)).thenReturn(List.of());
+
+    AuthResponse response = authService.register(request);
+
+    assertNull(response.getToken());
+    assertTrue(Boolean.TRUE.equals(response.getRequiresEmailVerification()));
+    verify(emailVerificationMailService).sendVerificationCode(eq("prakash@gmail.com"), anyString());
   }
 
   @Test
   void register_duplicateEmail_shouldThrowConflictException() {
     RegisterRequest request = new RegisterRequest();
-    request.setEmail("prakash@campus.com");
+    request.setEmail("prakash@gmail.com");
 
-    when(userRepository.existsByEmail("prakash@campus.com")).thenReturn(true);
+    when(userRepository.existsByEmail("prakash@gmail.com")).thenReturn(true);
 
     assertThrows(ResponseStatusException.class, () -> authService.register(request));
   }
@@ -94,15 +145,16 @@ class AuthServiceTest {
   @Test
   void login_validCredentials_shouldReturnAuthResponse() {
     LoginRequest request = new LoginRequest();
-    request.setEmail("prakash@campus.com");
+    request.setEmail("prakash@gmail.com");
     request.setPassword("secret123");
 
     User user = new User();
     user.setId(1L);
-    user.setEmail("prakash@campus.com");
+    user.setEmail("prakash@gmail.com");
     user.setPassword("encoded-secret");
+    user.setEmailVerified(true);
 
-    when(userRepository.findByEmail("prakash@campus.com")).thenReturn(Optional.of(user));
+    when(userRepository.findByEmail("prakash@gmail.com")).thenReturn(Optional.of(user));
     when(passwordEncoder.matches("secret123", "encoded-secret")).thenReturn(true);
     when(jwtService.generateToken(user)).thenReturn("mock-jwt-token");
 
@@ -113,15 +165,33 @@ class AuthServiceTest {
   }
 
   @Test
+  void login_unverified_withMailConfigured_shouldForbid() {
+    LoginRequest request = new LoginRequest();
+    request.setEmail("prakash@gmail.com");
+    request.setPassword("secret123");
+
+    User user = new User();
+    user.setEmail("prakash@gmail.com");
+    user.setPassword("encoded-secret");
+    user.setEmailVerified(false);
+
+    when(userRepository.findByEmail("prakash@gmail.com")).thenReturn(Optional.of(user));
+    when(passwordEncoder.matches("secret123", "encoded-secret")).thenReturn(true);
+    when(emailVerificationMailService.isConfigured()).thenReturn(true);
+
+    assertThrows(ResponseStatusException.class, () -> authService.login(request));
+  }
+
+  @Test
   void login_invalidPassword_shouldThrowUnauthorizedException() {
     LoginRequest request = new LoginRequest();
-    request.setEmail("prakash@campus.com");
+    request.setEmail("prakash@gmail.com");
     request.setPassword("wrongpass");
 
     User user = new User();
     user.setPassword("encoded-secret");
 
-    when(userRepository.findByEmail("prakash@campus.com")).thenReturn(Optional.of(user));
+    when(userRepository.findByEmail("prakash@gmail.com")).thenReturn(Optional.of(user));
     when(passwordEncoder.matches("wrongpass", "encoded-secret")).thenReturn(false);
 
     assertThrows(ResponseStatusException.class, () -> authService.login(request));
@@ -132,35 +202,46 @@ class AuthServiceTest {
     User user = new User();
     user.setId(1L);
     user.setFullName("Prakash");
-    user.setEmail("prakash@campus.com");
+    user.setEmail("prakash@gmail.com");
     user.setRole(Role.STUDENT);
 
-    when(userRepository.findByEmail("prakash@campus.com")).thenReturn(Optional.of(user));
+    when(userRepository.findByEmail("prakash@gmail.com")).thenReturn(Optional.of(user));
 
-    CurrentUserResponse response = authService.getCurrentUser("prakash@campus.com");
+    CurrentUserResponse response = authService.getCurrentUser("prakash@gmail.com");
 
     assertNotNull(response);
     assertEquals("Prakash", response.getFullName());
-    assertEquals("prakash@campus.com", response.getEmail());
+    assertEquals("prakash@gmail.com", response.getEmail());
   }
 
   @Test
   void forgotPassword_userExists_shouldGenerateToken() {
-    ForgotPasswordRequest req = new ForgotPasswordRequest("prakash@campus.com");
+    ForgotPasswordRequest req = new ForgotPasswordRequest("prakash@gmail.com");
     User user = new User();
     user.setId(1L);
-    user.setEmail("prakash@campus.com");
+    user.setEmail("prakash@gmail.com");
 
     PasswordResetToken oldToken = new PasswordResetToken();
     oldToken.setUsed(false);
 
-    when(userRepository.findByEmail("prakash@campus.com")).thenReturn(Optional.of(user));
+    when(userRepository.findByEmail("prakash@gmail.com")).thenReturn(Optional.of(user));
     when(passwordResetTokenRepository.findByUserIdAndUsedFalse(1L)).thenReturn(List.of(oldToken));
 
     MessageResponse res = authService.forgotPassword(req);
 
     assertNotNull(res);
     verify(passwordResetTokenRepository).save(any(PasswordResetToken.class));
+    verify(passwordResetMailService).sendResetLink(eq("prakash@gmail.com"), anyString());
+  }
+
+  @Test
+  void forgotPassword_unknownEmail_doesNotSendMail() {
+    ForgotPasswordRequest req = new ForgotPasswordRequest("nobody@gmail.com");
+    when(userRepository.findByEmail("nobody@gmail.com")).thenReturn(Optional.empty());
+
+    authService.forgotPassword(req);
+
+    verify(passwordResetMailService, never()).sendResetLink(anyString(), anyString());
   }
 
   @Test

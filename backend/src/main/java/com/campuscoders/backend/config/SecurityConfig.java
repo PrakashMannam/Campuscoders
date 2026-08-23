@@ -16,6 +16,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+import org.springframework.beans.factory.annotation.Value;
 
 import com.campuscoders.backend.security.CustomAccessDeniedHandler;
 import com.campuscoders.backend.security.CustomAuthenticationEntryPoint;
@@ -29,6 +30,9 @@ public class SecurityConfig {
   private final JwtAuthenticationFilter authenticationFilter;
   private final CustomAuthenticationEntryPoint authenticationEntryPoint;
   private final CustomAccessDeniedHandler accessDeniedHandler;
+  
+  @Value("${campuscoders.frontend-base-url:http://localhost:3000}")
+  private String frontendUrl;
 
   public SecurityConfig(
       JwtAuthenticationFilter authenticationFilter,
@@ -46,13 +50,14 @@ public class SecurityConfig {
     return new BCryptPasswordEncoder();
   }
 
-  // Allow React dev servers on ports 3000 and 3030 to call the Spring Boot API.
+  // Allow React dev servers and configured frontend URL to call the Spring Boot API.
   @Bean
   public CorsConfigurationSource corsConfigurationSource() {
     CorsConfiguration config = new CorsConfiguration();
     config.setAllowedOrigins(List.of(
         "http://localhost:3000",
-        "http://localhost:3030"));
+        "http://localhost:3030",
+        frontendUrl));
     config.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
     config.setAllowedHeaders(List.of("*"));
     config.setAllowCredentials(true);
@@ -85,12 +90,14 @@ public class SecurityConfig {
             .requestMatchers(
                 "/api/auth/register",
                 "/api/auth/login",
+                "/api/auth/verify-email",
+                "/api/auth/resend-verification",
                 "/api/auth/forgot-password",
                 "/api/auth/reset-password")
             .permitAll()
             .requestMatchers(HttpMethod.GET, "/api/learning-paths/**")
             .permitAll()
-            .requestMatchers(HttpMethod.GET, "/api/topics/*/resources")
+            .requestMatchers(HttpMethod.GET, "/api/topics/**")
             .permitAll()
             .requestMatchers(HttpMethod.GET, "/api/resources/**")
             .permitAll()
@@ -101,8 +108,6 @@ public class SecurityConfig {
             .requestMatchers(HttpMethod.GET, "/api/discussion-categories")
             .permitAll()
             .requestMatchers(HttpMethod.GET, "/api/discussions/**")
-            .permitAll()
-            .requestMatchers(HttpMethod.GET, "/api/leaderboard", "/api/leaderboard/top")
             .permitAll()
             .anyRequest()
             .authenticated())

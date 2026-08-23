@@ -2,7 +2,7 @@ import React, { useEffect } from 'react';
 import { FiCheckCircle, FiAlertCircle, FiInfo, FiX } from 'react-icons/fi';
 
 /**
- * Toast notification component — renders a dismissible inline alert.
+ * Toast notification component - renders a dismissible inline alert.
  *
  * @param {string}   type      - 'success' | 'error' | 'info'
  * @param {string}   message   - The message to display

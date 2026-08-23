@@ -1,6 +1,9 @@
 import React from 'react';
+import { useTheme } from '../context/ThemeContext';
 
-export default function Logo({ size = 40, showText = false, layout = 'stacked', theme = 'dark' }) {
+export default function Logo({ size = 40, showText = false, layout = 'stacked', theme: themeProp }) {
+  const { theme: appTheme } = useTheme();
+  const theme = themeProp ?? appTheme ?? 'light';
   // Center of our SVG
   const x0 = 115;
   const y0 = 100;

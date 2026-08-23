@@ -9,6 +9,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import static org.mockito.ArgumentMatchers.any;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -49,7 +50,6 @@ class UserLearningResourceServiceTest {
     User user = new User();
     user.setId(1L);
     user.setEmail("student@campus.com");
-    user.setTotalXp(10);
 
     LearningResource resource = new LearningResource();
     resource.setId(100L);
@@ -74,7 +74,24 @@ class UserLearningResourceServiceTest {
     assertNotNull(response);
     assertEquals(100L, response.resourceId());
     assertEquals("Java OOP Video", response.resourceTitle());
-    assertEquals(10, user.getTotalXp());
     verify(ulrRepo).save(any(UserLearningResource.class));
+  }
+
+  @Test
+  void uncomplete_existingCompletion_shouldDelete() {
+    User user = new User();
+    user.setId(1L);
+    user.setEmail("student@campus.com");
+
+    UserLearningResource savedUlr = new UserLearningResource();
+    savedUlr.setId(500L);
+
+    when(userRepo.findByEmail("student@campus.com")).thenReturn(Optional.of(user));
+    when(ulrRepo.findByUserIdAndResourceId(1L, 100L)).thenReturn(Optional.of(savedUlr));
+
+    service.uncomplete("student@campus.com", 100L);
+
+    verify(ulrRepo).delete(savedUlr);
+    verify(ulrRepo, never()).save(any(UserLearningResource.class));
   }
 }

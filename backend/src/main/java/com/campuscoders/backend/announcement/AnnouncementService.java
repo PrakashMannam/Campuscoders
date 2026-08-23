@@ -14,14 +14,18 @@ import com.campuscoders.backend.announcement.dto.CreateAnnouncementRequest;
 import com.campuscoders.backend.announcement.dto.UpdateAnnouncementRequest;
 import com.campuscoders.backend.announcement.repository.AnnouncementRepository;
 import com.campuscoders.backend.common.dto.PageResponse;
+import com.campuscoders.backend.notification.NotificationService;
+import com.campuscoders.backend.notification.NotificationType;
 
 @Service
 public class AnnouncementService {
 
   private final AnnouncementRepository announcementRepository;
+  private final NotificationService notificationService;
 
-  public AnnouncementService(AnnouncementRepository announcementRepository) {
+  public AnnouncementService(AnnouncementRepository announcementRepository, NotificationService notificationService) {
     this.announcementRepository = announcementRepository;
+    this.notificationService = notificationService;
   }
 
   // Public endpoint for students: Filter to active announcements only with optional category and search string.
@@ -61,7 +65,16 @@ public class AnnouncementService {
     announcement.setActionUrl(request.actionUrl());
     announcement.setActive(true);
 
-    return toResponse(announcementRepository.save(announcement));
+    Announcement saved = announcementRepository.save(announcement);
+    
+    notificationService.notifyAllUsers(
+        "New Announcement",
+        request.title(),
+        NotificationType.ANNOUNCEMENT,
+        "/dashboard/announcements"
+    );
+
+    return toResponse(saved);
   }
 
   @Transactional

@@ -1,69 +1,74 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef, useMemo } from "react";
+import { Link } from "react-router-dom";
 import {
-  FiEdit2, FiSave, FiExternalLink, FiGithub,
-  FiAward, FiBookOpen, FiTrendingUp, FiTarget,
-  FiCode, FiCheckCircle, FiStar, FiGlobe
+  FiEdit2, FiSave, FiX, FiExternalLink, FiMail, FiBookOpen,
+  FiCalendar, FiEye, FiEyeOff, FiMapPin, FiSettings, FiLock
 } from "react-icons/fi";
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import DashboardLayout from "../components/DashboardLayout";
+import BrandMark from "../components/BrandMark";
+import ActivityHeatmap from "../components/ActivityHeatmap";
 import Toast from "../components/Toast";
 import api from "../api/client";
 
-const CHART_COLORS = ['#10b981', '#d97706', '#e2e8f0'];
-
-// Mock data for features where backend APIs are not yet ready
-const mockActivities = [
-  { id: 1, icon: '💻', text: "Solved 'Two Sum' on LeetCode", time: '2 hours ago', color: '#10b981' },
-  { id: 2, icon: '🏅', text: "Earned 'Consistency Master' badge", time: '1 day ago', color: '#d97706' },
-  { id: 3, icon: '📚', text: "Completed 'Java OOP' topic", time: '2 days ago', color: '#6366f1' },
-  { id: 4, icon: '🔥', text: "Reached 15-day streak!", time: '3 days ago', color: '#ef4444' },
-  { id: 5, icon: '📝', text: "Bookmarked 'Spring Security with JWT'", time: '4 days ago', color: '#0ea5e9' },
+const LINK_FIELDS = [
+  { key: "leetcodeUrl", name: "LeetCode", placeholder: "https://leetcode.com/u/your-handle" },
+  { key: "githubUrl", name: "GitHub", placeholder: "https://github.com/your-handle" },
+  { key: "geeksforgeeksUrl", name: "GeeksforGeeks", placeholder: "https://www.geeksforgeeks.org/user/your-handle" },
+  { key: "linkedinUrl", name: "LinkedIn", placeholder: "https://www.linkedin.com/in/your-handle" },
+  { key: "portfolioUrl", name: "Portfolio", placeholder: "https://your-site.com" },
 ];
 
-const mockMilestones = [
-  { id: 1, title: 'Complete 50 Problems', current: 32, target: 50, color: '#10b981' },
-  { id: 2, title: 'Finish Java Path', current: 7, target: 12, color: '#d97706' },
-  { id: 3, title: '30-Day Streak', current: 15, target: 30, color: '#6366f1' },
-];
+function initials(name) {
+  return String(name || "CC")
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((w) => w[0].toUpperCase())
+    .join("");
+}
 
-function MilestoneCircle({ milestone }) {
-  const pct = Math.round((milestone.current / milestone.target) * 100);
-  const radius = 32;
-  const circumference = 2 * Math.PI * radius;
-  const dashoffset = circumference - (pct / 100) * circumference;
+function formatJoined(iso) {
+  if (!iso) return null;
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return null;
+  return d.toLocaleDateString(undefined, { month: "short", year: "numeric" });
+}
 
-  return (
-    <div style={{ textAlign: 'center', flex: '1' }}>
-      <svg width="80" height="80" viewBox="0 0 80 80">
-        <circle cx="40" cy="40" r={radius} fill="none" stroke="#f1f5f9" strokeWidth="6" />
-        <circle cx="40" cy="40" r={radius} fill="none" stroke={milestone.color} strokeWidth="6"
-          strokeDasharray={circumference} strokeDashoffset={dashoffset}
-          strokeLinecap="round" transform="rotate(-90 40 40)"
-          style={{ transition: 'stroke-dashoffset 1s ease' }} />
-        <text x="40" y="44" textAnchor="middle" fontSize="14" fontWeight="800" fill="#111827">{pct}%</text>
-      </svg>
-      <div style={{ fontSize: '0.78rem', fontWeight: 700, color: '#111827', marginTop: '4px' }}>{milestone.title}</div>
-      <div style={{ fontSize: '0.72rem', color: '#94a3b8' }}>{milestone.current}/{milestone.target}</div>
-    </div>
-  );
+function roleLabel(role) {
+  if (!role) return "Student";
+  const value = String(role).toLowerCase();
+  if (value === "admin") return "Admin";
+  return "Student";
 }
 
 export default function Profile() {
   const [profile, setProfile] = useState(null);
-  const [editing, setEditing] = useState(false);
+  const [editingBio, setEditingBio] = useState(false);
+  const [editingLink, setEditingLink] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
 
   const [fullName, setFullName] = useState("");
   const [bio, setBio] = useState("");
   const [university, setUniversity] = useState("");
+  const [links, setLinks] = useState({
+    leetcodeUrl: "",
+    githubUrl: "",
+    geeksforgeeksUrl: "",
+    linkedinUrl: "",
+    portfolioUrl: "",
+  });
+  const [linkDraft, setLinkDraft] = useState("");
+  const [leetcodeYear, setLeetcodeYear] = useState(new Date().getFullYear());
+  const [githubYear, setGithubYear] = useState(new Date().getFullYear());
+  const [calendar, setCalendar] = useState(null);
+  const [calendarLoading, setCalendarLoading] = useState(false);
+  const [githubCalendar, setGithubCalendar] = useState(null);
+  const [githubLoading, setGithubLoading] = useState(false);
+  const [pathsInProgress, setPathsInProgress] = useState(0);
+  const [savedCount, setSavedCount] = useState(0);
+  const didAutoLeetcodeYear = useRef(false);
 
-  const [leetcodeUrl, setLeetcodeUrl] = useState("");
-  const [githubUrl, setGithubUrl] = useState("");
-  const [gfgUrl, setGfgUrl] = useState("");
-  const [linkedinUrl, setLinkedinUrl] = useState("");
-  const [portfolioUrl, setPortfolioUrl] = useState("");
-
-  /* ── Toast ── */
   const [toast, setToast] = useState({ show: false, type: "success", message: "" });
   const showToast = useCallback((type, message) => {
     setToast({ show: true, type, message });
@@ -72,22 +77,30 @@ export default function Profile() {
     setToast((prev) => ({ ...prev, show: false }));
   }, []);
 
+  const [avatarUrl, setAvatarUrl] = useState("");
+
+  const applyProfile = (data) => {
+    setProfile(data);
+    setFullName(data.fullName || "");
+    setBio(data.bio || "");
+    setUniversity(data.university || "");
+    setAvatarUrl(data.avatarUrl || "");
+    setLinks({
+      leetcodeUrl: data.leetcodeUrl || "",
+      githubUrl: data.githubUrl || "",
+      geeksforgeeksUrl: data.geeksforgeeksUrl || "",
+      linkedinUrl: data.linkedinUrl || "",
+      portfolioUrl: data.portfolioUrl || "",
+    });
+  };
+
   const fetchProfile = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await api.get('/profile/me');
-      const data = res.data;
-      setProfile(data);
-      setFullName(data.fullName || "");
-      setBio(data.bio || "");
-      setUniversity(data.university || "");
-      setLeetcodeUrl(data.leetcodeUrl || "");
-      setGithubUrl(data.githubUrl || "");
-      setGfgUrl(data.gfgUrl || "");
-      setLinkedinUrl(data.linkedinUrl || "");
-      setPortfolioUrl(data.portfolioUrl || "");
+      const res = await api.get("/profile/me");
+      applyProfile(res.data);
     } catch (err) {
-      showToast('error', 'Failed to load user profile.');
+      showToast("error", "Could not load profile.");
     } finally {
       setLoading(false);
     }
@@ -97,289 +110,353 @@ export default function Profile() {
     fetchProfile();
   }, [fetchProfile]);
 
-  const handleSave = async (e) => {
-    e.preventDefault();
+  useEffect(() => {
+    let cancelled = false;
+    Promise.all([
+      api.get("/learning-progress/in-progress").catch(() => ({ data: [] })),
+      api.get("/bookmarks").catch(() => ({ data: {} })),
+    ]).then(([progressRes, bookmarkRes]) => {
+      if (cancelled) return;
+      const paths = Array.isArray(progressRes.data) ? progressRes.data.length : 0;
+      const bm = bookmarkRes.data || {};
+      const saved = (bm.bookmarkedPathIds?.length || 0)
+        + (bm.bookmarkedTopicIds?.length || 0)
+        + (bm.bookmarkedResourceIds?.length || 0);
+      setPathsInProgress(paths);
+      setSavedCount(saved);
+    });
+    return () => { cancelled = true; };
+  }, []);
+
+  const loadCalendar = useCallback(async (year) => {
+    setCalendarLoading(true);
     try {
-      const res = await api.put('/profile/me', {
-        fullName, bio, university,
-        leetcodeUrl, githubUrl, gfgUrl, linkedinUrl, portfolioUrl,
-      });
-      setProfile(res.data);
-      setEditing(false);
-      showToast('success', 'Profile updated successfully!');
+      const res = await api.get('/profile/me/leetcode-calendar', { params: { year } });
+      setCalendar(res.data);
     } catch (err) {
-      showToast('error', 'Failed to update profile.');
+      setCalendar({
+        available: false,
+        days: [],
+        message: 'Could not load LeetCode activity.',
+      });
+    } finally {
+      setCalendarLoading(false);
+    }
+  }, []);
+
+  const loadGithubCalendar = useCallback(async (year) => {
+    setGithubLoading(true);
+    try {
+      const res = await api.get('/profile/me/github-calendar', { params: { year } });
+      setGithubCalendar(res.data);
+    } catch (err) {
+      setGithubCalendar({
+        available: false,
+        days: [],
+        message: 'Could not load GitHub activity.',
+      });
+    } finally {
+      setGithubLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (loading) return;
+    loadCalendar(leetcodeYear);
+  }, [loading, links.leetcodeUrl, leetcodeYear, loadCalendar]);
+
+  useEffect(() => {
+    if (loading) return;
+    loadGithubCalendar(githubYear);
+  }, [loading, links.githubUrl, githubYear, loadGithubCalendar]);
+
+  useEffect(() => {
+    didAutoLeetcodeYear.current = false;
+    setCalendar(null);
+  }, [links.leetcodeUrl]);
+
+  useEffect(() => {
+    const years = calendar?.activeYears || [];
+    if (didAutoLeetcodeYear.current) return;
+    if (!calendar?.available || !years.length || years.includes(leetcodeYear)) return;
+    didAutoLeetcodeYear.current = true;
+    setLeetcodeYear(Math.max(...years));
+  }, [calendar, leetcodeYear]);
+
+  const savePayload = (extra = {}) => ({
+    fullName,
+    bio,
+    university,
+    leetcodeUrl: links.leetcodeUrl,
+    geeksforgeeksUrl: links.geeksforgeeksUrl,
+    githubUrl: links.githubUrl,
+    linkedinUrl: links.linkedinUrl,
+    portfolioUrl: links.portfolioUrl,
+    avatarUrl: avatarUrl || "",
+    ...extra,
+  });
+
+  const persist = async (payload) => {
+    setSaving(true);
+    try {
+      const res = await api.put("/profile/me", payload);
+      applyProfile(res.data);
+      showToast("success", "Saved.");
+      return true;
+    } catch (err) {
+      showToast("error", err.response?.data?.message || "Could not save.");
+      return false;
+    } finally {
+      setSaving(false);
     }
   };
 
-  // Learning progress donut chart data
-  const chartData = [
-    { name: 'Completed Topics', value: profile?.completedTopics || 8 },
-    { name: 'In Progress', value: profile?.inProgressTopics || 4 },
-    { name: 'Not Started', value: profile?.notStartedTopics || 12 },
-  ];
+  const handleSaveBio = async (e) => {
+    e.preventDefault();
+    const ok = await persist(savePayload());
+    if (ok) setEditingBio(false);
+  };
 
-  const codingProfiles = [
-    { name: 'LeetCode', icon: <FiCode size={18} />, url: leetcodeUrl, setter: setLeetcodeUrl, color: '#d97706', bg: '#FEF3C7' },
-    { name: 'GitHub', icon: <FiGithub size={18} />, url: githubUrl, setter: setGithubUrl, color: '#111827', bg: '#F3F4F6' },
-    { name: 'GeeksforGeeks', icon: <FiBookOpen size={18} />, url: gfgUrl, setter: setGfgUrl, color: '#059669', bg: '#ECFDF5' },
-    { name: 'LinkedIn', icon: <FiExternalLink size={18} />, url: linkedinUrl, setter: setLinkedinUrl, color: '#0077B5', bg: '#EFF6FF' },
-    { name: 'Portfolio', icon: <FiGlobe size={18} />, url: portfolioUrl, setter: setPortfolioUrl, color: '#8b5cf6', bg: '#F5F3FF' },
-  ];
+  const startEditLink = (key) => {
+    setEditingLink(key);
+    setLinkDraft(links[key] || "");
+  };
+
+  const handleSaveLink = async (key) => {
+    const next = { ...links, [key]: linkDraft.trim() };
+    const ok = await persist(savePayload({ [key]: next[key] }));
+    if (ok) {
+      setLinks(next);
+      setEditingLink(null);
+    }
+  };
+
+  const linkedProfiles = useMemo(
+    () => LINK_FIELDS.filter((field) => links[field.key]),
+    [links]
+  );
+  const joined = formatJoined(profile?.createdAt);
+  const githubEmpty = !githubCalendar?.available && !(githubCalendar?.days || []).length;
 
   return (
     <DashboardLayout>
-      <div style={{ padding: "32px", maxWidth: "1200px" }}>
+      <div className="pf-page">
         <Toast type={toast.type} message={toast.message} show={toast.show} onClose={hideToast} />
 
-        {/* Header */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '28px' }}>
-          <div>
-            <h2 style={{ fontSize: "1.8rem", fontWeight: 800, color: "#111827", margin: "0 0 6px" }}>
-              My Engineer Profile
-            </h2>
-            <p style={{ fontSize: "0.9rem", color: "#6B7280", margin: 0 }}>
-              Track your learning journey, achievements, and coding profiles.
-            </p>
-          </div>
-          {!editing ? (
-            <button onClick={() => setEditing(true)} className="btn btn-primary"
-              style={{ padding: '8px 16px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <FiEdit2 size={16} /> Edit Profile
-            </button>
-          ) : (
-            <button onClick={handleSave} className="btn btn-primary"
-              style={{ padding: '8px 16px', display: 'flex', alignItems: 'center', gap: '6px', background: '#10b981' }}>
-              <FiSave size={16} /> Save Changes
-            </button>
-          )}
-        </div>
-
         {loading ? (
-          <p style={{ color: '#64748b' }}>Loading profile...</p>
+          <p className="sd-muted">Loading profile...</p>
         ) : (
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 360px', gap: '28px' }}>
-            {/* ── LEFT COLUMN ── */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-              {/* Profile Info Card */}
-              <div style={{
-                background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '16px',
-                padding: '28px', boxShadow: '0 2px 8px rgba(0,0,0,0.03)'
-              }}>
-                <form onSubmit={handleSave}>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
-                    <div>
-                      <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 700, color: '#4b5563', marginBottom: '6px' }}>Full Name</label>
-                      {editing ? (
-                        <input type="text" className="form-input" value={fullName} onChange={(e) => setFullName(e.target.value)} required />
-                      ) : (
-                        <div style={{ fontSize: '1.1rem', fontWeight: 800, color: '#111827' }}>{profile?.fullName}</div>
+          <div className="pf-grid">
+            <section className="pf-card pf-hero">
+              <div className="pf-avatar">
+                {profile?.avatarUrl ? (
+                  <img src={profile.avatarUrl} alt="" style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} />
+                ) : (
+                  initials(profile?.fullName)
+                )}
+              </div>
+              <div className="pf-hero-copy">
+                {editingBio ? (
+                  <form onSubmit={handleSaveBio} className="pf-bio-form">
+                    <label>
+                      Name
+                      <input className="form-input" value={fullName} onChange={(e) => setFullName(e.target.value)} required />
+                    </label>
+                    <label>
+                      University <span className="pf-optional">(optional)</span>
+                      <input className="form-input" value={university} onChange={(e) => setUniversity(e.target.value)} placeholder="" />
+                    </label>
+                    <label>
+                      Bio
+                      <textarea className="form-input" rows={3} value={bio} onChange={(e) => setBio(e.target.value)} placeholder="" />
+                    </label>
+                    <label>
+                      Avatar image URL <span className="pf-optional">(optional)</span>
+                      <input
+                        className="form-input"
+                        type="url"
+                        value={avatarUrl}
+                        onChange={(e) => setAvatarUrl(e.target.value)}
+                        placeholder="https://..."
+                      />
+                    </label>
+                    <div className="pf-actions">
+                      <button type="submit" className="btn btn-dark" disabled={saving}>
+                        <FiSave size={15} /> Save
+                      </button>
+                      <button type="button" className="btn btn-secondary" onClick={() => { setEditingBio(false); applyProfile(profile); }}>
+                        <FiX size={15} /> Cancel
+                      </button>
+                    </div>
+                  </form>
+                ) : (
+                  <>
+                    <div className="pf-hero-badges">
+                      <span className="pf-chip pf-chip-gold">{roleLabel(profile?.role)}</span>
+                      <span className="pf-chip">
+                        {profile?.publicProfileVisible === false
+                          ? <><FiEyeOff size={12} /> Private</>
+                          : <><FiEye size={12} /> Public profile</>}
+                      </span>
+                    </div>
+                    <h2>{profile?.fullName}</h2>
+                    <div className="pf-facts">
+                      <p className="pf-fact"><FiMail size={14} /> <span>{profile?.email}</span></p>
+                      <p className="pf-fact"><FiMapPin size={14} /> <span>{university || "University not added"}</span></p>
+                      {joined && (
+                        <p className="pf-fact"><FiCalendar size={14} /> <span>Joined {joined}</span></p>
                       )}
                     </div>
-                    <div>
-                      <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 700, color: '#4b5563', marginBottom: '6px' }}>Email Address</label>
-                      <div style={{ fontSize: '1rem', color: '#6b7280' }}>{profile?.email}</div>
-                    </div>
-                    <div>
-                      <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 700, color: '#4b5563', marginBottom: '6px' }}>University / Campus</label>
-                      {editing ? (
-                        <input type="text" className="form-input" value={university} onChange={(e) => setUniversity(e.target.value)} />
-                      ) : (
-                        <div style={{ fontSize: '1rem', color: '#111827' }}>{profile?.university || 'Campus Coders University'}</div>
-                      )}
-                    </div>
-                    <div>
-                      <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 700, color: '#4b5563', marginBottom: '6px' }}>Role</label>
-                      <div style={{ fontSize: '1rem', color: '#111827' }}>Student</div>
-                    </div>
-                  </div>
-                  <div style={{ marginTop: '20px' }}>
-                    <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 700, color: '#4b5563', marginBottom: '6px' }}>Bio</label>
-                    {editing ? (
-                      <textarea className="form-input" rows={3} value={bio} onChange={(e) => setBio(e.target.value)} />
-                    ) : (
-                      <div style={{ fontSize: '0.95rem', color: '#374151', lineHeight: '1.6' }}>{profile?.bio || 'No bio provided yet.'}</div>
+                    <p className="pf-bio">{bio || "Add a short bio so people know what you work on."}</p>
+                    {linkedProfiles.length > 0 && (
+                      <div className="pf-hero-badges">
+                        {linkedProfiles.map((field) => (
+                          <a
+                            key={field.key}
+                            href={links[field.key]}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="pf-chip"
+                          >
+                            <BrandMark name={field.name} size={12} />
+                            {field.name}
+                          </a>
+                        ))}
+                      </div>
                     )}
-                  </div>
-                </form>
-              </div>
-
-              {/* Learning Progress Chart */}
-              <div style={{
-                background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '16px',
-                padding: '28px', boxShadow: '0 2px 8px rgba(0,0,0,0.03)'
-              }}>
-                <h3 style={{ fontSize: '1.1rem', fontWeight: 800, color: '#111827', margin: '0 0 20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <FiTrendingUp size={18} color="#d97706" /> Learning Progress
-                </h3>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '40px' }}>
-                  <div style={{ width: '180px', height: '180px' }}>
-                    <ResponsiveContainer width="100%" height="100%">
-                      <PieChart>
-                        <Pie data={chartData} cx="50%" cy="50%" innerRadius={50} outerRadius={75}
-                          paddingAngle={3} dataKey="value" strokeWidth={0}>
-                          {chartData.map((entry, idx) => (
-                            <Cell key={`cell-${idx}`} fill={CHART_COLORS[idx % CHART_COLORS.length]} />
-                          ))}
-                        </Pie>
-                        <Tooltip />
-                      </PieChart>
-                    </ResponsiveContainer>
-                  </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                    {chartData.map((item, idx) => (
-                      <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                        <div style={{ width: '12px', height: '12px', borderRadius: '3px', background: CHART_COLORS[idx] }}></div>
-                        <span style={{ fontSize: '0.88rem', color: '#4b5563', fontWeight: 600 }}>{item.name}</span>
-                        <span style={{ fontSize: '0.88rem', fontWeight: 800, color: '#111827' }}>{item.value}</span>
+                    <div className="pf-stats">
+                      <div className="pf-stat">
+                        <strong>{pathsInProgress}</strong>
+                        <span>Paths in progress</span>
                       </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-
-              {/* Achievement Cards */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px' }}>
-                {[
-                  { label: 'Resources Completed', value: profile?.problemsSolved || 24, icon: <FiCheckCircle size={22} />, color: '#10b981', bg: '#ECFDF5' },
-                  { label: 'Certificates Earned', value: profile?.certificates || 3, icon: <FiAward size={22} />, color: '#d97706', bg: '#FEF3C7' },
-                  { label: 'Badges Earned', value: profile?.badges || 7, icon: <FiStar size={22} />, color: '#6366f1', bg: '#EEF2FF' },
-                ].map((card, idx) => (
-                  <div key={idx} style={{
-                    background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '16px',
-                    padding: '24px', boxShadow: '0 2px 8px rgba(0,0,0,0.03)', textAlign: 'center',
-                    transition: 'transform 0.2s, box-shadow 0.2s', cursor: 'default'
-                  }}
-                  onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-3px)'; e.currentTarget.style.boxShadow = '0 8px 24px rgba(0,0,0,0.08)'; }}
-                  onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.03)'; }}>
-                    <div style={{
-                      width: '48px', height: '48px', borderRadius: '12px', background: card.bg,
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      color: card.color, margin: '0 auto 12px'
-                    }}>{card.icon}</div>
-                    <div style={{ fontSize: '1.8rem', fontWeight: 800, color: '#0f172a' }}>{card.value}</div>
-                    <div style={{ fontSize: '0.78rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', marginTop: '4px' }}>{card.label}</div>
-                  </div>
-                ))}
-              </div>
-
-              {/* Recent Activity Feed */}
-              <div style={{
-                background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '16px',
-                padding: '28px', boxShadow: '0 2px 8px rgba(0,0,0,0.03)'
-              }}>
-                <h3 style={{ fontSize: '1.1rem', fontWeight: 800, color: '#111827', margin: '0 0 20px' }}>
-                  📋 Recent Activity
-                </h3>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0' }}>
-                  {mockActivities.map((activity, idx) => (
-                    <div key={activity.id} style={{
-                      display: 'flex', alignItems: 'flex-start', gap: '16px',
-                      padding: '14px 0',
-                      borderBottom: idx < mockActivities.length - 1 ? '1px solid #f1f5f9' : 'none'
-                    }}>
-                      <div style={{
-                        width: '36px', height: '36px', borderRadius: '10px',
-                        background: `${activity.color}15`, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        fontSize: '1rem', flexShrink: 0, position: 'relative'
-                      }}>
-                        {activity.icon}
-                        {/* Timeline line */}
-                        {idx < mockActivities.length - 1 && (
-                          <div style={{
-                            position: 'absolute', top: '40px', left: '50%', transform: 'translateX(-50%)',
-                            width: '2px', height: '24px', background: '#f1f5f9'
-                          }}></div>
-                        )}
+                      <div className="pf-stat">
+                        <strong>{savedCount}</strong>
+                        <span>Saved items</span>
                       </div>
-                      <div style={{ flex: 1 }}>
-                        <div style={{ fontSize: '0.88rem', fontWeight: 600, color: '#111827' }}>{activity.text}</div>
-                        <div style={{ fontSize: '0.75rem', color: '#94a3b8', marginTop: '2px' }}>{activity.time}</div>
+                      <div className="pf-stat">
+                        <strong>{calendar?.totalSolved ?? "—"}</strong>
+                        <span>LeetCode solved</span>
+                      </div>
+                      <div className="pf-stat">
+                        <strong>{githubEmpty ? "—" : (githubCalendar?.totalActivity ?? "—")}</strong>
+                        <span>GitHub this year</span>
                       </div>
                     </div>
-                  ))}
-                </div>
+                    <div className="pf-hero-actions">
+                      <button type="button" className="btn btn-secondary" onClick={() => setEditingBio(true)}>
+                        <FiEdit2 size={15} /> Edit profile
+                      </button>
+                      <Link to="/dashboard/settings" className="btn btn-secondary">
+                        <FiSettings size={15} /> Settings
+                      </Link>
+                      <Link to="/dashboard/change-password" className="btn btn-secondary">
+                        <FiLock size={15} /> Password
+                      </Link>
+                      <Link to="/dashboard/my-learning" className="btn btn-secondary">
+                        <FiBookOpen size={15} /> My learning
+                      </Link>
+                    </div>
+                  </>
+                )}
               </div>
-            </div>
+            </section>
 
-            {/* ── RIGHT COLUMN ── */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-              {/* Stats Summary */}
-              <div style={{
-                background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '16px',
-                padding: '24px', boxShadow: '0 2px 8px rgba(0,0,0,0.03)'
-              }}>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-                  <div style={{ background: '#f8fafc', padding: '16px', borderRadius: '12px', textAlign: 'center' }}>
-                    <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase' }}>TOTAL XP</div>
-                    <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#10b981', marginTop: '4px' }}>{profile?.totalXp || 0} XP</div>
-                  </div>
-                  <div style={{ background: '#f8fafc', padding: '16px', borderRadius: '12px', textAlign: 'center' }}>
-                    <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase' }}>DAILY STREAK</div>
-                    <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#d4af37', marginTop: '4px' }}>🔥 {profile?.dailyStreak || 0} Days</div>
-                  </div>
-                </div>
-              </div>
+            <ActivityHeatmap
+              brand="LeetCode"
+              title="LeetCode activity"
+              countLabel="submissions"
+              streakLabel="max streak"
+              note=""
+              activityData={calendar?.days || []}
+              year={leetcodeYear}
+              yearOptions={calendar?.activeYears}
+              onYearChange={setLeetcodeYear}
+              username={calendar?.username}
+              streak={calendar?.streak}
+              totalActiveDays={calendar?.totalActiveDays}
+              totalActivity={calendar?.totalActivity}
+              totalSolved={calendar?.totalSolved}
+              easySolved={calendar?.easySolved}
+              mediumSolved={calendar?.mediumSolved}
+              hardSolved={calendar?.hardSolved}
+              ranking={calendar?.ranking}
+              loading={calendarLoading}
+              message={calendar?.message || (links.leetcodeUrl ? '' : 'Add your LeetCode profile below to see activity.')}
+            />
 
-              {/* Coding Profiles Manager */}
-              <div style={{
-                background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '16px',
-                padding: '24px', boxShadow: '0 2px 8px rgba(0,0,0,0.03)'
-              }}>
-                <h3 style={{ fontSize: '1rem', fontWeight: 800, color: '#111827', margin: '0 0 20px' }}>
-                  🔗 Coding Profiles
-                </h3>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                  {codingProfiles.map((cp, idx) => (
-                    <div key={idx} style={{
-                      display: 'flex', alignItems: 'center', gap: '12px',
-                      padding: '12px', borderRadius: '10px', border: '1px solid #f1f5f9',
-                      transition: 'border-color 0.2s'
-                    }}
-                    onMouseEnter={e => e.currentTarget.style.borderColor = '#d1d5db'}
-                    onMouseLeave={e => e.currentTarget.style.borderColor = '#f1f5f9'}>
-                      <div style={{
-                        width: '36px', height: '36px', borderRadius: '10px', background: cp.bg,
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        color: cp.color, flexShrink: 0
-                      }}>{cp.icon}</div>
-                      <div style={{ flex: 1 }}>
-                        <div style={{ fontSize: '0.82rem', fontWeight: 700, color: '#111827' }}>{cp.name}</div>
-                        {editing ? (
-                          <input type="url" className="form-input" placeholder={`Enter ${cp.name} URL`}
-                            value={cp.url} onChange={e => cp.setter(e.target.value)}
-                            style={{ fontSize: '0.78rem', padding: '4px 8px', marginTop: '4px' }} />
+            <ActivityHeatmap
+              brand="GitHub"
+              title="GitHub activity"
+              countLabel="contributions"
+              streakLabel="streak"
+              note=""
+              activityData={githubCalendar?.days || []}
+              year={githubYear}
+              onYearChange={setGithubYear}
+              username={githubCalendar?.username}
+              streak={githubCalendar?.streak}
+              totalActiveDays={githubCalendar?.totalActiveDays}
+              totalActivity={githubCalendar?.totalActivity}
+              loading={githubLoading}
+              message={githubCalendar?.message || (links.githubUrl ? '' : 'Add your GitHub profile below to see activity.')}
+            />
+
+            <section className="pf-card">
+              <h3>Profiles</h3>
+              <p className="sd-muted pf-lead">Add the sites you already use.</p>
+              <ul className="pf-links">
+                {LINK_FIELDS.map((field) => {
+                  const url = links[field.key];
+                  const isEditing = editingLink === field.key;
+                  return (
+                    <li key={field.key} className="pf-link-row">
+                      <span className="pf-link-icon">
+                        <BrandMark name={field.name} size={20} />
+                      </span>
+                      <div className="pf-link-body">
+                        <strong>{field.name}</strong>
+                        {isEditing ? (
+                          <div className="pf-link-edit">
+                            <input
+                              type="url"
+                              className="form-input"
+                              value={linkDraft}
+                              onChange={(e) => setLinkDraft(e.target.value)}
+                              placeholder={field.placeholder}
+                              autoFocus
+                            />
+                            <div className="pf-actions">
+                              <button type="button" className="btn btn-dark" disabled={saving} onClick={() => handleSaveLink(field.key)}>
+                                <FiSave size={14} /> Save
+                              </button>
+                              <button type="button" className="btn btn-secondary" onClick={() => setEditingLink(null)}>
+                                Cancel
+                              </button>
+                            </div>
+                          </div>
+                        ) : url ? (
+                          <a href={url} target="_blank" rel="noopener noreferrer" className="pf-link-url">
+                            {url.replace(/^https?:\/\//, "")} <FiExternalLink size={12} />
+                          </a>
                         ) : (
-                          cp.url ? (
-                            <a href={cp.url} target="_blank" rel="noopener noreferrer"
-                              style={{ fontSize: '0.75rem', color: '#d97706', textDecoration: 'none' }}>
-                              View Profile →
-                            </a>
-                          ) : (
-                            <span style={{ fontSize: '0.75rem', color: '#cbd5e1' }}>Not connected</span>
-                          )
+                          <span className="sd-muted">Not added</span>
                         )}
                       </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Upcoming Milestones */}
-              <div style={{
-                background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '16px',
-                padding: '24px', boxShadow: '0 2px 8px rgba(0,0,0,0.03)'
-              }}>
-                <h3 style={{ fontSize: '1rem', fontWeight: 800, color: '#111827', margin: '0 0 20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <FiTarget size={16} color="#6366f1" /> Upcoming Milestones
-                </h3>
-                <div style={{ display: 'flex', gap: '8px' }}>
-                  {mockMilestones.map(m => (
-                    <MilestoneCircle key={m.id} milestone={m} />
-                  ))}
-                </div>
-              </div>
-            </div>
+                      {!isEditing && (
+                        <button
+                          type="button"
+                          className="pf-edit-btn"
+                          onClick={() => startEditLink(field.key)}
+                          aria-label={`Edit ${field.name}`}
+                        >
+                          <FiEdit2 size={15} />
+                        </button>
+                      )}
+                    </li>
+                  );
+                })}
+              </ul>
+            </section>
           </div>
         )}
       </div>

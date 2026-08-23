@@ -51,6 +51,11 @@ public class User {
   @Column(nullable = false)
   private Boolean enabled = true;
 
+  /** False until the user confirms a one-time code emailed at registration. Default true for existing accounts. */
+  @NotNull
+  @Column(name = "email_verified", nullable = false)
+  private Boolean emailVerified = true;
+
   @Column(name = "university")
   private String university;
 
@@ -68,6 +73,9 @@ public class User {
 
   @Column(name = "linkedin_url", length = 500)
   private String linkedinUrl;
+
+  @Column(name = "portfolio_url", length = 500)
+  private String portfolioUrl;
 
   @Column(name = "avatar_url", length = 1000)
   private String avatarUrl;
@@ -88,16 +96,6 @@ public class User {
   @NotNull
   @Column(name = "discussion_mentions", nullable = false)
   private Boolean discussionMentions = true;
-
-  // Gamification metrics updated during check-ins and problem solving.
-  @Column(name = "total_xp")
-  private Integer totalXp = 0;
-
-  @Column(name = "daily_streak")
-  private Integer dailyStreak = 0;
-
-  @Column(name = "problems_solved")
-  private Integer problemsSolved = 0;
 
   @Column(name = "created_at")
   private Instant createdAt;

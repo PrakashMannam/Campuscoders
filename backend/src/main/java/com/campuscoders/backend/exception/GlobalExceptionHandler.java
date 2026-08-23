@@ -15,7 +15,7 @@ import org.springframework.web.server.ResponseStatusException;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
-    // Handles domain-specific business exceptions thrown anywhere in service layers (e.g., duplicate check-in, resource not found).
+    // Handles domain-specific business exceptions thrown anywhere in service layers (e.g., duplicate action, resource not found).
     @ExceptionHandler(CustomException.class)
     public ResponseEntity<ErrorDetails> handleCustomException(CustomException ex) {
         ErrorDetails errorDetails = new ErrorDetails(ex.getMessage(), ex.getHttpStatus().value());
@@ -46,7 +46,9 @@ public class GlobalExceptionHandler {
     // Catch-all safety fallback for unexpected runtime errors, preventing raw stack traces from leaking to the client.
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorDetails> handleGlobalException(Exception ex) {
-        ErrorDetails errorDetails = new ErrorDetails("An unexpected error occurred", HttpStatus.INTERNAL_SERVER_ERROR.value());
+        String msg = "An unexpected error occurred: " + ex.toString();
+        if (ex.getCause() != null) msg += " | Cause: " + ex.getCause().toString();
+        ErrorDetails errorDetails = new ErrorDetails(msg, HttpStatus.INTERNAL_SERVER_ERROR.value());
         return new ResponseEntity<>(errorDetails, HttpStatus.INTERNAL_SERVER_ERROR);
     }
 }

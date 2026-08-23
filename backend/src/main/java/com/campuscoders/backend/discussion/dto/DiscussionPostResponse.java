@@ -20,7 +20,6 @@ public record DiscussionPostResponse(
     Integer voteScore,
     Integer userVote,
     long repliesCount,
-    Boolean hasAcceptedAnswer,
     Instant createdAt,
     Instant updatedAt) {
 }

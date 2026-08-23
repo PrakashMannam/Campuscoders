@@ -2,16 +2,20 @@ package com.campuscoders.backend.learningprogress;
 
 import java.util.List;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.campuscoders.backend.learningprogress.dto.CompleteResourceRequest;
 import com.campuscoders.backend.learningprogress.dto.CompletedResourceResponse;
+import com.campuscoders.backend.learningprogress.dto.InProgressLearningPathResponse;
 import com.campuscoders.backend.learningprogress.dto.LearningPathProgressResponse;
 import com.campuscoders.backend.learningprogress.dto.TopicProgressResponse;
 
@@ -31,6 +35,11 @@ public class UserLearningResourceController {
   @GetMapping
   public List<CompletedResourceResponse> listCompleted(Authentication authentication) {
     return userLearningResourceService.listCompleted(authentication.getName());
+  }
+
+  @GetMapping("/in-progress")
+  public List<InProgressLearningPathResponse> getInProgressPaths(Authentication authentication) {
+    return userLearningResourceService.getInProgressPaths(authentication.getName());
   }
 
   // Calculates completion metrics and percentage for a given Learning Path.
@@ -55,5 +64,11 @@ public class UserLearningResourceController {
       Authentication authentication,
       @Valid @RequestBody CompleteResourceRequest request) {
     return userLearningResourceService.complete(authentication.getName(), request);
+  }
+
+  @DeleteMapping("/complete/{resourceId}")
+  @ResponseStatus(HttpStatus.NO_CONTENT)
+  public void uncomplete(Authentication authentication, @PathVariable Long resourceId) {
+    userLearningResourceService.uncomplete(authentication.getName(), resourceId);
   }
 }

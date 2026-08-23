@@ -32,6 +32,12 @@ class ProfileServiceTest {
   @Mock
   private PasswordEncoder passwordEncoder;
 
+  @Mock
+  private LeetCodeCalendarService leetCodeCalendarService;
+
+  @Mock
+  private GitHubCalendarService gitHubCalendarService;
+
   @InjectMocks
   private ProfileService profileService;
 
@@ -83,7 +89,15 @@ class ProfileServiceTest {
     user.setEmail("prakash@campus.com");
 
     UpdateProfileRequest req = new UpdateProfileRequest(
-        "Prakash M", "Stanford", "Bio", "leetcode", "gfg", "github", "linkedin", "avatar.jpg");
+        "Prakash M",
+        "Stanford",
+        "Bio",
+        "https://leetcode.com/u/prakash",
+        "https://geeksforgeeks.org/user/prakash",
+        "https://github.com/prakash",
+        "https://linkedin.com/in/prakash",
+        "https://prakash.dev",
+        "https://cdn.example.com/avatar.jpg");
 
     when(userRepository.findByEmail("prakash@campus.com")).thenReturn(Optional.of(user));
     when(userRepository.save(any(User.class))).thenReturn(user);

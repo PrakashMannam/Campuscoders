@@ -1,52 +1,23 @@
-﻿# Campus Coders Backend TODO
+﻿# Remaining work
 
-## Current Backend Checkpoint
+## Done in current tree
 
-- User entity created.
-- Role enum created with `STUDENT` and `ADMIN`.
-- UserRepository created.
-- Auth DTOs created.
-- PasswordEncoder config created.
-- AuthService register and login flows created.
-- AuthController register and login endpoints created.
-- MySQL config added in `application.yml`.
-- JWT dependencies added.
-- JwtService created.
-- CustomUserDetails and CustomUserDetailsService created.
-- JwtAuthenticationFilter created.
-- SecurityConfig updated for stateless JWT authentication.
-- Register/login tested in Postman and JWT token is returned.
+- Email verification OTP + disposable-domain guard + SMTP mail
+- Password reset mail templates
+- Bookmarks, campus events, placement/POTD surfaces
+- Removed check-in, leaderboard, unused frontend mock catalogs
+- Dark theme (dashboard/admin), privacy/terms, settings aligned to API
 
-## Immediate Cleanup
+## Before production deploy
 
-- Remove unused imports from `JwtService`.
-- Clean extra blank lines/formatting in auth/security files.
-- Add a simple protected test endpoint.
-- Test protected endpoint without token.
-- Test protected endpoint with token.
+- [ ] Strong `JWT_SECRET` (no local default)
+- [ ] Production MySQL + credentials via env only
+- [ ] SMTP env verified on host (`MAIL_*`, `MAIL_FROM`, `FRONTEND_URL`)
+- [ ] Hosted CORS / `REACT_APP_API_URL`
+- [ ] Consider Flyway (or similar) instead of `ddl-auto: update`
+- [ ] Drop leftover DB columns if any remain after confirming app writes without them
 
-## Tomorrow's Backend Session
+## Optional polish
 
-1. Run Maven compile.
-2. Create `GET /api/test/protected`.
-3. Test without token: request should be blocked.
-4. Test with token: request should succeed.
-5. Add role-based authorization rules for future admin APIs.
-6. Create `GET /api/auth/me`.
-7. Start learning resource module design.
-
-## Later Backend Modules
-
-- Current user API: `GET /api/auth/me`.
-- Learning paths.
-- Topics.
-- Resources with external links and uploaded files.
-- Bookmarks.
-- Progress tracking.
-- Admin resource upload.
-- Announcements.
-- Discussions.
-
-## Product Direction
-
-Campus Coders should be a clean, trusted learning resource portal maintained by seniors for juniors.
+- [ ] Rate-limit resend-verification / forgot-password
+- [ ] Session invalidation when `email_verified` flips off (currently JWT remains until expiry/logout)

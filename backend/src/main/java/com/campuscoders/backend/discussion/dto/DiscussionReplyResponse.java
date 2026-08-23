@@ -9,7 +9,6 @@ public record DiscussionReplyResponse(
     String authorName,
     String authorAvatarUrl,
     String content,
-    Boolean acceptedAnswer,
     Boolean active,
     Instant createdAt,
     Instant updatedAt) {

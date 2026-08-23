@@ -13,5 +13,6 @@ public record UpdateProfileRequest(
     @Pattern(regexp = "^$|https?://.+", message = "GeeksforGeeks URL must start with http:// or https://") String geeksforgeeksUrl,
     @Pattern(regexp = "^$|https?://.+", message = "GitHub URL must start with http:// or https://") String githubUrl,
     @Pattern(regexp = "^$|https?://.+", message = "LinkedIn URL must start with http:// or https://") String linkedinUrl,
+    @Pattern(regexp = "^$|https?://.+", message = "Portfolio URL must start with http:// or https://") String portfolioUrl,
     @Pattern(regexp = "^$|https?://.+", message = "Avatar URL must start with http:// or https://") String avatarUrl) {
 }

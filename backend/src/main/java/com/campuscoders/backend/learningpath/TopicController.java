@@ -38,8 +38,21 @@ public class TopicController {
   }
 
   // Fetches resources belonging to one topic, sorted by sortOrder.
+  @GetMapping("/{slug}")
+  public TopicResponse getActiveTopicBySlug(@PathVariable String slug) {
+    return topicService.getActiveTopicBySlug(slug);
+  }
+
   @GetMapping("/{slug}/resources")
   public List<LearningResourceResponse> getResourcesByTopicSlug(@PathVariable String slug) {
     return learningResourceService.getActiveResourcesByTopicSlug(slug);
+  }
+
+  // Toggles the bookmark status of a topic for the authenticated user.
+  @PostMapping("/{id}/bookmark")
+  public com.campuscoders.backend.common.dto.BookmarkToggleResponse toggleBookmark(
+      org.springframework.security.core.Authentication authentication,
+      @PathVariable Long id) {
+    return topicService.toggleBookmark(authentication.getName(), id);
   }
 }

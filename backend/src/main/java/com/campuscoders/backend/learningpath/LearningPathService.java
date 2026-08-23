@@ -2,6 +2,7 @@ package com.campuscoders.backend.learningpath;
 
 import java.util.Comparator;
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -10,6 +11,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
+import com.campuscoders.backend.bookmark.UserBookmarkedPath;
+import com.campuscoders.backend.bookmark.repository.UserBookmarkedPathRepository;
+import com.campuscoders.backend.common.dto.BookmarkToggleResponse;
 import com.campuscoders.backend.common.dto.PageResponse;
 import com.campuscoders.backend.learningpath.dto.CreateLearningPathRequest;
 import com.campuscoders.backend.learningpath.dto.LearningPathDetailsResponse;
@@ -20,6 +24,8 @@ import com.campuscoders.backend.learningpath.dto.UpdateLearningPathRequest;
 import com.campuscoders.backend.learningpath.repository.LearningPathRepository;
 import com.campuscoders.backend.learningpath.repository.LearningResourceRepository;
 import com.campuscoders.backend.learningpath.repository.TopicRepository;
+import com.campuscoders.backend.user.User;
+import com.campuscoders.backend.user.repository.UserRepository;
 
 @Service
 public class LearningPathService {
@@ -27,14 +33,40 @@ public class LearningPathService {
   private final LearningPathRepository learningPathRepository;
   private final TopicRepository topicRepository;
   private final LearningResourceRepository learningResourceRepository;
+  private final UserBookmarkedPathRepository userBookmarkedPathRepository;
+  private final UserRepository userRepository;
 
   public LearningPathService(
       LearningPathRepository learningPathRepository,
       TopicRepository topicRepository,
-      LearningResourceRepository learningResourceRepository) {
+      LearningResourceRepository learningResourceRepository,
+      UserBookmarkedPathRepository userBookmarkedPathRepository,
+      UserRepository userRepository) {
     this.learningPathRepository = learningPathRepository;
     this.topicRepository = topicRepository;
     this.learningResourceRepository = learningResourceRepository;
+    this.userBookmarkedPathRepository = userBookmarkedPathRepository;
+    this.userRepository = userRepository;
+  }
+
+  @Transactional
+  public BookmarkToggleResponse toggleBookmark(String userEmail, Long learningPathId) {
+    User user = userRepository.findByEmail(userEmail)
+        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+    LearningPath path = findLearningPathById(learningPathId);
+
+    Optional<UserBookmarkedPath> existingBookmark = userBookmarkedPathRepository.findByUserIdAndLearningPathId(user.getId(), path.getId());
+
+    if (existingBookmark.isPresent()) {
+      userBookmarkedPathRepository.delete(existingBookmark.get());
+      return new BookmarkToggleResponse(false);
+    } else {
+      UserBookmarkedPath newBookmark = new UserBookmarkedPath();
+      newBookmark.setUser(user);
+      newBookmark.setLearningPath(path);
+      userBookmarkedPathRepository.save(newBookmark);
+      return new BookmarkToggleResponse(true);
+    }
   }
 
   @Transactional
@@ -65,7 +97,17 @@ public class LearningPathService {
 
   @Transactional(readOnly = true)
   public PageResponse<LearningPathResponse> getAllActiveLearningPaths(Pageable pageable) {
-    Page<LearningPath> page = learningPathRepository.findByActiveTrue(pageable);
+    return getAllActiveLearningPaths(null, pageable);
+  }
+
+  @Transactional(readOnly = true)
+  public PageResponse<LearningPathResponse> getAllActiveLearningPaths(String category, Pageable pageable) {
+    Page<LearningPath> page;
+    if (category != null && !category.isBlank()) {
+      page = learningPathRepository.findByActiveTrueAndCategoryIgnoreCase(category.trim(), pageable);
+    } else {
+      page = learningPathRepository.findByActiveTrue(pageable);
+    }
     List<LearningPathResponse> mapped = page.getContent().stream()
         .map(this::toResponse)
         .toList();

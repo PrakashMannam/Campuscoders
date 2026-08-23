@@ -57,6 +57,23 @@ public class NotificationService {
     return toResponse(notificationRepository.save(notification));
   }
 
+  @Transactional
+  public void notifyAllUsers(String title, String message, NotificationType type, String targetUrl) {
+    List<User> allUsers = userRepository.findAll();
+    List<Notification> notifications = allUsers.stream().map(user -> {
+      Notification notification = new Notification();
+      notification.setRecipient(user);
+      notification.setTitle(title);
+      notification.setMessage(message);
+      notification.setType(type);
+      notification.setTargetUrl(targetUrl);
+      notification.setReadStatus(false);
+      return notification;
+    }).toList();
+    
+    notificationRepository.saveAll(notifications);
+  }
+
   // Security check: Verify the notification recipient matches the authenticated user before allowing read status update.
   @Transactional
   public NotificationResponse markAsRead(String email, Long notificationId) {

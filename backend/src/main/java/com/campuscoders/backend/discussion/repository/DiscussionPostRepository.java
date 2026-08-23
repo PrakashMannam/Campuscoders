@@ -26,11 +26,13 @@ public interface DiscussionPostRepository extends JpaRepository<DiscussionPost, 
          "AND (:search IS NULL OR :search = '' OR " +
          "     LOWER(p.title) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
          "     LOWER(p.content) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
-         "     (p.tags IS NOT NULL AND LOWER(p.tags) LIKE LOWER(CONCAT('%', :search, '%'))))")
+         "     (p.tags IS NOT NULL AND LOWER(p.tags) LIKE LOWER(CONCAT('%', :search, '%')))) " +
+         "AND (:unanswered IS NULL OR p.repliesCount = 0)")
   Page<DiscussionPost> findActiveDiscussions(
       @Param("slug") String categorySlug,
       @Param("featured") Boolean featured,
       @Param("search") String search,
+      @Param("unanswered") Boolean unanswered,
       Pageable pageable);
 
   @Query("SELECT p FROM DiscussionPost p " +

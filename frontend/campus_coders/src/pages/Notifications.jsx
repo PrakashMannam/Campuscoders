@@ -1,12 +1,18 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { FiCheck, FiCheckCircle, FiBell } from 'react-icons/fi';
 import DashboardLayout from '../components/DashboardLayout';
 import Toast from '../components/Toast';
 import api from '../api/client';
 
 export default function Notifications() {
+  const navigate = useNavigate();
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [currentPage, setCurrentPage] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
+  const [hasNext, setHasNext] = useState(false);
+  const [hasPrevious, setHasPrevious] = useState(false);
 
   /* ── Toast ── */
   const [toast, setToast] = useState({ show: false, type: 'success', message: '' });
@@ -20,14 +26,20 @@ export default function Notifications() {
   const fetchNotifications = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await api.get('/notifications');
-      setNotifications(res.data || []);
+      const res = await api.get('/notifications', {
+        params: { page: currentPage, size: 10 }
+      });
+      const pageData = res.data;
+      setNotifications(pageData.content || []);
+      setTotalPages(pageData.totalPages || 1);
+      setHasNext(pageData.hasNext || false);
+      setHasPrevious(pageData.hasPrevious || false);
     } catch (err) {
       showToast('error', 'Failed to load notifications.');
     } finally {
       setLoading(false);
     }
-  }, [showToast]);
+  }, [currentPage, showToast]);
 
   useEffect(() => {
     fetchNotifications();
@@ -52,7 +64,7 @@ export default function Notifications() {
     }
   };
 
-  const unreadCount = notifications.filter(n => !n.read).length;
+  const unreadCount = notifications.filter(n => !n.readStatus).length;
 
   return (
     <DashboardLayout>
@@ -71,7 +83,7 @@ export default function Notifications() {
               Notifications Hub
             </h2>
             <p className="nt-subtitle" style={{ fontSize: '0.9rem', color: '#6B7280', margin: 0 }}>
-              Stay updated with daily check-ins, achievements, and announcements.
+              Replies, challenges, and announcements from the platform.
             </p>
           </div>
           {unreadCount > 0 && (
@@ -116,7 +128,10 @@ export default function Notifications() {
               <div 
                 key={n.id} 
                 className="nt-item"
-                onClick={() => handleMarkOneRead(n.id)}
+                onClick={async () => {
+                  if (!n.readStatus) await handleMarkOneRead(n.id);
+                  if (n.targetUrl) navigate(n.targetUrl);
+                }}
                 style={{
                   background: '#FFFFFF',
                   border: '1px solid #F0F4F8',
@@ -125,8 +140,8 @@ export default function Notifications() {
                   display: 'flex',
                   alignItems: 'flex-start',
                   justifyContent: 'space-between',
-                  borderLeft: !n.read ? '4px solid #D4AF37' : '1px solid #E5E7EB',
-                  cursor: !n.read ? 'pointer' : 'default',
+                  borderLeft: !n.readStatus ? '4px solid #D4AF37' : '1px solid #E5E7EB',
+                  cursor: 'pointer',
                 }}
               >
                 <div style={{ display: 'flex', gap: '16px', alignItems: 'flex-start' }}>
@@ -148,7 +163,7 @@ export default function Notifications() {
                       <h4 style={{ margin: '0 0 2px', fontSize: '0.92rem', fontWeight: 800, color: '#111827' }}>
                         {n.title}
                       </h4>
-                      {!n.read && (
+                      {!n.readStatus && (
                         <span style={{
                           width: '6px',
                           height: '6px',
@@ -168,6 +183,39 @@ export default function Notifications() {
               </div>
             ))
           )}
+
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '12px', marginTop: '24px' }}>
+            <button
+              disabled={!hasPrevious}
+              onClick={() => setCurrentPage(p => p - 1)}
+              style={{
+                padding: '8px 14px', borderRadius: '8px', border: '1px solid #D1D5DB',
+                background: !hasPrevious ? '#f8fafc' : '#fff',
+                cursor: !hasPrevious ? 'not-allowed' : 'pointer',
+                color: !hasPrevious ? '#cbd5e1' : '#374151', fontSize: '0.85rem', fontWeight: 600
+              }}
+            >
+              Previous
+            </button>
+            <span style={{ fontSize: '0.85rem', color: '#64748b' }}>
+              Page {currentPage + 1} of {totalPages}
+            </span>
+            <button
+              disabled={!hasNext}
+              onClick={() => setCurrentPage(p => p + 1)}
+              style={{
+                padding: '8px 14px', borderRadius: '8px', border: '1px solid #D1D5DB',
+                background: !hasNext ? '#f8fafc' : '#fff',
+                cursor: !hasNext ? 'not-allowed' : 'pointer',
+                color: !hasNext ? '#cbd5e1' : '#374151', fontSize: '0.85rem', fontWeight: 600
+              }}
+            >
+              Next
+            </button>
+          </div>
+        )}
         </div>
       </div>
     </DashboardLayout>

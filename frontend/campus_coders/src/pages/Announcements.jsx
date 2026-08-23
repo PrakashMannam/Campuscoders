@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { FiCalendar, FiRefreshCw, FiX, FiBell, FiChevronLeft, FiChevronRight, FiArrowRight } from 'react-icons/fi';
+import { FiCalendar, FiRefreshCw, FiX, FiChevronLeft, FiChevronRight, FiArrowRight } from 'react-icons/fi';
 import DashboardLayout from '../components/DashboardLayout';
 import Toast from '../components/Toast';
 import api from '../api/client';
@@ -8,8 +8,6 @@ export default function Announcements() {
   const [announcements, setAnnouncements] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeCategory, setActiveCategory] = useState('ALL');
-  const [sortBy, setSortBy] = useState('Latest');
-  const [pushEnabled, setPushEnabled] = useState(false);
 
   // Pagination
   const [currentPage, setCurrentPage] = useState(0);
@@ -33,9 +31,6 @@ export default function Announcements() {
       if (activeCategory !== 'ALL') {
         url += `&category=${activeCategory}`;
       }
-      // Map sort option to API parameter
-      if (sortBy === 'Important') url += '&sortFilter=IMPORTANT';
-      else if (sortBy === 'Popular') url += '&sortFilter=POPULAR';
 
       const res = await api.get(url);
       setAnnouncements(res.data.content || []);
@@ -46,38 +41,30 @@ export default function Announcements() {
     } finally {
       setLoading(false);
     }
-  }, [activeCategory, currentPage, sortBy, showToast]);
+  }, [activeCategory, currentPage, showToast]);
 
   useEffect(() => {
     fetchAnnouncements();
   }, [fetchAnnouncements]);
 
-  const handleEnablePush = async () => {
-    try {
-      await api.put('/profile/settings/me', { pushNotifications: true });
-      setPushEnabled(true);
-      showToast('success', 'Push notifications enabled! You\'ll never miss an update.');
-    } catch (err) {
-      showToast('error', 'Failed to enable push notifications.');
-    }
-  };
-
   const getCategoryIcon = (category) => {
     switch (category) {
-      case 'SYSTEM': return '⚙️';
-      case 'ACADEMIC': return '📚';
+      case 'PLATFORM_UPDATE': return '🚀';
       case 'EVENT': return '🎉';
-      case 'HACKATHON': return '💻';
+      case 'ACADEMIC_NEWS': return '📚';
+      case 'SYSTEM_MAINTENANCE': return '⚙️';
+      case 'CAREER_CENTER': return '💼';
       default: return '📢';
     }
   };
 
   const getCategoryColor = (category) => {
     switch (category) {
-      case 'SYSTEM': return { bg: '#EEF2FF', color: '#4F46E5' };
-      case 'ACADEMIC': return { bg: '#ECFDF5', color: '#059669' };
+      case 'PLATFORM_UPDATE': return { bg: '#EEF2FF', color: '#4F46E5' };
       case 'EVENT': return { bg: '#FEF3C7', color: '#D97706' };
-      case 'HACKATHON': return { bg: '#FCE7F3', color: '#DB2777' };
+      case 'ACADEMIC_NEWS': return { bg: '#ECFDF5', color: '#059669' };
+      case 'SYSTEM_MAINTENANCE': return { bg: '#FEE2E2', color: '#DC2626' };
+      case 'CAREER_CENTER': return { bg: '#FCE7F3', color: '#DB2777' };
       default: return { bg: '#F3F4F6', color: '#374151' };
     }
   };
@@ -106,8 +93,9 @@ export default function Announcements() {
             <div style={{ background: '#FFFFFF', border: '1px solid #F0F4F8', borderRadius: '12px', padding: '20px' }}>
               <h4 style={{ fontSize: '0.72rem', fontWeight: 700, letterSpacing: '0.08em', color: '#9CA3AF', textTransform: 'uppercase', margin: '0 0 14px' }}>CATEGORIES</h4>
               <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                {['ALL', 'SYSTEM', 'ACADEMIC', 'EVENT', 'HACKATHON'].map(cat => {
+                {['ALL', 'PLATFORM_UPDATE', 'EVENT', 'ACADEMIC_NEWS', 'SYSTEM_MAINTENANCE', 'CAREER_CENTER'].map(cat => {
                   const isActive = activeCategory === cat;
+                  const displayName = cat === 'ALL' ? 'All' : cat.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()).replace(/\bAnd\b/g, 'and');
                   return (
                     <li
                       key={cat}
@@ -122,7 +110,7 @@ export default function Announcements() {
                       }}
                     >
                       <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        {getCategoryIcon(cat)} {cat}
+                        {getCategoryIcon(cat)} {displayName}
                       </span>
                     </li>
                   );
@@ -130,44 +118,18 @@ export default function Announcements() {
               </ul>
             </div>
 
-            {/* Push Notifications Widget */}
             <div style={{
-              background: 'linear-gradient(135deg, #FFFBEB 0%, #FEF3C7 100%)',
-              border: '1px solid #FDE68A', borderRadius: '12px', padding: '20px',
-              textAlign: 'center'
+              background: 'var(--surface)',
+              border: '1px solid var(--line)',
+              borderRadius: '12px',
+              padding: '20px',
             }}>
-              <div style={{
-                width: '48px', height: '48px', borderRadius: '50%',
-                background: '#d97706', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                margin: '0 auto 12px', color: '#fff'
-              }}>
-                <FiBell size={22} />
-              </div>
-              <h4 style={{ fontSize: '0.88rem', fontWeight: 800, color: '#111827', margin: '0 0 8px' }}>
-                Never miss an update!
+              <h4 style={{ fontSize: '0.88rem', fontWeight: 800, color: 'var(--ink)', margin: '0 0 8px' }}>
+                In-app alerts
               </h4>
-              <p style={{ fontSize: '0.78rem', color: '#6B7280', margin: '0 0 16px', lineHeight: '1.5' }}>
-                Enable push notifications to get instant alerts for important announcements.
+              <p style={{ fontSize: '0.78rem', color: 'var(--ink-muted)', margin: 0, lineHeight: '1.5' }}>
+                New announcements and discussion replies appear under Notifications in your dashboard.
               </p>
-              {pushEnabled ? (
-                <div style={{
-                  padding: '8px 16px', borderRadius: '8px', background: '#ECFDF5',
-                  color: '#059669', fontSize: '0.82rem', fontWeight: 700
-                }}>
-                  ✓ Notifications Enabled
-                </div>
-              ) : (
-                <button onClick={handleEnablePush} style={{
-                  width: '100%', padding: '10px 16px', borderRadius: '8px',
-                  background: '#d97706', color: '#fff', border: 'none',
-                  fontWeight: 700, fontSize: '0.85rem', cursor: 'pointer',
-                  transition: 'background 0.2s'
-                }}
-                onMouseEnter={e => e.currentTarget.style.background = '#b45309'}
-                onMouseLeave={e => e.currentTarget.style.background = '#d97706'}>
-                  Enable Notifications 🔔
-                </button>
-              )}
             </div>
           </div>
 
@@ -181,19 +143,13 @@ export default function Announcements() {
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem', color: '#64748b' }}>
                 <span style={{ fontWeight: 600 }}>Sort by:</span>
-                {['Latest', 'Important', 'Popular'].map(opt => (
-                  <button key={opt} onClick={() => { setSortBy(opt); setCurrentPage(0); }}
-                    style={{
-                      padding: '4px 12px', borderRadius: '6px', fontSize: '0.82rem',
-                      fontWeight: sortBy === opt ? 700 : 500, cursor: 'pointer',
-                      background: sortBy === opt ? '#FFFBEB' : 'transparent',
-                      color: sortBy === opt ? '#d97706' : '#64748b',
-                      border: sortBy === opt ? '1px solid #FDE68A' : '1px solid transparent',
-                      transition: 'all 0.2s'
-                    }}>
-                    {opt}
-                  </button>
-                ))}
+                <span style={{
+                  padding: '4px 12px', borderRadius: '6px', fontSize: '0.82rem',
+                  fontWeight: 700, background: '#FFFBEB', color: '#d97706',
+                  border: '1px solid #FDE68A'
+                }}>
+                  Latest
+                </span>
               </div>
               <button onClick={() => fetchAnnouncements()} style={{
                 background: 'none', border: '1px solid #e2e8f0', borderRadius: '6px',
@@ -272,16 +228,25 @@ export default function Announcements() {
                       </div>
 
                       {/* Action Button */}
-                      <button style={{
-                        background: 'none', border: '1px solid #e2e8f0', borderRadius: '8px',
-                        padding: '6px 14px', cursor: 'pointer', fontSize: '0.82rem', fontWeight: 600,
-                        color: '#d97706', display: 'flex', alignItems: 'center', gap: '4px',
-                        whiteSpace: 'nowrap', flexShrink: 0, transition: 'all 0.2s'
-                      }}
-                      onMouseEnter={e => { e.currentTarget.style.background = '#FFFBEB'; e.currentTarget.style.borderColor = '#FDE68A'; }}
-                      onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.borderColor = '#e2e8f0'; }}>
-                        Read More <FiArrowRight size={14} />
-                      </button>
+                      {a.actionUrl ? (
+                        <a href={a.actionUrl} target="_blank" rel="noopener noreferrer" style={{
+                          background: 'none', border: '1px solid #e2e8f0', borderRadius: '8px',
+                          padding: '6px 14px', fontSize: '0.82rem', fontWeight: 600,
+                          color: '#d97706', display: 'flex', alignItems: 'center', gap: '4px',
+                          whiteSpace: 'nowrap', flexShrink: 0, transition: 'all 0.2s',
+                          textDecoration: 'none', cursor: 'pointer'
+                        }}>
+                          {a.actionLabel || 'Read More'} <FiArrowRight size={14} />
+                        </a>
+                      ) : (
+                        <span style={{
+                          padding: '6px 14px', fontSize: '0.82rem', fontWeight: 600,
+                          color: '#94a3b8', display: 'flex', alignItems: 'center', gap: '4px',
+                          whiteSpace: 'nowrap', flexShrink: 0
+                        }}>
+                          No action
+                        </span>
+                      )}
                     </div>
                   );
                 })

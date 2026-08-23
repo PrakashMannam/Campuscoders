@@ -1,11 +1,12 @@
 import React from 'react';
-import { FiMail, FiPhone } from 'react-icons/fi';
-import { useLocation } from 'react-router-dom';
+import { useLocation, Link } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 import Logo from './Logo';
 
 export default function Footer() {
   const location = useLocation();
-  const isAuthPage = ['/login', '/register', '/verify-otp', '/forgot-password'].includes(location.pathname);
+  const { user } = useAuth();
+  const isAuthPage = ['/login', '/register', '/forgot-password', '/reset-password', '/verify-email'].includes(location.pathname);
 
   // If on an auth page, we do not render the main footer (it has its own simple footer)
   if (isAuthPage) {
@@ -32,75 +33,52 @@ export default function Footer() {
             </span>
           </div>
           <p>
-            The ultimate platform for engineering students to connect, learn, and build the future of technology together.
+            Your engineering learning workspace: practice, paths, and discussions.
           </p>
         </div>
 
         {/* Quick Links Column */}
         <div className="footer-links-col">
-          <div className="footer-title">Quick Links</div>
+          <div className="footer-title">Links</div>
           <ul>
             <li>
-              <button 
-                onClick={() => handleScrollTo('home')} 
-                style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
-                className="footer-contact-item"
-              >
-                Home
+              <button type="button" onClick={() => handleScrollTo('how')} className="footer-contact-item footer-link-btn">
+                How it works
               </button>
             </li>
             <li>
-              <button 
-                onClick={() => handleScrollTo('about')} 
-                style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
-                className="footer-contact-item"
-              >
-                About Us
-              </button>
-            </li>
-            <li>
-              <button 
-                onClick={() => handleScrollTo('features')} 
-                style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
-                className="footer-contact-item"
-              >
+              <button type="button" onClick={() => handleScrollTo('features')} className="footer-contact-item footer-link-btn">
                 Features
               </button>
             </li>
             <li>
-              <button 
-                onClick={() => handleScrollTo('feedback')} 
-                style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
-                className="footer-contact-item"
-              >
-                Feedback
-              </button>
+              <Link to="/privacy" className="footer-contact-item">Privacy</Link>
             </li>
-          </ul>
-        </div>
-
-        {/* Support Column */}
-        <div className="footer-contact-col">
-          <div className="footer-title">Support Contact</div>
-          <ul>
-            <li className="footer-contact-item">
-              <span className="footer-contact-icon">
-                <FiMail size={16} />
-              </span>
-              <a href="mailto:support@campuscoders.edu">support@campuscoders.edu</a>
+            <li>
+              <Link to="/terms" className="footer-contact-item">Terms</Link>
             </li>
-            <li className="footer-contact-item">
-              <span className="footer-contact-icon">
-                <FiPhone size={16} />
-              </span>
-              <span>+1 (555) TECH-PRO</span>
-            </li>
+            {!user ? (
+              <>
+                <li>
+                  <Link to="/login" className="footer-contact-item">Sign in</Link>
+                </li>
+                <li>
+                  <Link to="/register" className="footer-contact-item">Create account</Link>
+                </li>
+              </>
+            ) : (
+              <li>
+                <Link to={user.role === 'admin' ? '/admin' : '/dashboard'} className="footer-contact-item">
+                  {user.role === 'admin' ? 'Open admin' : 'Open dashboard'}
+                </Link>
+              </li>
+            )}
           </ul>
         </div>
       </div>
 
       <div className="footer-bottom">
-        © 2023 CAMPUS CODERS. ALL RIGHTS RESERVED. ACADEMIC TECHNICAL MODERNISM V2.0
+        &copy; {new Date().getFullYear()} Campus Coders. All rights reserved.
       </div>
     </footer>
   );

@@ -49,9 +49,6 @@ public class DiscussionReply {
   @Column(nullable = false, length = 3000)
   private String content;
 
-  @Column(name = "accepted_answer", nullable = false)
-  private Boolean acceptedAnswer = false;
-
   // Soft-delete flag: Replies are soft-deleted using active = false instead of physical deletion.
   @Column(nullable = false)
   private Boolean active = true;

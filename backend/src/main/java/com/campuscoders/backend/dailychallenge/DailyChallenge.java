@@ -35,13 +35,15 @@ public class DailyChallenge {
 
   @ManyToOne(fetch = FetchType.EAGER)
   @JoinColumn(name = "coding_problem_id", nullable = false)
+  @org.hibernate.annotations.NotFound(action = org.hibernate.annotations.NotFoundAction.IGNORE)
   private CodingProblem codingProblem;
 
   @Column(name = "challenge_date", nullable = false)
   private LocalDate challengeDate;
 
+  /** Legacy column kept at 0 — XP rewards were removed from the product. */
   @Column(name = "xp_reward", nullable = false)
-  private Integer xpReward = 10;
+  private Integer xpReward = 0;
 
   @Column(nullable = false)
   private Boolean active = true;

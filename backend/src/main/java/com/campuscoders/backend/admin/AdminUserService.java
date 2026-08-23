@@ -91,9 +91,6 @@ public class AdminUserService {
         user.getEnabled(),
         user.getUniversity(),
         user.getBio(),
-        user.getTotalXp(),
-        user.getDailyStreak(),
-        user.getProblemsSolved(),
         user.getCreatedAt(),
         user.getUpdatedAt());
   }

@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.campuscoders.backend.common.dto.PageResponse;
@@ -43,11 +44,12 @@ public class LearningPathController {
     return learningPathService.createLearningPath(request);
   }
 
-  // Public/student endpoint used by the frontend Learning Hub page.
+  // Public/student endpoint used by the frontend Learning Hub / Placement pages.
   @GetMapping
   public PageResponse<LearningPathResponse> getAllLearningPaths(
+      @RequestParam(required = false) String category,
       @PageableDefault(page = 0, size = 10, sort = "title", direction = Sort.Direction.ASC) Pageable pageable) {
-    return learningPathService.getAllActiveLearningPaths(pageable);
+    return learningPathService.getAllActiveLearningPaths(category, pageable);
   }
 
   // Page-friendly endpoint for one learning path with its topics and resources.
@@ -66,5 +68,13 @@ public class LearningPathController {
   @GetMapping("/{slug}/topics")
   public List<TopicResponse> getTopicsByLearningPathSlug(@PathVariable String slug) {
     return topicService.getActiveTopicsByLearningPathSlug(slug);
+  }
+
+  // Toggles the bookmark status of a learning path for the authenticated user.
+  @PostMapping("/{id}/bookmark")
+  public com.campuscoders.backend.common.dto.BookmarkToggleResponse toggleBookmark(
+      org.springframework.security.core.Authentication authentication,
+      @PathVariable Long id) {
+    return learningPathService.toggleBookmark(authentication.getName(), id);
   }
 }
