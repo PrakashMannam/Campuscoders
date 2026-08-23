@@ -29,6 +29,10 @@ spring:
       mail.smtp.auth: true
       mail.smtp.starttls.enable: true
 
+# Railway (and most PaaS hosts) inject PORT; default 8080 for local.
+server:
+  port: ${PORT:8080}
+
 # spring-dotenv: reads a file named ".env" from the process working directory
 # (normally backend/ when you run mvn spring-boot:run). OS env vars still win.
 
