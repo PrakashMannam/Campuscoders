@@ -1,0 +1,9 @@
+# Keep the image small; never bake secrets into the image.
+.env
+.env.*
+!.env.example
+target/
+.git/
+.idea/
+*.iml
+HELP.md
