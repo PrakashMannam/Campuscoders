@@ -65,7 +65,10 @@ public class AuthService {
     this.disposableEmailGuard = disposableEmailGuard;
   }
 
-  @Transactional
+  /**
+   * Not class-transactional: user must be committed before OTP insert (REQUIRES_NEW),
+   * or MySQL deadlocks on the users FK (lock wait timeout).
+   */
   public AuthResponse register(RegisterRequest registerRequest) {
     String email = normalizeEmail(registerRequest.getEmail());
     disposableEmailGuard.rejectIfDisposable(email);
@@ -84,7 +87,7 @@ public class AuthService {
     boolean mailReady = emailVerificationMailService.isConfigured();
     user.setEmailVerified(!mailReady);
 
-    User savedUser = userRepository.save(user);
+    User savedUser = userRepository.saveAndFlush(user);
 
     if (mailReady) {
       issueAndSendVerificationCode(savedUser);
@@ -169,7 +172,6 @@ public class AuthService {
     return buildAuthResponse(user);
   }
 
-  @Transactional
   public MessageResponse resendVerification(ResendVerificationRequest request) {
     String email = normalizeEmail(request.email());
     User user = userRepository.findByEmail(email).orElse(null);
