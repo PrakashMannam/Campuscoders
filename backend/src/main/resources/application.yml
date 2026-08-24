@@ -28,6 +28,10 @@ spring:
     properties:
       mail.smtp.auth: true
       mail.smtp.starttls.enable: true
+      # Fail fast on hosts that block outbound SMTP (Railway Hobby/Trial).
+      mail.smtp.connectiontimeout: 5000
+      mail.smtp.timeout: 5000
+      mail.smtp.writetimeout: 5000
 
 # Railway (and most PaaS hosts) inject PORT; default 8080 for local.
 server:
