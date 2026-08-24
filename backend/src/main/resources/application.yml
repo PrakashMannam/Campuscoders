@@ -6,6 +6,11 @@ campuscoders:
     from: ${MAIL_FROM:}
   resend:
     api-key: ${RESEND_API_KEY:}
+  # Optional prod bootstrap (Railway). Remove ADMIN_PASSWORD after first login.
+  admin:
+    email: ${ADMIN_EMAIL:}
+    password: ${ADMIN_PASSWORD:}
+    full-name: ${ADMIN_FULL_NAME:Campus Admin}
 
 spring:
   application:
