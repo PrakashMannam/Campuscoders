@@ -1,10 +1,10 @@
-# Used when Root Directory is set to "backend".
+# Used when Root Directory is the repo root (monorepo).
 [build]
 builder = "DOCKERFILE"
-dockerfilePath = "Dockerfile"
+dockerfilePath = "backend/Dockerfile"
 
 [deploy]
-# Must match the JAR path inside the Docker image (see Dockerfile).
+# Must match the JAR path inside the Docker image (see backend/Dockerfile).
 # Do NOT use target/*.jar — that path does not exist in the runtime image.
 startCommand = "java -jar app.jar"
 restartPolicyType = "ON_FAILURE"
