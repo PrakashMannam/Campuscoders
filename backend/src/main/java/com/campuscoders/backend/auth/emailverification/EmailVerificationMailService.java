@@ -49,8 +49,11 @@ public class EmailVerificationMailService {
           EmailVerificationMailTemplates.html(rawCode));
       mailSender.send(mimeMessage);
     } catch (Exception ex) {
+      // Railway Hobby/Trial blocks outbound SMTP (587/465). Don't fail registration after the user row exists.
       log.error("Failed to send verification email: {}", ex.getMessage());
-      throw new IllegalStateException("Could not send verification email");
+      throw new IllegalStateException(
+          "Email delivery is unavailable on this host (SMTP blocked). "
+              + "Clear MAIL_HOST/MAIL_FROM for auto-verify, upgrade Railway Pro, or use an HTTPS email API.");
     }
   }
 }

@@ -4,6 +4,8 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.UUID;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -31,6 +33,7 @@ import com.campuscoders.backend.user.repository.UserRepository;
 @Service
 public class AuthService {
 
+  private static final Logger log = LoggerFactory.getLogger(AuthService.class);
   private static final long RESET_TOKEN_EXPIRY_MINUTES = 15;
   private static final int OTP_MAX_ATTEMPTS = 5;
 
@@ -90,7 +93,11 @@ public class AuthService {
     User savedUser = userRepository.saveAndFlush(user);
 
     if (mailReady) {
-      issueAndSendVerificationCode(savedUser);
+      boolean mailSent = issueAndSendVerificationCode(savedUser);
+      if (!mailSent && Boolean.TRUE.equals(savedUser.getEmailVerified())) {
+        // SMTP unavailable — account was auto-verified as a fallback.
+        return buildAuthResponse(savedUser);
+      }
       AuthResponse pending = new AuthResponse();
       pending.setEmail(savedUser.getEmail());
       pending.setFullName(savedUser.getFullName());
@@ -118,11 +125,13 @@ public class AuthService {
     }
 
     if (!Boolean.TRUE.equals(user.getEmailVerified()) && emailVerificationMailService.isConfigured()) {
-      // Fresh OTP committed in its own transaction before this FORBIDDEN response.
-      issueAndSendVerificationCode(user);
-      throw new ResponseStatusException(
-          HttpStatus.FORBIDDEN,
-          "Please verify your email before signing in. Check your inbox for the code.");
+      boolean mailSent = issueAndSendVerificationCode(user);
+      if (mailSent) {
+        throw new ResponseStatusException(
+            HttpStatus.FORBIDDEN,
+            "Please verify your email before signing in. Check your inbox for the code.");
+      }
+      // SMTP unavailable — account was auto-verified; continue to token issuance.
     }
 
     return buildAuthResponse(user);
@@ -261,9 +270,19 @@ public class AuthService {
     return new MessageResponse("Password reset successful");
   }
 
-  private void issueAndSendVerificationCode(User user) {
+  /** @return true if the email was sent; false if delivery failed and the account was auto-verified */
+  private boolean issueAndSendVerificationCode(User user) {
     String rawCode = emailVerificationCodeService.issueRawCode(user);
-    emailVerificationMailService.sendVerificationCode(user.getEmail(), rawCode);
+    try {
+      emailVerificationMailService.sendVerificationCode(user.getEmail(), rawCode);
+      return true;
+    } catch (IllegalStateException ex) {
+      // SMTP often blocked on Railway Hobby — fall back so signup still works.
+      log.warn("Verification email failed for {}: {}. Auto-verifying account.", user.getEmail(), ex.getMessage());
+      user.setEmailVerified(true);
+      userRepository.save(user);
+      return false;
+    }
   }
 
   private AuthResponse buildAuthResponse(User user) {
