@@ -96,7 +96,7 @@ class AuthServiceTest {
     savedUser.setEnabled(true);
     savedUser.setEmailVerified(true);
 
-    when(userRepository.save(any(User.class))).thenAnswer(inv -> {
+    when(userRepository.saveAndFlush(any(User.class))).thenAnswer(inv -> {
       User u = inv.getArgument(0);
       u.setId(1L);
       return u;
@@ -122,7 +122,7 @@ class AuthServiceTest {
     when(userRepository.existsByEmail("prakash@gmail.com")).thenReturn(false);
     when(passwordEncoder.encode(anyString())).thenReturn("encoded");
     when(emailVerificationMailService.isConfigured()).thenReturn(true);
-    when(userRepository.save(any(User.class))).thenAnswer(inv -> {
+    when(userRepository.saveAndFlush(any(User.class))).thenAnswer(inv -> {
       User u = inv.getArgument(0);
       u.setId(1L);
       return u;

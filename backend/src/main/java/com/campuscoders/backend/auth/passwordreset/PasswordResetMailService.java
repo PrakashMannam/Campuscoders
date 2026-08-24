@@ -8,6 +8,8 @@ import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
+import com.campuscoders.backend.mail.ResendEmailClient;
+
 import jakarta.mail.internet.MimeMessage;
 
 @Service
@@ -16,58 +18,62 @@ public class PasswordResetMailService {
   private static final Logger log = LoggerFactory.getLogger(PasswordResetMailService.class);
 
   private final JavaMailSender mailSender;
+  private final ResendEmailClient resendEmailClient;
   private final String mailHost;
   private final String from;
   private final String frontendBaseUrl;
 
   public PasswordResetMailService(
       JavaMailSender mailSender,
+      ResendEmailClient resendEmailClient,
       @Value("${spring.mail.host:}") String mailHost,
       @Value("${campuscoders.mail.from:}") String from,
       @Value("${campuscoders.frontend-base-url:http://localhost:3000}") String frontendBaseUrl) {
     this.mailSender = mailSender;
+    this.resendEmailClient = resendEmailClient;
     this.mailHost = mailHost == null ? "" : mailHost.trim();
     this.from = from == null ? "" : from.trim();
     this.frontendBaseUrl = trimSlash(frontendBaseUrl);
   }
 
   public boolean isConfigured() {
-    return StringUtils.hasText(mailHost) && StringUtils.hasText(from);
+    return resendEmailClient.isConfigured()
+        || (StringUtils.hasText(mailHost) && StringUtils.hasText(from));
   }
 
   public void sendResetLink(String toEmail, String rawToken) {
     if (!isConfigured()) {
-      log.warn("Password reset email not sent: MAIL_HOST and MAIL_FROM are required.");
+      log.warn("Password reset email not sent: configure RESEND_API_KEY+MAIL_FROM or MAIL_HOST+MAIL_FROM.");
       return;
     }
 
     String link = frontendBaseUrl + "/reset-password?token=" + rawToken;
+    String subject = "Reset your Campus Coders password";
+    String plain = PasswordResetMailTemplates.plainText(link);
+    String html = PasswordResetMailTemplates.html(link);
+
+    if (resendEmailClient.isConfigured()) {
+      try {
+        resendEmailClient.send(toEmail, subject, plain, html);
+      } catch (Exception ex) {
+        log.error("Failed to send password reset email via Resend: {}", ex.getMessage());
+      }
+      return;
+    }
+
     try {
-      // MimeMessage enables sending rich emails (HTML, colors, links) instead of just plain text.
       MimeMessage mimeMessage = mailSender.createMimeMessage();
-      
-      // MimeMessageHelper is a Spring utility that simplifies setting email properties (to, from, subject) 
-      // without needing to write complex low-level MIME protocol headers manually.
       MimeMessageHelper helper = new MimeMessageHelper(mimeMessage, true, "UTF-8");
       helper.setFrom(from);
       helper.setTo(toEmail);
-      helper.setSubject("Reset your Campus Coders password");
-      
-      // We pass both plain text and HTML. If the user's email client blocks HTML, 
-      // they will automatically see the fallback plain text version.
-      helper.setText(PasswordResetMailTemplates.plainText(link), PasswordResetMailTemplates.html(link));
-      
+      helper.setSubject(subject);
+      helper.setText(plain, html);
       mailSender.send(mimeMessage);
     } catch (Exception ex) {
-      // We catch the exception locally instead of throwing it to a Global Handler.
-      // This prevents the entire transaction from rolling back (which would delete the reset token),
-      // and silently fails so the user doesn't see a massive 500 error if the mail server is down.
       log.error("Failed to send password reset email: {}", ex.getMessage());
     }
   }
 
-  // Removes the trailing slash from the frontend URL config (e.g., "http://localhost:3000/") 
-  // to prevent double slashes when concatenating the reset token route (e.g., "//reset-password").
   static String trimSlash(String url) {
     if (url == null || url.isBlank()) {
       return "http://localhost:3000";

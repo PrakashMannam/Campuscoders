@@ -8,6 +8,8 @@ import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
+import com.campuscoders.backend.mail.ResendEmailClient;
+
 import jakarta.mail.internet.MimeMessage;
 
 @Service
@@ -16,25 +18,38 @@ public class EmailVerificationMailService {
   private static final Logger log = LoggerFactory.getLogger(EmailVerificationMailService.class);
 
   private final JavaMailSender mailSender;
+  private final ResendEmailClient resendEmailClient;
   private final String mailHost;
   private final String from;
 
   public EmailVerificationMailService(
       JavaMailSender mailSender,
+      ResendEmailClient resendEmailClient,
       @Value("${spring.mail.host:}") String mailHost,
       @Value("${campuscoders.mail.from:}") String from) {
     this.mailSender = mailSender;
+    this.resendEmailClient = resendEmailClient;
     this.mailHost = mailHost == null ? "" : mailHost.trim();
     this.from = from == null ? "" : from.trim();
   }
 
   public boolean isConfigured() {
-    return StringUtils.hasText(mailHost) && StringUtils.hasText(from);
+    return resendEmailClient.isConfigured()
+        || (StringUtils.hasText(mailHost) && StringUtils.hasText(from));
   }
 
   public void sendVerificationCode(String toEmail, String rawCode) {
     if (!isConfigured()) {
-      log.warn("Verification email not sent: MAIL_HOST and MAIL_FROM are required.");
+      log.warn("Verification email not sent: configure RESEND_API_KEY+MAIL_FROM or MAIL_HOST+MAIL_FROM.");
+      return;
+    }
+
+    String subject = "Your Campus Coders verification code";
+    String plain = EmailVerificationMailTemplates.plainText(rawCode);
+    String html = EmailVerificationMailTemplates.html(rawCode);
+
+    if (resendEmailClient.isConfigured()) {
+      resendEmailClient.send(toEmail, subject, plain, html);
       return;
     }
 
@@ -43,17 +58,15 @@ public class EmailVerificationMailService {
       MimeMessageHelper helper = new MimeMessageHelper(mimeMessage, true, "UTF-8");
       helper.setFrom(from);
       helper.setTo(toEmail);
-      helper.setSubject("Your Campus Coders verification code");
-      helper.setText(
-          EmailVerificationMailTemplates.plainText(rawCode),
-          EmailVerificationMailTemplates.html(rawCode));
+      helper.setSubject(subject);
+      helper.setText(plain, html);
       mailSender.send(mimeMessage);
     } catch (Exception ex) {
-      // Railway Hobby/Trial blocks outbound SMTP (587/465). Don't fail registration after the user row exists.
-      log.error("Failed to send verification email: {}", ex.getMessage());
+      log.error("Failed to send verification email via SMTP: {}", ex.getMessage());
       throw new IllegalStateException(
           "Email delivery is unavailable on this host (SMTP blocked). "
-              + "Clear MAIL_HOST/MAIL_FROM for auto-verify, upgrade Railway Pro, or use an HTTPS email API.");
+              + "Use RESEND_API_KEY or clear MAIL_HOST for auto-verify.",
+          ex);
     }
   }
 }
