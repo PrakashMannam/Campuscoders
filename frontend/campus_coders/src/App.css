@@ -567,7 +567,7 @@ a.btn-dark:hover {
 .hero-section h1 {
   font-size: 4.5rem;
   font-weight: 800;
-  color: #111827;
+  color: var(--ink);
   max-width: 900px;
   margin: 0 auto 24px auto;
   letter-spacing: -0.02em;
@@ -608,7 +608,7 @@ a.btn-dark:hover {
 
 .stats-copy h2 {
   font-size: 2.5rem;
-  color: #111827;
+  color: var(--ink);
   margin-bottom: 24px;
 }
 
@@ -712,7 +712,7 @@ a.btn-dark:hover {
 
 .features-section h2 {
   font-size: 2.25rem;
-  color: #111827;
+  color: var(--ink);
   margin-bottom: 12px;
 }
 
@@ -772,7 +772,7 @@ a.btn-dark:hover {
 
 .feature-card h3 {
   font-size: 1.25rem;
-  color: #111827;
+  color: var(--ink);
   margin-bottom: 12px;
 }
 
@@ -1955,7 +1955,7 @@ a.btn-dark:hover {
   font-family: var(--font-title);
   font-size: 1.5rem;
   font-weight: 800;
-  color: #111827;
+  color: var(--ink);
 }
 
 /* Problem of the Day */
@@ -1983,7 +1983,7 @@ a.btn-dark:hover {
   font-family: var(--font-title);
   font-size: 1.6rem;
   font-weight: 800;
-  color: #111827;
+  color: var(--ink);
   margin: 0 0 10px;
 }
 
@@ -2062,7 +2062,7 @@ a.btn-dark:hover {
   font-family: var(--font-title);
   font-size: 1.05rem;
   font-weight: 700;
-  color: #111827;
+  color: var(--ink);
   margin: 0;
   display: flex;
   align-items: center;
@@ -2109,7 +2109,7 @@ a.btn-dark:hover {
 .sd-announce-item h4 {
   font-size: 0.88rem;
   font-weight: 700;
-  color: #111827;
+  color: var(--ink);
   margin: 0 0 4px;
   line-height: 1.4;
 }
@@ -2184,13 +2184,13 @@ a.btn-dark:hover {
 .sd-upcoming-day {
   font-size: 1.15rem;
   font-weight: 800;
-  color: #111827;
+  color: var(--ink);
 }
 
 .sd-upcoming-info h4 {
   font-size: 0.85rem;
   font-weight: 700;
-  color: #111827;
+  color: var(--ink);
   margin: 0 0 4px;
 }
 
@@ -2223,7 +2223,7 @@ a.btn-dark:hover {
   font-family: var(--font-title);
   font-size: 1.05rem;
   font-weight: 700;
-  color: #111827;
+  color: var(--ink);
   margin: 0;
 }
 
@@ -2316,7 +2316,7 @@ a.btn-dark:hover {
   font-family: var(--font-title);
   font-size: 1.5rem;
   font-weight: 800;
-  color: #111827;
+  color: var(--ink);
   margin: 0 0 8px;
 }
 
@@ -2366,7 +2366,7 @@ a.btn-dark:hover {
   font-family: var(--font-title);
   font-size: 1rem;
   font-weight: 700;
-  color: #111827;
+  color: var(--ink);
   margin: 0 0 8px;
 }
 
@@ -2422,7 +2422,7 @@ a.btn-dark:hover {
 }
 
 .cr-back:hover {
-  color: #111827;
+  color: var(--ink);
 }
 
 .cr-header {
@@ -2437,7 +2437,7 @@ a.btn-dark:hover {
   font-family: var(--font-title);
   font-size: 1.8rem;
   font-weight: 800;
-  color: #111827;
+  color: var(--ink);
   margin: 0 0 8px;
 }
 
@@ -2541,7 +2541,7 @@ a.btn-dark:hover {
   font-family: var(--font-title);
   font-size: 0.88rem;
   font-weight: 700;
-  color: #111827;
+  color: var(--ink);
   margin: 0 0 12px;
   line-height: 1.35;
 }
@@ -3048,7 +3048,7 @@ a.btn-dark:hover {
   font-family: var(--font-title);
   font-size: 1.25rem;
   font-weight: 800;
-  color: #111827;
+  color: var(--ink);
   margin: 0;
 }
 
@@ -3100,7 +3100,7 @@ a.btn-dark:hover {
   border-radius: 8px;
   padding: 10px 14px;
   font-size: 0.9rem;
-  color: #111827;
+  color: var(--ink);
   background: var(--surface);
   transition: border-color 0.15s ease;
   font-family: var(--font-body);
@@ -3142,7 +3142,7 @@ a.btn-dark:hover {
 
 .disc-btn-cancel:hover {
   background: #e5e7eb;
-  color: #111827;
+  color: var(--ink);
 }
 
 .disc-btn-submit {
@@ -3994,7 +3994,7 @@ a.btn-dark:hover {
   font-family: var(--font-title);
   font-size: 1.15rem;
   font-weight: 700;
-  color: #111827;
+  color: var(--ink);
   margin: 0 0 8px;
 }
 
@@ -4031,7 +4031,7 @@ a.btn-dark:hover {
 .ann-event-value {
   font-size: 0.92rem;
   font-weight: 700;
-  color: #111827;
+  color: var(--ink);
 }
 
 .ann-item-cta {
@@ -4215,7 +4215,7 @@ a.btn-dark:hover {
   font-family: var(--font-title);
   font-size: 1.6rem;
   font-weight: 800;
-  color: #111827;
+  color: var(--ink);
   margin: 0 0 8px;
 }
 
@@ -4270,7 +4270,7 @@ a.btn-dark:hover {
   font-family: var(--font-title);
   font-size: 1.3rem;
   font-weight: 800;
-  color: #111827;
+  color: var(--ink);
 }
 
 .prof-stat-label {
@@ -4310,7 +4310,7 @@ a.btn-dark:hover {
   font-family: var(--font-title);
   font-size: 1.1rem;
   font-weight: 700;
-  color: #111827;
+  color: var(--ink);
   margin: 0;
   display: flex;
   align-items: center;
@@ -4375,7 +4375,7 @@ a.btn-dark:hover {
   border-radius: 8px;
   background: var(--paper);
   font-size: 0.9rem;
-  color: #111827;
+  color: var(--ink);
   font-family: var(--font-body);
   box-sizing: border-box;
   transition: border-color 0.2s ease;
@@ -4430,7 +4430,7 @@ a.btn-dark:hover {
   font-family: var(--font-title);
   font-size: 1.1rem;
   font-weight: 700;
-  color: #111827;
+  color: var(--ink);
   margin: 0 0 24px;
   display: flex;
   align-items: center;
@@ -4517,7 +4517,7 @@ a.btn-dark:hover {
   background: var(--paper);
   font-size: 0.85rem;
   font-family: var(--font-body);
-  color: #111827;
+  color: var(--ink);
   width: 120px;
 }
 
@@ -4796,7 +4796,7 @@ a.btn-dark:hover {
   font-family: var(--font-title);
   font-size: 1.15rem;
   font-weight: 700;
-  color: #111827;
+  color: var(--ink);
   margin: 0 0 4px;
 }
 
@@ -4881,7 +4881,7 @@ a.btn-dark:hover {
   display: block;
   font-size: 0.88rem;
   font-weight: 600;
-  color: #111827;
+  color: var(--ink);
 }
 
 .sett-row-sub {
@@ -5249,7 +5249,7 @@ a.btn-dark:hover {
 }
 
 .cpw-back:hover {
-  color: #111827;
+  color: var(--ink);
 }
 
 .cpw-card {
@@ -5349,7 +5349,7 @@ a.btn-dark:hover {
   font-family: var(--font-title);
   font-size: 1.5rem;
   font-weight: 800;
-  color: #111827;
+  color: var(--ink);
   margin: 0 0 8px;
 }
 
@@ -5361,7 +5361,7 @@ a.btn-dark:hover {
 }
 
 .cpw-step-content p strong {
-  color: #111827;
+  color: var(--ink);
 }
 
 .cpw-hint {
@@ -5429,7 +5429,7 @@ a.btn-dark:hover {
   border-radius: 8px;
   border: 1.5px solid var(--line);
   background: #fafbfd;
-  color: #111827;
+  color: var(--ink);
   font-family: var(--font-body);
   transition: all 0.2s ease;
 }
@@ -5498,7 +5498,7 @@ a.btn-dark:hover {
   border-radius: 8px;
   background: var(--paper);
   font-size: 0.9rem;
-  color: #111827;
+  color: var(--ink);
   font-family: var(--font-body);
   transition: border-color 0.2s ease;
 }
@@ -5574,7 +5574,7 @@ a.btn-dark:hover {
   font-family: var(--font-title);
   font-size: 1.5rem;
   font-weight: 800;
-  color: #111827;
+  color: var(--ink);
   margin: 0 0 8px;
 }
 
@@ -5623,7 +5623,7 @@ a.btn-dark:hover {
 
 .sd-cal-day-cell.today .sd-cal-day-num {
   font-weight: 700;
-  color: #111827;
+  color: var(--ink);
   background: var(--paper);
   border-radius: 50%;
 }
@@ -5695,7 +5695,7 @@ a.btn-dark:hover {
 .sd-potd-open-btn:hover {
   background: var(--paper);
   border-color: #9ca3af;
-  color: #111827;
+  color: var(--ink);
 }
 
 .sd-potd-confirm-btn {
@@ -5764,7 +5764,7 @@ a.btn-dark:hover {
 }
 
 .lb-back:hover {
-  color: #111827;
+  color: var(--ink);
 }
 
 .lb-header {
@@ -5785,7 +5785,7 @@ a.btn-dark:hover {
   font-family: var(--font-title);
   font-size: 1.8rem;
   font-weight: 800;
-  color: #111827;
+  color: var(--ink);
   margin: 0 0 4px;
 }
 
@@ -5886,7 +5886,7 @@ a.btn-dark:hover {
 
 .lb-student-fullname {
   font-weight: 600;
-  color: #111827;
+  color: var(--ink);
   display: flex;
   align-items: center;
   gap: 8px;

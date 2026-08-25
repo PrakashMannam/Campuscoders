@@ -707,6 +707,7 @@ export default function Discussions() {
               <div className="disc-form-group">
                 <label>Category</label>
                 <select value={newCategoryId} onChange={(e) => setNewCategoryId(e.target.value)} required>
+                  <option value="" disabled>Select a category...</option>
                   {categories.map((c) => (
                     <option key={c.id} value={c.id}>{c.name}</option>
                   ))}
@@ -746,6 +747,7 @@ export default function Discussions() {
               <div className="disc-form-group">
                 <label>Category</label>
                 <select value={editPostModal.categoryId} onChange={(e) => setEditPostModal({ ...editPostModal, categoryId: e.target.value })} required>
+                  <option value="" disabled>Select a category...</option>
                   {categories.map((c) => (
                     <option key={c.id} value={c.id}>{c.name}</option>
                   ))}
