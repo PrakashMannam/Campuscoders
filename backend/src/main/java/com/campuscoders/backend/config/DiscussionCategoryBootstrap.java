@@ -4,19 +4,22 @@ import java.util.List;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.boot.CommandLineRunner;
+import org.springframework.boot.ApplicationArguments;
+import org.springframework.boot.ApplicationRunner;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.campuscoders.backend.discussion.DiscussionCategory;
 import com.campuscoders.backend.discussion.repository.DiscussionCategoryRepository;
 
 /**
- * Ensures discussion categories exist in every environment (prod has no @Profile("dev") seed).
+ * Seeds default discussion categories when none are active.
+ * Needed because {@code DataInitializer} is {@code @Profile("dev")} only.
  */
 @Component
 @Order(2)
-public class DiscussionCategoryBootstrap implements CommandLineRunner {
+public class DiscussionCategoryBootstrap implements ApplicationRunner {
 
   private static final Logger log = LoggerFactory.getLogger(DiscussionCategoryBootstrap.class);
 
@@ -27,8 +30,11 @@ public class DiscussionCategoryBootstrap implements CommandLineRunner {
   }
 
   @Override
-  public void run(String... args) {
-    if (discussionCategoryRepository.count() > 0) {
+  @Transactional
+  public void run(ApplicationArguments args) {
+    long activeCount = discussionCategoryRepository.findByActiveTrueOrderBySortOrderAscNameAsc().size();
+    if (activeCount > 0) {
+      log.info("Discussion categories already present (active={}). Skipping seed.", activeCount);
       return;
     }
 
@@ -46,7 +52,8 @@ public class DiscussionCategoryBootstrap implements CommandLineRunner {
         category("General Discussion", "general",
             "Casual tech talk and community chat", "#6B7280", "message-square", 6)));
 
-    log.info("Seeded {} default discussion categories.", discussionCategoryRepository.count());
+    log.info("Seeded default discussion categories (active={}).",
+        discussionCategoryRepository.findByActiveTrueOrderBySortOrderAscNameAsc().size());
   }
 
   private static DiscussionCategory category(
