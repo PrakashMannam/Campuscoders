@@ -11,6 +11,7 @@ import AdminManageChallenges from './AdminManageChallenges';
 import AdminManageEvents from './AdminManageEvents';
 import AdminManageUsers from './AdminManageUsers';
 import AdminManageCommunity from './AdminManageCommunity';
+import AdminManageDiscussionCategories from './AdminManageDiscussionCategories';
 
 export default function AdminRoutes() {
   return (
@@ -26,6 +27,7 @@ export default function AdminRoutes() {
         <Route path="/events" element={<AdminManageEvents />} />
         <Route path="/users" element={<AdminManageUsers />} />
         <Route path="/community" element={<AdminManageCommunity />} />
+        <Route path="/discussion-categories" element={<AdminManageDiscussionCategories />} />
 
         <Route path="*" element={<Navigate to="/admin" replace />} />
       </Routes>

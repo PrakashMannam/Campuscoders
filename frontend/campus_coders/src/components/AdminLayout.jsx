@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import {
   FiGrid, FiList, FiBook, FiHash, FiVolume2, FiTarget, FiCalendar,
-  FiUsers, FiMessageCircle, FiLogOut, FiMoon, FiSun
+  FiUsers, FiMessageCircle, FiLogOut, FiMoon, FiSun, FiFolder
 } from 'react-icons/fi';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
@@ -19,6 +19,7 @@ const adminNavItems = [
   { to: '/admin/events', icon: <FiCalendar size={18} />, label: 'Contests & events' },
   { to: '/admin/users', icon: <FiUsers size={18} />, label: 'Users' },
   { to: '/admin/community', icon: <FiMessageCircle size={18} />, label: 'Community' },
+  { to: '/admin/discussion-categories', icon: <FiFolder size={18} />, label: 'Categories' },
 ];
 
 export default function AdminLayout({ children }) {
