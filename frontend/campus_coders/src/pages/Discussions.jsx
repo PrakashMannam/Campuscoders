@@ -706,12 +706,25 @@ export default function Discussions() {
               </div>
               <div className="disc-form-group">
                 <label>Category</label>
-                <select value={newCategoryId} onChange={(e) => setNewCategoryId(e.target.value)} required>
-                  <option value="" disabled>Select a category...</option>
-                  {categories.map((c) => (
-                    <option key={c.id} value={c.id}>{c.name}</option>
-                  ))}
-                </select>
+                {categories.length === 0 ? (
+                  <p className="disc-form-hint">No categories yet. Ask an admin to add some, then refresh.</p>
+                ) : (
+                  <select
+                    className="disc-select"
+                    value={newCategoryId}
+                    onChange={(e) => setNewCategoryId(e.target.value)}
+                    required
+                  >
+                    <option value="" disabled>
+                      Select a category...
+                    </option>
+                    {categories.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.name}
+                      </option>
+                    ))}
+                  </select>
+                )}
               </div>
               <div className="disc-form-group">
                 <label>Body</label>
@@ -746,10 +759,19 @@ export default function Discussions() {
               </div>
               <div className="disc-form-group">
                 <label>Category</label>
-                <select value={editPostModal.categoryId} onChange={(e) => setEditPostModal({ ...editPostModal, categoryId: e.target.value })} required>
-                  <option value="" disabled>Select a category...</option>
+                <select
+                  className="disc-select"
+                  value={editPostModal.categoryId}
+                  onChange={(e) => setEditPostModal({ ...editPostModal, categoryId: e.target.value })}
+                  required
+                >
+                  <option value="" disabled>
+                    Select a category...
+                  </option>
                   {categories.map((c) => (
-                    <option key={c.id} value={c.id}>{c.name}</option>
+                    <option key={c.id} value={c.id}>
+                      {c.name}
+                    </option>
                   ))}
                 </select>
               </div>

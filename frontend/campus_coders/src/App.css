@@ -3106,6 +3106,30 @@ a.btn-dark:hover {
   font-family: var(--font-body);
 }
 
+.disc-form-group .disc-select {
+  width: 100%;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  padding-right: 40px;
+  background-color: var(--surface);
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236B7280' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  background-size: 16px;
+  cursor: pointer;
+}
+
+.disc-form-hint {
+  margin: 0;
+  padding: 10px 14px;
+  border-radius: 8px;
+  border: 1px dashed var(--line);
+  font-size: 0.85rem;
+  color: var(--ink-muted, #6b7280);
+  background: var(--paper, #f9fafb);
+}
+
 .disc-form-group input:focus,
 .disc-form-group select:focus,
 .disc-form-group textarea:focus {
