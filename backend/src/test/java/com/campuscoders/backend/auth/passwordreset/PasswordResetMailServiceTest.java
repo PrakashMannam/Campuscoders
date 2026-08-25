@@ -11,7 +11,7 @@ import static org.mockito.Mockito.verify;
 import org.junit.jupiter.api.Test;
 import org.springframework.mail.javamail.JavaMailSender;
 
-import com.campuscoders.backend.mail.ResendEmailClient;
+import com.campuscoders.backend.mail.BrevoEmailClient;
 
 import jakarta.mail.internet.MimeMessage;
 
@@ -34,9 +34,9 @@ class PasswordResetMailServiceTest {
   @Test
   void sendResetLink_skipsWhenHostOrFromMissing() {
     JavaMailSender sender = mock(JavaMailSender.class);
-    ResendEmailClient resend = mock(ResendEmailClient.class);
+    BrevoEmailClient brevo = mock(BrevoEmailClient.class);
     PasswordResetMailService service =
-        new PasswordResetMailService(sender, resend, "", "", "http://localhost:3000");
+        new PasswordResetMailService(sender, brevo, "", "", "http://localhost:3000");
 
     assertFalse(service.isConfigured());
     service.sendResetLink("a@b.com", "token-1");

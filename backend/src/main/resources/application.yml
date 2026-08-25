@@ -4,8 +4,9 @@ campuscoders:
   frontend-base-url: ${FRONTEND_URL:http://localhost:3000}
   mail:
     from: ${MAIL_FROM:}
-  resend:
-    api-key: ${RESEND_API_KEY:}
+  # Brevo HTTPS API — verify a Gmail/sender address in Brevo (no custom domain required).
+  brevo:
+    api-key: ${BREVO_API_KEY:}
   # Optional prod bootstrap (Railway). Remove ADMIN_PASSWORD after first login.
   admin:
     email: ${ADMIN_EMAIL:}

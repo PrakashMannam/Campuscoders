@@ -8,7 +8,7 @@ import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
-import com.campuscoders.backend.mail.ResendEmailClient;
+import com.campuscoders.backend.mail.BrevoEmailClient;
 
 import jakarta.mail.internet.MimeMessage;
 
@@ -18,29 +18,29 @@ public class EmailVerificationMailService {
   private static final Logger log = LoggerFactory.getLogger(EmailVerificationMailService.class);
 
   private final JavaMailSender mailSender;
-  private final ResendEmailClient resendEmailClient;
+  private final BrevoEmailClient brevoEmailClient;
   private final String mailHost;
   private final String from;
 
   public EmailVerificationMailService(
       JavaMailSender mailSender,
-      ResendEmailClient resendEmailClient,
+      BrevoEmailClient brevoEmailClient,
       @Value("${spring.mail.host:}") String mailHost,
       @Value("${campuscoders.mail.from:}") String from) {
     this.mailSender = mailSender;
-    this.resendEmailClient = resendEmailClient;
+    this.brevoEmailClient = brevoEmailClient;
     this.mailHost = mailHost == null ? "" : mailHost.trim();
     this.from = from == null ? "" : from.trim();
   }
 
   public boolean isConfigured() {
-    return resendEmailClient.isConfigured()
+    return brevoEmailClient.isConfigured()
         || (StringUtils.hasText(mailHost) && StringUtils.hasText(from));
   }
 
   public void sendVerificationCode(String toEmail, String rawCode) {
     if (!isConfigured()) {
-      log.warn("Verification email not sent: configure RESEND_API_KEY+MAIL_FROM or MAIL_HOST+MAIL_FROM.");
+      log.warn("Verification email not sent: configure BREVO_API_KEY+MAIL_FROM or MAIL_HOST+MAIL_FROM.");
       return;
     }
 
@@ -48,8 +48,8 @@ public class EmailVerificationMailService {
     String plain = EmailVerificationMailTemplates.plainText(rawCode);
     String html = EmailVerificationMailTemplates.html(rawCode);
 
-    if (resendEmailClient.isConfigured()) {
-      resendEmailClient.send(toEmail, subject, plain, html);
+    if (brevoEmailClient.isConfigured()) {
+      brevoEmailClient.send(toEmail, subject, plain, html);
       return;
     }
 
@@ -65,7 +65,7 @@ public class EmailVerificationMailService {
       log.error("Failed to send verification email via SMTP: {}", ex.getMessage());
       throw new IllegalStateException(
           "Email delivery is unavailable on this host (SMTP blocked). "
-              + "Use RESEND_API_KEY or clear MAIL_HOST for auto-verify.",
+              + "Use BREVO_API_KEY or clear MAIL_HOST for auto-verify.",
           ex);
     }
   }

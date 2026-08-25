@@ -8,7 +8,7 @@ import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
-import com.campuscoders.backend.mail.ResendEmailClient;
+import com.campuscoders.backend.mail.BrevoEmailClient;
 
 import jakarta.mail.internet.MimeMessage;
 
@@ -18,32 +18,32 @@ public class PasswordResetMailService {
   private static final Logger log = LoggerFactory.getLogger(PasswordResetMailService.class);
 
   private final JavaMailSender mailSender;
-  private final ResendEmailClient resendEmailClient;
+  private final BrevoEmailClient brevoEmailClient;
   private final String mailHost;
   private final String from;
   private final String frontendBaseUrl;
 
   public PasswordResetMailService(
       JavaMailSender mailSender,
-      ResendEmailClient resendEmailClient,
+      BrevoEmailClient brevoEmailClient,
       @Value("${spring.mail.host:}") String mailHost,
       @Value("${campuscoders.mail.from:}") String from,
       @Value("${campuscoders.frontend-base-url:http://localhost:3000}") String frontendBaseUrl) {
     this.mailSender = mailSender;
-    this.resendEmailClient = resendEmailClient;
+    this.brevoEmailClient = brevoEmailClient;
     this.mailHost = mailHost == null ? "" : mailHost.trim();
     this.from = from == null ? "" : from.trim();
     this.frontendBaseUrl = trimSlash(frontendBaseUrl);
   }
 
   public boolean isConfigured() {
-    return resendEmailClient.isConfigured()
+    return brevoEmailClient.isConfigured()
         || (StringUtils.hasText(mailHost) && StringUtils.hasText(from));
   }
 
   public void sendResetLink(String toEmail, String rawToken) {
     if (!isConfigured()) {
-      log.warn("Password reset email not sent: configure RESEND_API_KEY+MAIL_FROM or MAIL_HOST+MAIL_FROM.");
+      log.warn("Password reset email not sent: configure BREVO_API_KEY+MAIL_FROM or MAIL_HOST+MAIL_FROM.");
       return;
     }
 
@@ -52,11 +52,11 @@ public class PasswordResetMailService {
     String plain = PasswordResetMailTemplates.plainText(link);
     String html = PasswordResetMailTemplates.html(link);
 
-    if (resendEmailClient.isConfigured()) {
+    if (brevoEmailClient.isConfigured()) {
       try {
-        resendEmailClient.send(toEmail, subject, plain, html);
+        brevoEmailClient.send(toEmail, subject, plain, html);
       } catch (Exception ex) {
-        log.error("Failed to send password reset email via Resend: {}", ex.getMessage());
+        log.error("Failed to send password reset email via Brevo: {}", ex.getMessage());
       }
       return;
     }
