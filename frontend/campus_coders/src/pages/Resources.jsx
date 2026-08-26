@@ -202,7 +202,7 @@ export default function Resources() {
               <p>No bookmarks yet. Open a resource and save it.</p>
             </div>
           ) : (
-            <div className="res-bookmark-table-container" style={{ background: '#fff', border: '1px solid #e6e1d6', borderRadius: 12, overflow: 'auto' }}>
+            <div className="res-bookmark-table-container" style={{ background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 12, overflow: 'auto' }}>
               <table className="res-bookmark-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
                 <thead>
                   <tr>

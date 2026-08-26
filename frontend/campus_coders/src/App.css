@@ -6334,7 +6334,9 @@ a.btn-dark:hover {
   flex-grow: 1;
   display: -webkit-box;
   -webkit-line-clamp: 3;
+  line-clamp: 3;
   -webkit-box-orient: vertical;
+  box-orient: vertical;
   overflow: hidden;
 }
 
@@ -6484,9 +6486,9 @@ a.btn-dark:hover {
   align-items: center;
   justify-content: center;
   padding: 28px 16px;
-  border: 1.5px dashed #e2e8f0;
+  border: 1.5px dashed var(--line);
   border-radius: 12px;
-  background: #f8fafc;
+  background: var(--surface);
   color: #94a3b8;
   font-size: 0.85rem;
   text-align: center;
@@ -6796,7 +6798,7 @@ a.btn-dark:hover {
 /* Community Banner */
 .res-community-banner,
 .alp-request-banner {
-  background: linear-gradient(135deg, #f8fafc 0%, #edf2f7 100%);
+  background: var(--surface);
   border: 1px solid var(--line);
   border-radius: 16px;
   padding: 24px 32px;
@@ -7233,14 +7235,14 @@ a.btn-dark:hover {
   padding: 14px 18px;
   border-radius: 10px;
   border: 1px solid var(--line);
-  background: #fafafa;
+  background: var(--surface);
   cursor: pointer;
   transition: var(--transition-smooth);
 }
 
 .lpd-topic-row:hover {
-  background: var(--surface);
-  border-color: #cbd5e1;
+  background: var(--paper);
+  border-color: var(--line);
   transform: translateX(4px);
 }
 
