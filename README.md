@@ -9,7 +9,7 @@ Open learning portal for students and early-career engineers.
 |---|---|
 | Backend | Java 21, Spring Boot 3, Spring Security (JWT), Spring Data JPA, MySQL |
 | Frontend | React (CRA), React Router, Axios |
-| Mail | Spring Mail (SMTP) for email verification OTP and password reset |
+| Mail | Brevo API (HTTP) for email verification OTP and password reset |
 
 ## Local setup
 
