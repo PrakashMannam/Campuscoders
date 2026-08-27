@@ -12,6 +12,9 @@ campuscoders:
     email: ${ADMIN_EMAIL:}
     password: ${ADMIN_PASSWORD:}
     full-name: ${ADMIN_FULL_NAME:Campus Admin}
+  # Idempotent curated catalog seed on boot (set CATALOG_SEED=false to skip).
+  catalog:
+    seed: ${CATALOG_SEED:true}
 
 spring:
   application:

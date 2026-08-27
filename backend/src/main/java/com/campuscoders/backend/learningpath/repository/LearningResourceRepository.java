@@ -24,6 +24,10 @@ public interface LearningResourceRepository extends JpaRepository<LearningResour
   // Fetches visible resources in the exact order the topic detail page should show them.
   List<LearningResource> findByTopicIdAndActiveTrueOrderBySortOrderAsc(Long topicId);
 
+  List<LearningResource> findByTopicId(Long topicId);
+
+  Optional<LearningResource> findByTopicIdAndUrl(Long topicId, String url);
+
   // Count active resources belonging to a specific Learning Path for percentage calculations.
   long countByTopicLearningPathIdAndActiveTrue(Long learningPathId);
 
