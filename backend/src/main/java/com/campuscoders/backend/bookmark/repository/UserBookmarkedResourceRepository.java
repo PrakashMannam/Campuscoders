@@ -10,4 +10,8 @@ import com.campuscoders.backend.bookmark.UserBookmarkedResource;
 public interface UserBookmarkedResourceRepository extends JpaRepository<UserBookmarkedResource, Long> {
     Optional<UserBookmarkedResource> findByUserIdAndResourceId(Long userId, Long resourceId);
     List<UserBookmarkedResource> findByUserId(Long userId);
+
+    void deleteByResourceTopicId(Long topicId);
+
+    void deleteByResourceTopicLearningPathId(Long learningPathId);
 }

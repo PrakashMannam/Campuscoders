@@ -10,4 +10,6 @@ import com.campuscoders.backend.bookmark.UserBookmarkedPath;
 public interface UserBookmarkedPathRepository extends JpaRepository<UserBookmarkedPath, Long> {
     Optional<UserBookmarkedPath> findByUserIdAndLearningPathId(Long userId, Long pathId);
     List<UserBookmarkedPath> findByUserId(Long userId);
+
+    void deleteByLearningPathId(Long learningPathId);
 }

@@ -738,6 +738,14 @@
   to { transform: rotate(360deg); }
 }
 
+.ap-danger-link {
+  color: #b91c1c !important;
+}
+
+.ap-danger-link:hover {
+  color: #991b1b !important;
+}
+
 @media (max-width: 980px) {
   .admin-shell .dl-sidebar {
     width: 72px;

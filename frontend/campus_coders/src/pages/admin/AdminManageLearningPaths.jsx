@@ -106,6 +106,24 @@ export default function AdminManageLearningPaths() {
     }
   };
 
+  const deletePath = async (p) => {
+    const ok = window.confirm(
+      `Are you sure you want to delete "${p.title}"?\n\nThis permanently removes the path, its topics, and resources. This cannot be undone.`
+    );
+    if (!ok) return;
+    try {
+      await api.delete(`/admin/learning-paths/${p.id}`);
+      if (editingId === p.id) {
+        setEditingId(null);
+        setForm(emptyForm);
+      }
+      showToast('success', 'Path deleted.');
+      await load();
+    } catch (err) {
+      showToast('error', err.response?.data?.message || 'Could not delete path.');
+    }
+  };
+
   return (
     <div>
       <Toast type={toast.type} message={toast.message} show={toast.show} onClose={hideToast} />
@@ -179,8 +197,10 @@ export default function AdminManageLearningPaths() {
                   <td>{p.active ? 'Live' : 'Hidden'}</td>
                   <td>
                     <button type="button" className="sd-text-link" onClick={() => startEdit(p)}>Edit</button>
-                    {' - '}
+                    {' · '}
                     <button type="button" className="sd-text-link" onClick={() => toggleActive(p)}>{p.active ? 'Hide' : 'Show'}</button>
+                    {' · '}
+                    <button type="button" className="sd-text-link ap-danger-link" onClick={() => deletePath(p)}>Delete</button>
                   </td>
                 </tr>
               ))}

@@ -25,6 +25,10 @@ public interface UserLearningResourceRepository extends JpaRepository<UserLearni
   // Derived JPA count query: Counts user completions for resources belonging to a specific Topic.
   long countByUserIdAndResourceTopicId(Long userId, Long topicId);
 
+  void deleteByResourceTopicId(Long topicId);
+
+  void deleteByResourceTopicLearningPathId(Long learningPathId);
+
   @Query("""
       select distinct t.learningPath.id
       from UserLearningResource ulr

@@ -108,6 +108,24 @@ export default function AdminManageTopics() {
     }
   };
 
+  const deleteTopic = async (t) => {
+    const ok = window.confirm(
+      `Are you sure you want to delete "${t.title}"?\n\nThis permanently removes the topic and its resources. This cannot be undone.`
+    );
+    if (!ok) return;
+    try {
+      await api.delete(`/admin/topics/${t.id}`);
+      if (editingId === t.id) {
+        setEditingId(null);
+        setForm({ ...emptyForm, learningPathId: form.learningPathId });
+      }
+      showToast('success', 'Topic deleted.');
+      await load();
+    } catch (err) {
+      showToast('error', err.response?.data?.message || 'Could not delete topic.');
+    }
+  };
+
   const pathTitle = (id) => paths.find((p) => Number(p.id) === Number(id))?.title || `#${id}`;
 
   return (
@@ -180,8 +198,10 @@ export default function AdminManageTopics() {
                   <td>{t.active ? 'Live' : 'Hidden'}</td>
                   <td>
                     <button type="button" className="sd-text-link" onClick={() => startEdit(t)}>Edit</button>
-                    {' - '}
+                    {' · '}
                     <button type="button" className="sd-text-link" onClick={() => toggleActive(t)}>{t.active ? 'Hide' : 'Show'}</button>
+                    {' · '}
+                    <button type="button" className="sd-text-link ap-danger-link" onClick={() => deleteTopic(t)}>Delete</button>
                   </td>
                 </tr>
               ))}

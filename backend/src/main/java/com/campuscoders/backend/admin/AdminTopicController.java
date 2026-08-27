@@ -2,7 +2,9 @@ package com.campuscoders.backend.admin;
 
 import java.util.List;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -11,6 +13,7 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.campuscoders.backend.admin.dto.AdminTopicOptionResponse;
@@ -75,5 +78,12 @@ public class AdminTopicController {
   @PatchMapping("/{topicId}/activate")
   public TopicResponse activateTopicForAdmin(@PathVariable Long topicId) {
     return topicService.activateTopic(topicId);
+  }
+
+  // Hard-delete topic (also removes its resources, bookmarks, and completion rows).
+  @DeleteMapping("/{topicId}")
+  @ResponseStatus(HttpStatus.NO_CONTENT)
+  public void deleteTopicForAdmin(@PathVariable Long topicId) {
+    topicService.deleteTopic(topicId);
   }
 }

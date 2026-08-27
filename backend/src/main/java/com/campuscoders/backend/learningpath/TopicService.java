@@ -10,6 +10,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import com.campuscoders.backend.bookmark.UserBookmarkedTopic;
+import com.campuscoders.backend.bookmark.repository.UserBookmarkedResourceRepository;
 import com.campuscoders.backend.bookmark.repository.UserBookmarkedTopicRepository;
 import com.campuscoders.backend.common.dto.BookmarkToggleResponse;
 import com.campuscoders.backend.learningpath.dto.CreateTopicRequest;
@@ -17,6 +18,7 @@ import com.campuscoders.backend.learningpath.dto.TopicResponse;
 import com.campuscoders.backend.learningpath.dto.UpdateTopicRequest;
 import com.campuscoders.backend.learningpath.repository.LearningPathRepository;
 import com.campuscoders.backend.learningpath.repository.TopicRepository;
+import com.campuscoders.backend.learningprogress.repository.UserLearningResourceRepository;
 import com.campuscoders.backend.user.User;
 import com.campuscoders.backend.user.repository.UserRepository;
 
@@ -26,16 +28,22 @@ public class TopicService {
   private final TopicRepository topicRepository;
   private final LearningPathRepository learningPathRepository;
   private final UserBookmarkedTopicRepository userBookmarkedTopicRepository;
+  private final UserBookmarkedResourceRepository userBookmarkedResourceRepository;
+  private final UserLearningResourceRepository userLearningResourceRepository;
   private final UserRepository userRepository;
 
   public TopicService(
       TopicRepository topicRepository,
       LearningPathRepository learningPathRepository,
       UserBookmarkedTopicRepository userBookmarkedTopicRepository,
+      UserBookmarkedResourceRepository userBookmarkedResourceRepository,
+      UserLearningResourceRepository userLearningResourceRepository,
       UserRepository userRepository) {
     this.topicRepository = topicRepository;
     this.learningPathRepository = learningPathRepository;
     this.userBookmarkedTopicRepository = userBookmarkedTopicRepository;
+    this.userBookmarkedResourceRepository = userBookmarkedResourceRepository;
+    this.userLearningResourceRepository = userLearningResourceRepository;
     this.userRepository = userRepository;
   }
 
@@ -45,7 +53,8 @@ public class TopicService {
         .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
     Topic topic = findTopicById(topicId);
 
-    Optional<UserBookmarkedTopic> existingBookmark = userBookmarkedTopicRepository.findByUserIdAndTopicId(user.getId(), topic.getId());
+    Optional<UserBookmarkedTopic> existingBookmark = userBookmarkedTopicRepository.findByUserIdAndTopicId(user.getId(),
+        topic.getId());
 
     if (existingBookmark.isPresent()) {
       userBookmarkedTopicRepository.delete(existingBookmark.get());
@@ -86,6 +95,19 @@ public class TopicService {
     return toResponse(savedTopic);
   }
 
+  @Transactional
+  public void deleteTopic(Long topicId) {
+    Topic topic = findTopicById(topicId);
+
+    // Clear dependent rows that are not cascade-owned by Topic (bookmarks + completions).
+    userLearningResourceRepository.deleteByResourceTopicId(topicId);
+    userBookmarkedResourceRepository.deleteByResourceTopicId(topicId);
+    userBookmarkedTopicRepository.deleteByTopicId(topicId);
+
+    // CascadeType.ALL + orphanRemoval removes LearningResource children.
+    topicRepository.delete(topic);
+  }
+
   @Transactional(readOnly = true)
   public TopicResponse getActiveTopicBySlug(String slug) {
     Topic topic = topicRepository.findBySlug(slug)
@@ -109,7 +131,8 @@ public class TopicService {
         .toList();
   }
 
-  // Multi-attribute sorting: Sorts topics first by Learning Path title, then by numerical sort order, then alphabetically.
+  // Multi-attribute sorting: Sorts topics first by Learning Path title, then by
+  // numerical sort order, then alphabetically.
   @Transactional(readOnly = true)
   public List<TopicResponse> getTopicsForAdmin(Long learningPathId, Boolean active) {
     return topicRepository.findAll()
@@ -135,7 +158,8 @@ public class TopicService {
           "Topic slug already exists");
     }
 
-    // Admins can change topic details or move a topic to a different parent learning path.
+    // Admins can change topic details or move a topic to a different parent
+    // learning path.
     topic.setLearningPath(learningPath);
     topic.setTitle(request.title());
     topic.setSlug(request.slug());
@@ -183,7 +207,8 @@ public class TopicService {
             "Topic not found"));
   }
 
-  // Null-safe comparator helper: Places items without a sort order at the end of the list instead of throwing NullPointerException.
+  // Null-safe comparator helper: Places items without a sort order at the end of
+  // the list instead of throwing NullPointerException.
   private Integer nullSafeSortOrder(Integer sortOrder) {
     return sortOrder == null ? Integer.MAX_VALUE : sortOrder;
   }

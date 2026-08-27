@@ -13,6 +13,8 @@ import org.springframework.web.server.ResponseStatusException;
 
 import com.campuscoders.backend.bookmark.UserBookmarkedPath;
 import com.campuscoders.backend.bookmark.repository.UserBookmarkedPathRepository;
+import com.campuscoders.backend.bookmark.repository.UserBookmarkedResourceRepository;
+import com.campuscoders.backend.bookmark.repository.UserBookmarkedTopicRepository;
 import com.campuscoders.backend.common.dto.BookmarkToggleResponse;
 import com.campuscoders.backend.common.dto.PageResponse;
 import com.campuscoders.backend.learningpath.dto.CreateLearningPathRequest;
@@ -24,6 +26,7 @@ import com.campuscoders.backend.learningpath.dto.UpdateLearningPathRequest;
 import com.campuscoders.backend.learningpath.repository.LearningPathRepository;
 import com.campuscoders.backend.learningpath.repository.LearningResourceRepository;
 import com.campuscoders.backend.learningpath.repository.TopicRepository;
+import com.campuscoders.backend.learningprogress.repository.UserLearningResourceRepository;
 import com.campuscoders.backend.user.User;
 import com.campuscoders.backend.user.repository.UserRepository;
 
@@ -34,6 +37,9 @@ public class LearningPathService {
   private final TopicRepository topicRepository;
   private final LearningResourceRepository learningResourceRepository;
   private final UserBookmarkedPathRepository userBookmarkedPathRepository;
+  private final UserBookmarkedTopicRepository userBookmarkedTopicRepository;
+  private final UserBookmarkedResourceRepository userBookmarkedResourceRepository;
+  private final UserLearningResourceRepository userLearningResourceRepository;
   private final UserRepository userRepository;
 
   public LearningPathService(
@@ -41,11 +47,17 @@ public class LearningPathService {
       TopicRepository topicRepository,
       LearningResourceRepository learningResourceRepository,
       UserBookmarkedPathRepository userBookmarkedPathRepository,
+      UserBookmarkedTopicRepository userBookmarkedTopicRepository,
+      UserBookmarkedResourceRepository userBookmarkedResourceRepository,
+      UserLearningResourceRepository userLearningResourceRepository,
       UserRepository userRepository) {
     this.learningPathRepository = learningPathRepository;
     this.topicRepository = topicRepository;
     this.learningResourceRepository = learningResourceRepository;
     this.userBookmarkedPathRepository = userBookmarkedPathRepository;
+    this.userBookmarkedTopicRepository = userBookmarkedTopicRepository;
+    this.userBookmarkedResourceRepository = userBookmarkedResourceRepository;
+    this.userLearningResourceRepository = userLearningResourceRepository;
     this.userRepository = userRepository;
   }
 
@@ -55,7 +67,8 @@ public class LearningPathService {
         .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
     LearningPath path = findLearningPathById(learningPathId);
 
-    Optional<UserBookmarkedPath> existingBookmark = userBookmarkedPathRepository.findByUserIdAndLearningPathId(user.getId(), path.getId());
+    Optional<UserBookmarkedPath> existingBookmark = userBookmarkedPathRepository
+        .findByUserIdAndLearningPathId(user.getId(), path.getId());
 
     if (existingBookmark.isPresent()) {
       userBookmarkedPathRepository.delete(existingBookmark.get());
@@ -71,7 +84,8 @@ public class LearningPathService {
 
   @Transactional
   public LearningPathResponse createLearningPath(CreateLearningPathRequest request) {
-    // 1️⃣ Validate slug uniqueness to ensure clean, readable routing URLs (e.g. /paths/java-backend).
+    // 1️⃣ Validate slug uniqueness to ensure clean, readable routing URLs (e.g.
+    // /paths/java-backend).
     if (learningPathRepository.existsBySlug(request.slug())) {
       throw new ResponseStatusException(
           HttpStatus.CONFLICT,
@@ -93,6 +107,21 @@ public class LearningPathService {
     LearningPath savedLearningPath = learningPathRepository.save(learningPath);
 
     return toResponse(savedLearningPath);
+  }
+
+  @Transactional
+  public void deleteLearningPath(Long learningPathId) {
+    LearningPath learningPath = findLearningPathById(learningPathId);
+
+    // Clear dependent rows that are not cascade-owned by LearningPath
+    // (completions, resource/topic/path bookmarks) before hard delete.
+    userLearningResourceRepository.deleteByResourceTopicLearningPathId(learningPathId);
+    userBookmarkedResourceRepository.deleteByResourceTopicLearningPathId(learningPathId);
+    userBookmarkedTopicRepository.deleteByTopicLearningPathId(learningPathId);
+    userBookmarkedPathRepository.deleteByLearningPathId(learningPathId);
+
+    // CascadeType.ALL + orphanRemoval removes Topic -> LearningResource children.
+    learningPathRepository.delete(learningPath);
   }
 
   @Transactional(readOnly = true)
@@ -179,7 +208,8 @@ public class LearningPathService {
     return toResponse(savedLearningPath);
   }
 
-  // Construct a nested curriculum tree: Learning Path -> List of Topics -> List of Resources.
+  // Construct a nested curriculum tree: Learning Path -> List of Topics -> List
+  // of Resources.
   @Transactional(readOnly = true)
   public LearningPathDetailsResponse getLearningPathDetailsBySlug(String slug) {
     LearningPath learningPath = findLearningPathBySlug(slug);
